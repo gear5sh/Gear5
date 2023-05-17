@@ -1,9 +1,11 @@
 package connector
 
+import "github.com/piyushsingariya/syndicate/models"
+
 type Connector interface {
-	Check()
-	Discover()
-	Create(streamName string) error
+	Setup(config, state, catalog interface{}) error
+	Check() error
+	Discover() ([]*models.Stream, error)
 
 	Type() string
 	Schema() string
@@ -17,4 +19,5 @@ type Driver interface {
 type Adapter interface {
 	Connector
 	Write()
+	Create(streamName string) error
 }

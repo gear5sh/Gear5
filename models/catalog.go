@@ -77,18 +77,21 @@ type CatalogRow struct {
 
 // Stream is a dto for Airbyte catalog Stream object serialization
 type Stream struct {
-	Name                    string     `json:"name,omitempty"`
-	JsonSchema              *Schema    `json:"json_schema,omitempty"`
-	SupportedSyncModes      []string   `json:"supported_sync_modes,omitempty"`
-	SourceDefinedPrimaryKey [][]string `json:"source_defined_primary_key,omitempty"`
-	SourceDefinedCursor     bool       `json:"source_defined_cursor"`
-	DefaultCursorField      []string   `json:"default_cursor_field,omitempty"`
+	Name                    string               `json:"name,omitempty"`
+	JsonSchema              *Schema              `json:"json_schema,omitempty"`
+	SupportedSyncModes      []constants.SyncMode `json:"supported_sync_modes,omitempty"`
+	SourceDefinedPrimaryKey [][]string           `json:"source_defined_primary_key,omitempty"`
+	SourceDefinedCursor     bool                 `json:"source_defined_cursor"`
+	DefaultCursorField      []string             `json:"default_cursor_field,omitempty"`
 
 	Namespace string   `json:"namespace,omitempty"`
 	SortKey   []string `json:"sort_key,omitempty"`
 
 	SyncMode            string   `json:"-" yaml:"-"` //without serialization
 	SelectedCursorField []string `json:"-" yaml:"-"` //without serialization
+
+	// _ struct{} `additionalProperties:"false"`                                    // Tags of unnamed field are applied to parent schema.
+	_ struct{} `$schema:"http://json-schema.org/draft-07/schema#" type:"object"` // Multiple unnamed fields can be used.
 }
 
 // Schema is a dto for Airbyte catalog Schema object serialization
