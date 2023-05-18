@@ -1,9 +1,12 @@
 package models
 
 type Credentials struct {
-	ClientID     string `json:"client_id" required:"true"`
-	ClientSecret string `json:"client_secret" required:"true"`
-	RefreshToken string `json:"refresh_token"`
+	_ struct{} `additionalProperties:"false"`                                                             // Tags of unnamed field are applied to parent schema.
+	_ struct{} `title:"Authentication" description:"Credentials for connecting to the Google Sheets API"` // Multiple unnamed fields can be used.
+
+	ClientID     string `json:"client_id" title:"Client ID" required:"true" description:"Enter your Google application's Client ID"`
+	ClientSecret string `json:"client_secret" title:"Client Secret" required:"true" description:"Enter your Google application's Client Secret"`
+	RefreshToken string `json:"refresh_token" title:"Refresh Token" required:"true" description:"Enter your Google application's refresh token"`
 }
 
 type Config struct {

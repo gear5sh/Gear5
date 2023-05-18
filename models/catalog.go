@@ -21,7 +21,7 @@ type Row struct {
 	ConnectionStatus *StatusRow             `json:"connectionStatus,omitempty"`
 	State            *StateRow              `json:"state,omitempty"`
 	Record           *RecordRow             `json:"record,omitempty"`
-	Catalog          *CatalogRow            `json:"catalog,omitempty"`
+	Catalog          *RawCatalog            `json:"catalog,omitempty"`
 	Action           *ActionRow             `json:"action,omitempty"`
 	Spec             map[string]interface{} `json:"spec,omitempty"`
 }
@@ -57,8 +57,8 @@ type RecordRow struct {
 	Data   map[string]interface{} `json:"data,omitempty"`
 }
 
-// Catalog is a dto for formatted airbyte catalog serialization
-type Catalog struct {
+// ConfiguredCatalog is a dto for formatted airbyte catalog serialization
+type ConfiguredCatalog struct {
 	Streams []*WrappedStream `json:"streams,omitempty"`
 }
 
@@ -70,8 +70,8 @@ type WrappedStream struct {
 	Stream              *Stream  `json:"stream,omitempty"`
 }
 
-// CatalogRow is a dto for Airbyte discover output serialization
-type CatalogRow struct {
+// RawCatalog is a dto for Airbyte discover output serialization
+type RawCatalog struct {
 	Streams []*Stream `json:"streams,omitempty"`
 }
 

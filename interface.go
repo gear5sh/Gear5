@@ -1,9 +1,9 @@
-package connector
+package syndicate
 
 import "github.com/piyushsingariya/syndicate/models"
 
 type Connector interface {
-	Setup(config, state, catalog interface{}) error
+	Setup(config, state, catalog interface{}, batchSize int) error
 	Check() error
 	Discover() ([]*models.Stream, error)
 
