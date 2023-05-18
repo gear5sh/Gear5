@@ -14,12 +14,12 @@ const (
 	ActionType           = "ACTION"
 )
 
-// Row is a dto for airbyte output row representation
-type Row struct {
+// Message is a dto for syndicate output row representation
+type Message struct {
 	Type             string                 `json:"type"`
-	Log              *LogRow                `json:"log,omitempty"`
+	Log              *Log                   `json:"log,omitempty"`
 	ConnectionStatus *StatusRow             `json:"connectionStatus,omitempty"`
-	State            *StateRow              `json:"state,omitempty"`
+	State            *State                 `json:"state,omitempty"`
 	Record           *RecordRow             `json:"record,omitempty"`
 	Catalog          *RawCatalog            `json:"catalog,omitempty"`
 	Action           *ActionRow             `json:"action,omitempty"`
@@ -34,8 +34,8 @@ type ActionRow struct {
 	// add truncate
 }
 
-// LogRow is a dto for airbyte logs serialization
-type LogRow struct {
+// Log is a dto for airbyte logs serialization
+type Log struct {
 	Level   string `json:"level,omitempty"`
 	Message string `json:"message,omitempty"`
 }
@@ -46,8 +46,8 @@ type StatusRow struct {
 	Message string `json:"message,omitempty"`
 }
 
-// StateRow is a dto for airbyte state serialization
-type StateRow struct {
+// State is a dto for airbyte state serialization
+type State struct {
 	Data map[string]interface{} `json:"data,omitempty"`
 }
 
