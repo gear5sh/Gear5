@@ -53,31 +53,6 @@ func NewClient(config *models.Config) (*spreadsheet.Service, error) {
 	return service, nil
 }
 
-/* def get_first_row(client, spreadsheet_id: str, sheet_name: str) -> List[str]:
-   spreadsheet = Spreadsheet.parse_obj(client.get(spreadsheetId=spreadsheet_id, includeGridData=True, ranges=f"{sheet_name}!1:1"))
-
-   # There is only one sheet since we are specifying the sheet in the requested ranges.
-   returned_sheets = spreadsheet.sheets
-   if len(returned_sheets) != 1:
-       raise Exception(f"Unexpected return result: Sheet {sheet_name} was expected to contain data on exactly 1 sheet. ")
-
-   range_data = returned_sheets[0].data
-   if len(range_data) != 1:
-       raise Exception(f"Expected data for exactly one range for sheet {sheet_name}")
-
-   all_row_data = range_data[0].rowData
-   if not all_row_data:
-       # the sheet is empty
-       logger.warning(f"The sheet {sheet_name} (ID {spreadsheet_id}) is empty!")
-       return []
-
-   if len(all_row_data) != 1:
-       raise Exception(f"Expected data for exactly one row for sheet {sheet_name}")
-
-   first_row_data = all_row_data[0]
-
-   return Helpers.get_formatted_row_values(first_row_data) */
-
 func LoadHeaders(sheet spreadsheet.Sheet) ([]string, error) {
 	if len(sheet.Rows) == 0 {
 		return []string{}, fmt.Errorf("expected data for exactly one range for sheet %s", sheet.Properties.Title)
@@ -90,6 +65,11 @@ func LoadHeaders(sheet spreadsheet.Sheet) ([]string, error) {
 
 	if sheet.Properties.GridProperties.RowCount == 0 {
 		logrus.Warn("[%s] The sheet %s (ID %s) rows are empty!", EmptySheetError, sheet.Properties.Title, sheet.Properties.ID)
+		return []string{}, nil
+	}
+
+	if sheet.Properties.GridProperties.RowCount == 1 {
+		logrus.Warn("[%s] no data found in the sheet %s (ID %s) rows are empty!", EmptySheetError, sheet.Properties.Title, sheet.Properties.ID)
 		return []string{}, nil
 	}
 
@@ -173,4 +153,24 @@ func headersToStream(sheetName string, headers []string) *syndicatemodels.Stream
 	}
 
 	return &stream
+}
+
+func GetIndexToColumn(sheet spreadsheet.Sheet) (map[int]string, error) {
+	headers, err := LoadHeaders(sheet)
+	if err != nil {
+		return nil, err
+	}
+
+	output := make(map[int]string)
+
+	for i := range headers {
+		headers[i], err = SafeNameConversion(headers[i])
+		if err != nil {
+			return nil, err
+		}
+
+		output[i] = headers[i]
+	}
+
+	return output, nil
 }
