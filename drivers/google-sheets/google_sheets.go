@@ -8,7 +8,6 @@ import (
 	"github.com/piyushsingariya/syndicate/logger"
 	syndicatemodels "github.com/piyushsingariya/syndicate/models"
 	"github.com/piyushsingariya/syndicate/utils"
-	"github.com/piyushsingariya/syndicate/utils/jsonutils"
 	"gopkg.in/Iwark/spreadsheet.v2"
 )
 
@@ -21,7 +20,7 @@ type GoogleSheets struct {
 
 func (gs *GoogleSheets) Setup(config, _, catalog interface{}, batchSize int) error {
 	conf := &models.Config{}
-	if err := jsonutils.UnmarshalConfig(config, conf); err != nil {
+	if err := utils.UnmarshalConfig(config, conf); err != nil {
 		return err
 	}
 
@@ -31,7 +30,7 @@ func (gs *GoogleSheets) Setup(config, _, catalog interface{}, batchSize int) err
 
 	if catalog != nil {
 		cat := &syndicatemodels.ConfiguredCatalog{}
-		if err := jsonutils.UnmarshalConfig(catalog, cat); err != nil {
+		if err := utils.UnmarshalConfig(catalog, cat); err != nil {
 			return err
 		}
 
