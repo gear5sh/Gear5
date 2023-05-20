@@ -9,10 +9,12 @@ import (
 )
 
 func main() {
-	schema, err := utils.ToJsonSchema(models.Config{})
+	model := &models.Config{}
+	schema, err := utils.ToJsonSchema(model)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	fmt.Println(schema)
+	// model.GetSchema()
 }
