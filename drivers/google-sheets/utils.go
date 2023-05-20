@@ -25,9 +25,9 @@ func NewClient(config *models.Config) (*spreadsheet.Service, error) {
 
 	// get bytes from base64 encoded google service accounts key
 	credBytes, err := json.Marshal(map[string]string{
-		"client_id":     config.Credentials.ClientID,
-		"refresh_token": config.Credentials.RefreshToken,
-		"client_secret": config.Credentials.ClientSecret,
+		// "client_id":     config.Credentials.OAuth.ClientID,
+		// "refresh_token": config.Credentials.OAuth.RefreshToken,
+		// "client_secret": config.Credentials.OAuth.ClientSecret,
 	})
 	if err != nil {
 		return nil, err
