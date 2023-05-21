@@ -93,6 +93,11 @@ type JSONSchema interface {
 	SetType(typeList string)
 }
 
+// Definitions hold schema definitions.
+// http://json-schema.org/latest/json-schema-validation.html#rfc.section.5.26
+// RFC draft-wright-json-schema-validation-00, section 5.26
+type Definitions map[string]*JSONSchema
+
 // BasicSchema is the base implementation of the JsonSchema interface.
 type basicSchema struct {
 	SchemaURI    string                `json:"$schema,omitempty"`
@@ -107,7 +112,7 @@ type basicSchema struct {
 	Not          JSONSchema            `json:"not,omitempty"`
 	Definitions  map[string]JSONSchema `json:"definitions,omitempty"`
 	DefaultValue interface{}           `json:"default,omitempty"`
-	ConstValue   interface{}           `json:"const,omitempty"`
+	Const        interface{}           `json:"const,omitempty"`
 }
 
 // FromJSON returns a JSONSchema object from the given json bytes.
@@ -365,7 +370,7 @@ func (s *basicSchema) SetDefault(def interface{}) {
 }
 
 func (s *basicSchema) SetConstant(constant interface{}) {
-	s.ConstValue = constant
+	s.Const = constant
 }
 
 func (s *basicSchema) SetType(typeList string) {
