@@ -1,9 +1,11 @@
 package generator
 
 import (
+	"encoding/json"
 	"fmt"
 	"go/ast"
 	"go/doc"
+	"os"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -221,6 +223,10 @@ func (g *JSONSchemaGenerator) addCommonAttrs(schema schema.JSONSchema, anno *sch
 		schema.SetDefault(anno.defaultValue)
 	}
 
+	if anno.constValue != "" {
+		schema.SetConstant(anno.constValue)
+	}
+
 	if anno.title != "" {
 		schema.SetTitle(anno.title)
 	}
@@ -246,10 +252,13 @@ func (g *JSONSchemaGenerator) addCommonAttrs(schema schema.JSONSchema, anno *sch
 	}
 
 	if len(anno.oneOf) > 0 {
+		fmt.Println("oneofs", anno.oneOf)
 		schemas, err := g.generateSchemasFromTypePaths(anno.oneOf, parentKey)
 		if err != nil {
+			fmt.Println("found error", err)
 			return fmt.Errorf("error setting 'oneOf' for %s: %s", name, err.Error())
 		}
+		json.NewEncoder(os.Stdout).Encode(schemas)
 		schema.SetOneOf(schemas)
 	}
 
@@ -534,7 +543,6 @@ func (g *JSONSchemaGenerator) generateSchemasFromTypePaths(paths []string, paren
 	var err error
 
 	for _, path := range paths {
-
 		var schemaItem schema.JSONSchema
 		defKey := g.defKeyFromPath(path)
 		g.LogVerbose("path: ", path)
@@ -565,6 +573,7 @@ func (g *JSONSchemaGenerator) generateSchemaFromTypePath(path string, parentKey 
 	var ok bool
 
 	if isIdent(path) {
+		g.LogVerboseF("found ident: %s\n", path)
 		if tmpSchema, ok, err = g.generateSchemaForBuiltIn(path, nil, parentKey); ok {
 			schemaItem = tmpSchema
 		}

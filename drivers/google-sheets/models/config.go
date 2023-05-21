@@ -6,29 +6,23 @@ import (
 	"github.com/piyushsingariya/syndicate"
 )
 
-//go:generate jsonschemagen -s -c -r -o ./petschema github.com/piyushsingariya/syndicate/driver/google-sheets/models Config
 type Config struct {
 	// Credentials for connecting to the Google Sheets API
 	//
 	// @jsonschema(
 	// required=true,
-	// oneOf=["github.com/piyushsingariya/syndicate/drivers/google-sheets/models/Client","github.com/piyushsingariya/syndicate/drivers/google-sheets/models/Service"]
+	// oneOf=["Client","Service"]
 	// )
-	// Credentials    *Credentials `json:"credentials"  jsonschema:"oneof_type=Client;Service,title=Authentication,description=Credentials for connecting to the Google Sheets API"`
 	Credentials    interface{} `json:"credentials"`
 	SpreadsheetID  string      `json:"spreadsheet_id" required:"true"`
 	NameConversion *bool       `json:"name_conversion" required:"false" default:"true"`
 }
 
-type Credentials struct {
-	Service *Service `title:"Service Account Key Authentication,oneof_required=Service"`
-}
-
-// @jsonschema=(title=Authenticate via Google (OAuth))
+// Authenticate via Google (OAuth)
 type Client struct {
 	// Auth Type.
 	//
-	// @jsonSchema(required=true, maxLength=250, const=Client)
+	// @jsonschema(required=true, const=Client)
 	AuthType     string `json:"auth_type" jsonschema:"title=Auth Type,const=Client"`
 	ClientID     string `json:"client_id" jsonschema:"title=Client ID,description=Enter your Google application's Client ID"`
 	ClientSecret string `json:"client_secret" jsonschema:"title=Client Secret,description=Enter your Google application's Client Secret"`

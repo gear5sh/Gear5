@@ -64,7 +64,7 @@ type definition struct {
 // NewOptions creates a new options instance with sane defaults.
 func NewOptions() Options {
 	return Options{
-		SpecVersion:    schema.SpecVersionDraftV4,
+		SpecVersion:    schema.SpecVersion202012,
 		IncludeTests:   false,
 		AutoCreateDefs: true,
 		LogLevel:       InfoLevel,
@@ -87,7 +87,7 @@ func (g *JSONSchemaGenerator) newDeclInfo(pkg *loader.PackageInfo, file *ast.Fil
 
 func (g *JSONSchemaGenerator) defKeyFromPath(path string) string {
 	if !isPackageType(path) {
-		return ""
+		return path
 	}
 
 	defKey := g.options.DefinitionPrefix + path
@@ -548,6 +548,12 @@ func (g *JSONSchemaGenerator) generateSchemaForBuiltIn(name string, field *ast.F
 		if err == nil {
 			g.LogVerbose("returning simple schema ", jsonType)
 			return simpleSchema, true, err
+		}
+	} else {
+		schema, err := NewJSONSchemaGenerator(g.basePackage, name, g.options).Generate()
+		if err == nil {
+			g.LogVerbose("returning generated schema ", name)
+			return schema, true, err
 		}
 	}
 

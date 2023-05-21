@@ -120,7 +120,6 @@ func isIdent(name string) bool {
 }
 
 func isPackageType(name string) bool {
-
 	if strings.HasPrefix(name, "/") {
 		return false
 	}

@@ -89,6 +89,7 @@ type JSONSchema interface {
 	SetOneOf(items []JSONSchema)
 	SetNot(not JSONSchema)
 	SetDefault(def interface{})
+	SetConstant(def interface{})
 	SetType(typeList string)
 }
 
@@ -106,6 +107,7 @@ type basicSchema struct {
 	Not          JSONSchema            `json:"not,omitempty"`
 	Definitions  map[string]JSONSchema `json:"definitions,omitempty"`
 	DefaultValue interface{}           `json:"default,omitempty"`
+	ConstValue   interface{}           `json:"const,omitempty"`
 }
 
 // FromJSON returns a JSONSchema object from the given json bytes.
@@ -360,6 +362,10 @@ func (s *basicSchema) SetNot(not JSONSchema) {
 
 func (s *basicSchema) SetDefault(def interface{}) {
 	s.DefaultValue = def
+}
+
+func (s *basicSchema) SetConstant(constant interface{}) {
+	s.ConstValue = constant
 }
 
 func (s *basicSchema) SetType(typeList string) {
