@@ -27,6 +27,7 @@ type schemaAnno struct {
 	format               string
 	title                string
 	defaultValue         string
+	constValue           string
 	maximum              float64
 	exclusiveMaximum     bool
 	minimum              float64
@@ -109,6 +110,11 @@ func (f *schemaAnnoFactory) ValidateAndCreate(name string, attrs map[string][]st
 		case "default":
 			if v[0] != "" {
 				anno.defaultValue = v[0]
+			}
+
+		case "const":
+			if v[0] != "" {
+				anno.constValue = v[0]
 			}
 
 		case "maximum":
