@@ -10,37 +10,24 @@ import (
 var (
 	globalDriver  syndicate.Driver
 	globalAdapter syndicate.Adapter
-	rootCmd       *cobra.Command
 )
 
-func RegisterDriver(driver syndicate.Driver) error {
+func RegisterDriver(driver syndicate.Driver) (*cobra.Command, error) {
 	if globalAdapter != nil {
-		return fmt.Errorf("adapter already registered: %s", globalAdapter.Type())
+		return nil, fmt.Errorf("adapter already registered: %s", globalAdapter.Type())
 	}
 
 	globalDriver = driver
 
-	return nil
+	return syndicate.CreateRootCommand(true, driver), nil
 }
 
-func GetDriver() syndicate.Driver {
-	return globalDriver
-}
-
-func RegisterAdapter(driver syndicate.Adapter) error {
+func RegisterAdapter(adapter syndicate.Adapter) (*cobra.Command, error) {
 	if globalDriver != nil {
-		return fmt.Errorf("driver alraedy registered: %s", globalDriver.Type())
+		return nil, fmt.Errorf("driver alraedy registered: %s", globalDriver.Type())
 	}
 
-	globalAdapter = driver
+	globalAdapter = adapter
 
-	return nil
-}
-
-func GetAdapter() syndicate.Adapter {
-	return globalAdapter
-}
-
-func Root() *cobra.Command {
-	return rootCmd
+	return syndicate.CreateRootCommand(false, adapter), nil
 }

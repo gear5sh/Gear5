@@ -19,12 +19,7 @@ var SpecCmd = &cobra.Command{
 			return fmt.Errorf("expected type to be: Connector, found %T", connector)
 		}
 
-		spec, err := connector.Spec()
-		if err != nil {
-			return fmt.Errorf("failed to get spec from connector: %s", connector.Type())
-		}
-
-		schema, err := jsonschema.Reflect(spec)
+		schema, err := jsonschema.Reflect(connector.Spec())
 		if err != nil {
 			return fmt.Errorf("failed to generate json schema for config: %s", connector.Type())
 		}

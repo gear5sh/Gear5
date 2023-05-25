@@ -4,7 +4,7 @@ import "github.com/piyushsingariya/syndicate/models"
 
 type Connector interface {
 	Setup(config, state, catalog interface{}, batchSize int) error
-	Spec() (interface{}, error)
+	Spec() interface{}
 	Check() error
 	Discover() ([]*models.Stream, error)
 
@@ -13,12 +13,12 @@ type Connector interface {
 
 type Driver interface {
 	Connector
-	Read()
+	Read(channel chan<- models.RecordRow) error
 }
 
 type Adapter interface {
 	Connector
-	Write()
+	Write(channel <-chan models.RecordRow) error
 	Create(streamName string) error
 }
 

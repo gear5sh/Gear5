@@ -48,6 +48,14 @@ func (gs *GoogleSheets) Setup(config, _, catalog interface{}, batchSize int) err
 	return nil
 }
 
+func (gs *GoogleSheets) Spec() interface{} {
+	return models.Config{}
+}
+
+func (gs *GoogleSheets) Type() string {
+	return "Google-Sheets"
+}
+
 func (gs *GoogleSheets) Check() error {
 	_, _, err := gs.getAllSheetStreams()
 	if err != nil {

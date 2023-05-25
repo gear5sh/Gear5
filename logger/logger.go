@@ -33,6 +33,12 @@ func Error(v ...interface{}) {
 	Log("", ERROR, v...)
 }
 
+// Fatal writes record into os.stdout with log level ERROR and exits
+func Fatal(v ...interface{}) {
+	Log("", ERROR, v...)
+	os.Exit(1)
+}
+
 // Error writes record into os.stdout with log level ERROR
 func Errorf(format string, v ...interface{}) {
 	Log(format, ERROR, v...)
