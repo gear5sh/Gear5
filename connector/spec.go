@@ -1,4 +1,4 @@
-package syndicate
+package protocol
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ var SpecCmd = &cobra.Command{
 	Short: "Syndicate spec command",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		connector, not := rawConnector.(Connector)
-		if not {
+		if !not {
 			return fmt.Errorf("expected type to be: Connector, found %T", connector)
 		}
 

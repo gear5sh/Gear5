@@ -1,4 +1,4 @@
-package syndicate
+package protocol
 
 import (
 	"fmt"
