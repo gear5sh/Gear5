@@ -3,16 +3,17 @@ package syndicate
 import (
 	"fmt"
 
+	"github.com/piyushsingariya/syndicate/syndicate"
 	"github.com/spf13/cobra"
 )
 
 var (
-	globalDriver  Driver
-	globalAdapter Adapter
+	globalDriver  syndicate.Driver
+	globalAdapter syndicate.Adapter
 	rootCmd       *cobra.Command
 )
 
-func RegisterDriver(driver Driver) error {
+func RegisterDriver(driver syndicate.Driver) error {
 	if globalAdapter != nil {
 		return fmt.Errorf("adapter already registered: %s", globalAdapter.Type())
 	}
@@ -22,11 +23,11 @@ func RegisterDriver(driver Driver) error {
 	return nil
 }
 
-func GetDriver() Driver {
+func GetDriver() syndicate.Driver {
 	return globalDriver
 }
 
-func RegisterAdapter(driver Adapter) error {
+func RegisterAdapter(driver syndicate.Adapter) error {
 	if globalDriver != nil {
 		return fmt.Errorf("driver alraedy registered: %s", globalDriver.Type())
 	}
@@ -36,7 +37,7 @@ func RegisterAdapter(driver Adapter) error {
 	return nil
 }
 
-func GetAdapter() Adapter {
+func GetAdapter() syndicate.Adapter {
 	return globalAdapter
 }
 

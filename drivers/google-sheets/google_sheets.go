@@ -20,7 +20,7 @@ type GoogleSheets struct {
 
 func (gs *GoogleSheets) Setup(config, _, catalog interface{}, batchSize int) error {
 	conf := &models.Config{}
-	if err := utils.UnmarshalConfig(config, conf); err != nil {
+	if err := utils.Unmarshal(config, conf); err != nil {
 		return err
 	}
 
@@ -30,7 +30,7 @@ func (gs *GoogleSheets) Setup(config, _, catalog interface{}, batchSize int) err
 
 	if catalog != nil {
 		cat := &syndicatemodels.ConfiguredCatalog{}
-		if err := utils.UnmarshalConfig(catalog, cat); err != nil {
+		if err := utils.Unmarshal(catalog, cat); err != nil {
 			return err
 		}
 
