@@ -37,12 +37,14 @@ var RootCmd = &cobra.Command{
 	},
 }
 
-func CreateRootCommand(forDriver bool) *cobra.Command {
+func CreateRootCommand(forDriver bool, connector interface{}) *cobra.Command {
 	if forDriver {
 		RootCmd.AddCommand(driverCommands...)
 	} else {
 		RootCmd.AddCommand(adapterCommands...)
 	}
+
+	rawConnector = connector
 
 	return RootCmd
 }

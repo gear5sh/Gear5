@@ -30,5 +30,3 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 )
-
-replace github.com/piyushsingariya/syndicate => ../../
