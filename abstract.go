@@ -11,3 +11,8 @@ func Bool(b bool) *bool {
 func Int(i int) *int {
 	return &i
 }
+
+type AbstractDriver struct {
+}
+
+// func (a *AbstractDriver)

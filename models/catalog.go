@@ -16,7 +16,7 @@ const (
 
 // Message is a dto for syndicate output row representation
 type Message struct {
-	Type             string                 `json:"type"`
+	Type             constants.MessageType  `json:"type"`
 	Log              *Log                   `json:"log,omitempty"`
 	ConnectionStatus *StatusRow             `json:"connectionStatus,omitempty"`
 	State            *State                 `json:"state,omitempty"`
