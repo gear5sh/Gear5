@@ -16,6 +16,7 @@ function build() {
         fail "The argument does not have a recognized prefix."
     fi
     cd $path
+    pwd
     go mod tidy
     go build -ldflags="-w -s -X constants/constants.version=${GIT_VERSION} -X constants/constants.commitsha=${GIT_COMMITSHA} -X constants/constants.releasechannel=${RELEASE_CHANNEL}" -o syndicate main.go
     mv syndicate ../../
