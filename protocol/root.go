@@ -58,8 +58,8 @@ func getAvailableCommands() []*cobra.Command {
 }
 
 func init() {
-	driverCommands = append(driverCommands, SpecCmd, DiscoverCmd, ReadCmd)
-	adapterCommands = append(adapterCommands, SpecCmd, DiscoverCmd, WriteCmd)
+	driverCommands = append(driverCommands, SpecCmd, CheckCmd, DiscoverCmd, ReadCmd)
+	adapterCommands = append(adapterCommands, SpecCmd, CheckCmd, DiscoverCmd, WriteCmd)
 
 	RootCmd.PersistentFlags().StringVarP(&config, "config", "", "", "(Required) Config for Syndicate connector")
 	RootCmd.PersistentFlags().StringVarP(&catalog, "catalog", "", "", "(Required) Catalog for Syndicate connector")

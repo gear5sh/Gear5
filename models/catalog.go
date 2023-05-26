@@ -42,8 +42,8 @@ type Log struct {
 
 // StatusRow is a dto for airbyte result status serialization
 type StatusRow struct {
-	Status  string `json:"status,omitempty"`
-	Message string `json:"message,omitempty"`
+	Status  constants.ConnectionStatus `json:"status,omitempty"`
+	Message string                     `json:"message,omitempty"`
 }
 
 // State is a dto for airbyte state serialization

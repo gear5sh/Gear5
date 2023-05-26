@@ -17,10 +17,10 @@ type GoogleSheets struct {
 	*spreadsheet.Service
 	config    *models.Config
 	catalog   *syndicatemodels.ConfiguredCatalog
-	batchSize int
+	batchSize int64
 }
 
-func (gs *GoogleSheets) Setup(config, _, catalog interface{}, batchSize int) error {
+func (gs *GoogleSheets) Setup(config, _, catalog interface{}, batchSize int64) error {
 	conf := &models.Config{}
 	if err := utils.Unmarshal(config, conf); err != nil {
 		return err
@@ -104,9 +104,9 @@ func (gs *GoogleSheets) Read(channel chan<- syndicatemodels.RecordRow) error {
 
 		logger.Infof("Row count in sheet %s[%s]:%d", sheet.Properties.Title, sheet.Properties.ID, sheet.Properties.GridProperties.RowCount-1)
 
-		for rowCursor := 1; rowCursor < len(sheet.Rows); rowCursor += batchSize {
+		for rowCursor := int64(1); rowCursor < int64(len(sheet.Rows)); rowCursor += batchSize {
 			// make a batch of records
-			for batchCursor := rowCursor; batchCursor < len(sheet.Rows) && batchCursor < rowCursor+batchSize; batchCursor++ {
+			for batchCursor := rowCursor; batchCursor < int64(len(sheet.Rows)) && batchCursor < rowCursor+batchSize; batchCursor++ {
 				record := syndicatemodels.RecordRow{Stream: stream, Data: make(map[string]interface{})}
 
 				for i, pointer := range sheet.Rows[batchCursor] {
@@ -117,7 +117,7 @@ func (gs *GoogleSheets) Read(channel chan<- syndicatemodels.RecordRow) error {
 			}
 
 			// flush the records after collecting the batch
-			if len(records) >= batchSize {
+			if int64(len(records)) >= batchSize {
 				for _, record := range records {
 					channel <- record
 				}

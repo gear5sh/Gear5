@@ -6,7 +6,7 @@ import (
 )
 
 type Connector interface {
-	Setup(config, state, catalog interface{}, batchSize int) error
+	Setup(config, state, catalog interface{}, batchSize int64) error
 	Spec() (schema.JSONSchema, error)
 	Check() error
 	Discover() ([]*models.Stream, error)
