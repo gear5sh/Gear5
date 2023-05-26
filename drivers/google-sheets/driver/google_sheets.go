@@ -1,10 +1,12 @@
-package main
+package driver
 
 import (
 	"fmt"
 	"strings"
 
 	"github.com/piyushsingariya/syndicate/drivers/google-sheets/models"
+	"github.com/piyushsingariya/syndicate/jsonschema"
+	"github.com/piyushsingariya/syndicate/jsonschema/schema"
 	"github.com/piyushsingariya/syndicate/logger"
 	syndicatemodels "github.com/piyushsingariya/syndicate/models"
 	"github.com/piyushsingariya/syndicate/utils"
@@ -20,7 +22,7 @@ type GoogleSheets struct {
 
 func (gs *GoogleSheets) Setup(config, _, catalog interface{}, batchSize int) error {
 	conf := &models.Config{}
-	if err := utils.UnmarshalConfig(config, conf); err != nil {
+	if err := utils.Unmarshal(config, conf); err != nil {
 		return err
 	}
 
@@ -30,7 +32,7 @@ func (gs *GoogleSheets) Setup(config, _, catalog interface{}, batchSize int) err
 
 	if catalog != nil {
 		cat := &syndicatemodels.ConfiguredCatalog{}
-		if err := utils.UnmarshalConfig(catalog, cat); err != nil {
+		if err := utils.Unmarshal(catalog, cat); err != nil {
 			return err
 		}
 
@@ -46,6 +48,14 @@ func (gs *GoogleSheets) Setup(config, _, catalog interface{}, batchSize int) err
 	gs.batchSize = batchSize
 
 	return nil
+}
+
+func (gs *GoogleSheets) Spec() (schema.JSONSchema, error) {
+	return jsonschema.Reflect(models.Config{})
+}
+
+func (gs *GoogleSheets) Type() string {
+	return "Google-Sheets"
 }
 
 func (gs *GoogleSheets) Check() error {

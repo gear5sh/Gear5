@@ -20,10 +20,11 @@ type Config struct {
 
 // Authenticate via Google (OAuth)
 type Client struct {
-	// Auth Type.
+	// Enter your Google application Client ID
 	//
-	// @jsonschema(required=true, const=Client)
-	AuthType     string `json:"auth_type" jsonschema:"title=Auth Type,const=Client"`
+	// @jsonschema(
+	// title="Client ID"
+	// )
 	ClientID     string `json:"client_id" jsonschema:"title=Client ID,description=Enter your Google application's Client ID"`
 	ClientSecret string `json:"client_secret" jsonschema:"title=Client Secret,description=Enter your Google application's Client Secret"`
 	RefreshToken string `json:"refresh_token" title:"Refresh Token" required:"true" description:"Enter your Google application's refresh token"`
@@ -31,10 +32,6 @@ type Client struct {
 
 // @jsonschema=(title=Service Account Key Authentication)
 type Service struct {
-	// Auth Type.
-	//
-	// @jsonSchema(required=true, const=Client)
-	AuthType           string `json:"auth_type"`
 	ServiceAccountInfo string `json:"service_account_info" title:"Service Account Information." required:"true" description:"Enter your Google Cloud <a href='https://cloud.google.com/iam/docs/creating-managing-service-account-keys#creating_service_account_keys'>service account key</a> in JSON format" example:"'{ 'type': 'service_account', 'project_id': YOUR_PROJECT_ID, 'private_key_id': YOUR_PRIVATE_KEY, ... }'"`
 }
 

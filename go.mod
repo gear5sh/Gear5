@@ -23,5 +23,3 @@ require (
 	golang.org/x/tools v0.9.1
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
-
-replace github.com/invopop/jsonschema v0.7.0 => ../../jsonschema

@@ -3,43 +3,31 @@ package syndicate
 import (
 	"fmt"
 
+	protocol "github.com/piyushsingariya/syndicate/connector"
 	"github.com/spf13/cobra"
 )
 
 var (
-	globalDriver  Driver
-	globalAdapter Adapter
-	rootCmd       *cobra.Command
+	globalDriver  protocol.Driver
+	globalAdapter protocol.Adapter
 )
 
-func RegisterDriver(driver Driver) error {
+func RegisterDriver(driver protocol.Driver) (*cobra.Command, error) {
 	if globalAdapter != nil {
-		return fmt.Errorf("adapter already registered: %s", globalAdapter.Type())
+		return nil, fmt.Errorf("adapter already registered: %s", globalAdapter.Type())
 	}
 
 	globalDriver = driver
 
-	return nil
+	return protocol.CreateRootCommand(true, driver), nil
 }
 
-func GetDriver() Driver {
-	return globalDriver
-}
-
-func RegisterAdapter(driver Adapter) error {
+func RegisterAdapter(adapter protocol.Adapter) (*cobra.Command, error) {
 	if globalDriver != nil {
-		return fmt.Errorf("driver alraedy registered: %s", globalDriver.Type())
+		return nil, fmt.Errorf("driver alraedy registered: %s", globalDriver.Type())
 	}
 
-	globalAdapter = driver
+	globalAdapter = adapter
 
-	return nil
-}
-
-func GetAdapter() Adapter {
-	return globalAdapter
-}
-
-func Root() *cobra.Command {
-	return rootCmd
+	return protocol.CreateRootCommand(false, adapter), nil
 }

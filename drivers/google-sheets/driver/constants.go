@@ -1,3 +1,3 @@
-package main
+package driver
 
 const EmptySheetError = "EmptySheetError"

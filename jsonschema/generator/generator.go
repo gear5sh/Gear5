@@ -364,7 +364,6 @@ func (g *JSONSchemaGenerator) generateSchemaForExpr(ownerDecl *declInfo, fieldEx
 		generatedSchema = simpleDef.schema
 	}
 
-	//	fmt.Println(ownerDecl)
 	if generatedSchema == nil {
 
 		switch fieldType := fieldExpr.(type) {

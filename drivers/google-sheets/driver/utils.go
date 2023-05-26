@@ -1,9 +1,10 @@
-package main
+package driver
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
@@ -23,29 +24,32 @@ func NewClient(config *models.Config) (*spreadsheet.Service, error) {
 	// create api context
 	ctx := context.Background()
 
-	// get bytes from base64 encoded google service accounts key
-	credBytes, err := json.Marshal(map[string]string{
-		// "client_id":     config.Credentials.OAuth.ClientID,
-		// "refresh_token": config.Credentials.OAuth.RefreshToken,
-		// "client_secret": config.Credentials.OAuth.ClientSecret,
-	})
-	if err != nil {
-		return nil, err
-	}
+	var confClient *http.Client
+	if oauth, ok := config.Credentials.(models.Client); ok {
+		// get bytes from base64 encoded google service accounts key
+		credBytes, err := json.Marshal(map[string]string{
+			"client_id":     oauth.ClientID,
+			"refresh_token": oauth.RefreshToken,
+			"client_secret": oauth.ClientSecret,
+		})
+		if err != nil {
+			return nil, err
+		}
 
-	// authenticate and get configuration
-	jwtConfig, err := google.JWTConfigFromJSON(credBytes, "https://www.googleapis.com/auth/spreadsheets")
-	if err != nil {
-		return nil, err
-	}
+		// authenticate and get configuration
+		jwtConfig, err := google.JWTConfigFromJSON(credBytes, "https://www.googleapis.com/auth/spreadsheets")
+		if err != nil {
+			return nil, err
+		}
 
-	// create client with config and context
-	confClient := jwtConfig.Client(ctx)
+		// create client with config and context
+		confClient = jwtConfig.Client(ctx)
+	}
 
 	service := spreadsheet.NewServiceWithClient(confClient)
 
 	// fetch spreadsheet
-	_, err = service.FetchSpreadsheet(config.SpreadsheetID)
+	_, err := service.FetchSpreadsheet(config.SpreadsheetID)
 	if err != nil {
 		return nil, err
 	}
