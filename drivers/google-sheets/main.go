@@ -1,20 +1,23 @@
 package main
 
 import (
-	"fmt"
-	"log"
+	"os"
 
-	"github.com/piyushsingariya/syndicate/drivers/google-sheets/models"
-	"github.com/piyushsingariya/syndicate/utils"
+	"github.com/piyushsingariya/syndicate"
+	"github.com/piyushsingariya/syndicate/drivers/google-sheets/driver"
+	"github.com/piyushsingariya/syndicate/logger"
 )
 
 func main() {
-	model := &models.Config{}
-	schema, err := utils.ToJsonSchema(model)
+	driver := &driver.GoogleSheets{}
+	cmd, err := syndicate.RegisterDriver(driver)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 
-	fmt.Println(schema)
-	// model.GetSchema()
+	// Execute the root command
+	err = cmd.Execute()
+	if err != nil {
+		os.Exit(1)
+	}
 }

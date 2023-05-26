@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/piyushsingariya/syndicate/jsonschema"
 	"github.com/piyushsingariya/syndicate/models"
@@ -67,17 +68,17 @@ func ToYamlSchema(obj interface{}) (string, error) {
 	return string(yamlData), nil
 }
 
-// UnmarshalConfig serializes and deserializes config into the object
+// Unmarshal serializes and deserializes any from into the object
 // return error if occurred
-func UnmarshalConfig(config interface{}, object interface{}) error {
-	reformatted := reformatInnerMaps(config)
+func Unmarshal(from interface{}, object interface{}) error {
+	reformatted := reformatInnerMaps(from)
 	b, err := json.Marshal(reformatted)
 	if err != nil {
 		return fmt.Errorf("error marshalling object: %v", err)
 	}
 	err = json.Unmarshal(b, object)
 	if err != nil {
-		return fmt.Errorf("error unmarshalling config: %v", err)
+		return fmt.Errorf("error unmarshalling from object: %v", err)
 	}
 
 	return nil
@@ -108,4 +109,21 @@ func reformatInnerMaps(valueI interface{}) interface{} {
 	default:
 		return valueI
 	}
+}
+
+func CheckIfFilesExists(files ...string) error {
+	for _, file := range files {
+		// Check if the file or directory exists
+		_, err := os.Stat(file)
+		if os.IsNotExist(err) {
+			return fmt.Errorf("%s does not exist", file)
+		}
+
+		_, err = os.ReadFile(file)
+		if err != nil {
+			return fmt.Errorf("failed to read %s", file)
+		}
+	}
+
+	return nil
 }

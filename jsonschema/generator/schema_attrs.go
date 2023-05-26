@@ -11,6 +11,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/piyushsingariya/syndicate/jsonschema/schema"
+	"github.com/piyushsingariya/syndicate/logger"
 )
 
 func (g *JSONSchemaGenerator) shouldReturnRef(decl *declInfo) bool {
@@ -252,10 +253,9 @@ func (g *JSONSchemaGenerator) addCommonAttrs(schema schema.JSONSchema, anno *sch
 	}
 
 	if len(anno.oneOf) > 0 {
-		fmt.Println("oneofs", anno.oneOf)
 		schemas, err := g.generateSchemasFromTypePaths(anno.oneOf, parentKey)
 		if err != nil {
-			fmt.Println("found error", err)
+			logger.Error("found error", err)
 			return fmt.Errorf("error setting 'oneOf' for %s: %s", name, err.Error())
 		}
 		json.NewEncoder(os.Stdout).Encode(schemas)

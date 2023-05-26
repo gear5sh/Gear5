@@ -1,4 +1,4 @@
-package cmd
+package protocol
 
 import (
 	"bufio"
@@ -18,20 +18,6 @@ import (
 	"github.com/piyushsingariya/syndicate/jsonschema/schema"
 
 	"github.com/spf13/cobra"
-)
-
-var (
-	logHead = `     __________  _  __
- __ / / __/ __ \/ |/ /
-/ // /\ \/ /_/ /    /
-\___/___/\____/_/|_/
-       / __/___/ /  ___ __ _  ___ _
-      _\ \/ __/ _ \/ -_)  ' \/ _ '/
-     /___/\__/_//_/\__/_/_/_/\_,_/   __
-         / ___/__ ___  ___ _______ _/ /____  ____
-        / (_ / -_) _ \/ -_) __/ _ '/ __/ _ \/ __/
-        \___/\__/_//_/\__/_/  \_,_/\__/\___/_/
-                                                 `
 )
 
 const (
@@ -126,10 +112,6 @@ func (c *RootCmd) doGeneration(cmd *cobra.Command, args []string) error {
 	var rootSchema schema.JSONSchema
 
 	start := time.Now()
-
-	if c.getLogLevel() != generator.QuietLevel {
-		fmt.Println(logHead)
-	}
 
 	if len(args) < 2 {
 		cmd.Usage()

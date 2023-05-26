@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/piyushsingariya/syndicate/constants"
 	"github.com/piyushsingariya/syndicate/models"
 )
 
@@ -33,6 +34,12 @@ func Error(v ...interface{}) {
 	Log("", ERROR, v...)
 }
 
+// Fatal writes record into os.stdout with log level ERROR and exits
+func Fatal(v ...interface{}) {
+	Log("", ERROR, v...)
+	os.Exit(1)
+}
+
 // Error writes record into os.stdout with log level ERROR
 func Errorf(format string, v ...interface{}) {
 	Log(format, ERROR, v...)
@@ -49,10 +56,17 @@ func Warnf(format string, v ...interface{}) {
 }
 
 func Log(format string, level Level, v ...interface{}) {
+	message := ""
+	if format == "" {
+		message = fmt.Sprint(v...)
+	} else {
+		message = fmt.Sprintf(format, v...)
+	}
 	syndicateMessage := models.Message{
+		Type: constants.LogType,
 		Log: &models.Log{
 			Level:   level.String(),
-			Message: fmt.Sprintf(format, v...),
+			Message: message,
 		},
 	}
 
