@@ -28,7 +28,7 @@ func Reflect(v interface{}) (schema.JSONSchema, error) {
 	opts.AutoCreateDefs = !r.inlineDefs
 	opts.IncludeTests = r.includeTests
 	opts.SupressXAttrs = r.suppressXAttrs
-	opts.LogLevel = generator.VerboseLevel
+	opts.LogLevel = generator.QuietLevel
 
 	r.opts = opts
 	r.gen = generator.NewJSONSchemaGenerator(basePackage, typeOf.Name(), opts)

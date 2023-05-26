@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"github.com/piyushsingariya/syndicate/drivers/google-sheets/models"
+	"github.com/piyushsingariya/syndicate/jsonschema"
+	"github.com/piyushsingariya/syndicate/jsonschema/schema"
 	"github.com/piyushsingariya/syndicate/logger"
 	syndicatemodels "github.com/piyushsingariya/syndicate/models"
 	"github.com/piyushsingariya/syndicate/utils"
@@ -48,8 +50,8 @@ func (gs *GoogleSheets) Setup(config, _, catalog interface{}, batchSize int) err
 	return nil
 }
 
-func (gs *GoogleSheets) Spec() interface{} {
-	return models.Config{}
+func (gs *GoogleSheets) Spec() (schema.JSONSchema, error) {
+	return jsonschema.Reflect(models.Config{})
 }
 
 func (gs *GoogleSheets) Type() string {

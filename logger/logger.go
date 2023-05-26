@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/piyushsingariya/syndicate/constants"
 	"github.com/piyushsingariya/syndicate/models"
 )
 
@@ -55,10 +56,17 @@ func Warnf(format string, v ...interface{}) {
 }
 
 func Log(format string, level Level, v ...interface{}) {
+	message := ""
+	if format == "" {
+		message = fmt.Sprint(v...)
+	} else {
+		message = fmt.Sprintf(format, v...)
+	}
 	syndicateMessage := models.Message{
+		Type: constants.LogType,
 		Log: &models.Log{
 			Level:   level.String(),
-			Message: fmt.Sprintf(format, v...),
+			Message: message,
 		},
 	}
 
