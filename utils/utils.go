@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/piyushsingariya/syndicate/jsonschema"
+	"github.com/piyushsingariya/syndicate/logger"
 	"github.com/piyushsingariya/syndicate/models"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -126,4 +127,34 @@ func CheckIfFilesExists(files ...string) error {
 	}
 
 	return nil
+}
+
+func ReadFile(file string) interface{} {
+	content, err := ReadFileE(file)
+	if err != nil {
+		logger.Error(err)
+		return nil
+	}
+
+	return content
+}
+
+func ReadFileE(file string) (interface{}, error) {
+	if err := CheckIfFilesExists(file); err != nil {
+		return nil, err
+	}
+
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return nil, fmt.Errorf("file not found : %s", err)
+	}
+
+	var content interface{}
+
+	err = yaml.Unmarshal(data, &content)
+	if err != nil {
+		return nil, err
+	}
+
+	return content, nil
 }
