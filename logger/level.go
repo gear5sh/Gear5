@@ -16,17 +16,17 @@ const (
 func (l Level) String() string {
 	switch l {
 	case UNKNOWN:
-		return "unknown"
+		return "UNKNOWN"
 	case DEBUG:
-		return "debug"
+		return "DEBUG"
 	case INFO:
-		return "info"
+		return "INFO"
 	case WARN:
-		return "warn"
+		return "WARN"
 	case ERROR:
-		return "error"
+		return "ERROR"
 	case FATAL:
-		return "fatal"
+		return "FATAL"
 	default:
 		return ""
 	}

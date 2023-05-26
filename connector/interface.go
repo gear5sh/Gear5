@@ -1,10 +1,13 @@
 package protocol
 
-import "github.com/piyushsingariya/syndicate/models"
+import (
+	"github.com/piyushsingariya/syndicate/jsonschema/schema"
+	"github.com/piyushsingariya/syndicate/models"
+)
 
 type Connector interface {
 	Setup(config, state, catalog interface{}, batchSize int) error
-	Spec() interface{}
+	Spec() (schema.JSONSchema, error)
 	Check() error
 	Discover() ([]*models.Stream, error)
 

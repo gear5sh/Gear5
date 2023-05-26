@@ -13,5 +13,6 @@ func LogSpec(spec map[string]interface{}) {
 	message.Spec = spec
 	message.Type = constants.SpecType
 
+	Info("logging spec")
 	json.NewEncoder(os.Stdout).Encode(message)
 }

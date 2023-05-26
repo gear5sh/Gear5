@@ -11,6 +11,7 @@ require (
 require (
 	github.com/brainicorn/goblex v0.0.0-20210908194630-cfe0cfdf87dd // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/piyushsingariya/syndicate/drivers/google-sheets v0.0.0-20230521093806-5aabe4684866 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/sys v0.8.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
@@ -23,5 +24,3 @@ require (
 	golang.org/x/tools v0.9.1
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
-
-replace github.com/invopop/jsonschema v0.7.0 => ../../jsonschema
