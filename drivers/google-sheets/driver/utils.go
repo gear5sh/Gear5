@@ -12,8 +12,11 @@ import (
 	unidecode "github.com/mozillazg/go-unidecode"
 	"github.com/piyushsingariya/syndicate/constants"
 	"github.com/piyushsingariya/syndicate/drivers/google-sheets/models"
+	"github.com/piyushsingariya/syndicate/logger"
 	syndicatemodels "github.com/piyushsingariya/syndicate/models"
+	"github.com/piyushsingariya/syndicate/utils"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"gopkg.in/Iwark/spreadsheet.v2"
 )
@@ -24,33 +27,72 @@ func NewClient(config *models.Config) (*spreadsheet.Service, error) {
 	// create api context
 	ctx := context.Background()
 
-	var confClient *http.Client
-	if oauth, ok := config.Credentials.(models.Client); ok {
+	var client *http.Client
+	var err error
+	var credBytes []byte
+	if ok, _ := utils.IsOfType(config.Credentials, "client_id"); ok {
+		logger.Info("Credentials found to be OAuth")
+		oauth := &models.Client{}
+		if err := utils.Unmarshal(config.Credentials, oauth); err != nil {
+			return nil, err
+		}
+
+		// Create a new OAuth2 config
+		config := &oauth2.Config{
+			ClientID:     oauth.ClientID,
+			ClientSecret: oauth.ClientSecret,
+			Endpoint:     google.Endpoint,
+			Scopes:       []string{spreadsheet.Scope}, // Adjust the scopes as needed
+		}
+
+		// Create a new token source using the refresh token
+		tokenSource := config.TokenSource(context.TODO(), &oauth2.Token{
+			RefreshToken: oauth.RefreshToken,
+		})
+
+		// Create a new OAuth2 client
+		client = oauth2.NewClient(context.TODO(), tokenSource)
+	} else if ok, err := utils.IsOfType(config.Credentials, "service_account_info"); ok {
+		logger.Info("Credentials found to be Service Account")
+		serviceAccount := &models.Service{}
+		if err := utils.Unmarshal(config.Credentials, serviceAccount); err != nil {
+			return nil, err
+		}
+
 		// get bytes from base64 encoded google service accounts key
-		credBytes, err := json.Marshal(map[string]string{
-			"client_id":     oauth.ClientID,
-			"refresh_token": oauth.RefreshToken,
-			"client_secret": oauth.ClientSecret,
+		credBytes, err = json.Marshal(map[string]string{
+			"type":           "service_account",
+			"private_key_id": serviceAccount.ServiceAccountInfo,
 		})
 		if err != nil {
 			return nil, err
 		}
 
 		// authenticate and get configuration
-		jwtConfig, err := google.JWTConfigFromJSON(credBytes, "https://www.googleapis.com/auth/spreadsheets")
+		jwtConfig, err := google.JWTConfigFromJSON(credBytes, spreadsheet.Scope)
 		if err != nil {
 			return nil, err
 		}
 
 		// create client with config and context
-		confClient = jwtConfig.Client(ctx)
+		client = jwtConfig.Client(ctx)
+	} else {
+		return nil, fmt.Errorf("invalid credentials format, expected formats are: %T and %T", models.Client{}, models.Service{})
 	}
 
-	service := spreadsheet.NewServiceWithClient(confClient)
+	if client == nil {
+		return nil, fmt.Errorf("failed to create spreadsheet configuration client")
+	}
+
+	service := spreadsheet.NewServiceWithClient(client)
+	if service == nil {
+		return nil, fmt.Errorf("failed to create spreadsheet service")
+	}
 
 	// fetch spreadsheet
-	_, err := service.FetchSpreadsheet(config.SpreadsheetID)
+	_, err = service.FetchSpreadsheet(config.SpreadsheetID)
 	if err != nil {
+		logger.Error(err)
 		return nil, err
 	}
 
@@ -148,6 +190,7 @@ func headersToStream(sheetName string, headers []string) *syndicatemodels.Stream
 	stream := syndicatemodels.Stream{}
 	stream.Name = sheetName
 	stream.JsonSchema = &syndicatemodels.Schema{}
+	stream.JsonSchema.Properties = make(map[string]*syndicatemodels.Property)
 
 	for _, header := range headers {
 		stream.JsonSchema.Properties[header] = &syndicatemodels.Property{
