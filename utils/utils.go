@@ -158,3 +158,16 @@ func ReadFileE(file string) (interface{}, error) {
 
 	return content, nil
 }
+
+func IsOfType(object interface{}, decidingKey string) (bool, error) {
+	objectMap := make(map[string]interface{})
+	if err := Unmarshal(object, &objectMap); err != nil {
+		return false, err
+	}
+
+	if _, found := objectMap[decidingKey]; found {
+		return true, nil
+	}
+
+	return false, nil
+}
