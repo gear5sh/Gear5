@@ -3,7 +3,9 @@ package protocol
 import (
 	"fmt"
 
+	"github.com/piyushsingariya/syndicate/logger"
 	"github.com/piyushsingariya/syndicate/utils"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -58,11 +60,20 @@ func getAvailableCommands() []*cobra.Command {
 }
 
 func init() {
-	driverCommands = append(driverCommands, SpecCmd, DiscoverCmd, ReadCmd)
-	adapterCommands = append(adapterCommands, SpecCmd, DiscoverCmd, WriteCmd)
+	driverCommands = append(driverCommands, SpecCmd, CheckCmd, DiscoverCmd, ReadCmd)
+	adapterCommands = append(adapterCommands, SpecCmd, CheckCmd, DiscoverCmd, WriteCmd)
 
 	RootCmd.PersistentFlags().StringVarP(&config, "config", "", "", "(Required) Config for Syndicate connector")
 	RootCmd.PersistentFlags().StringVarP(&catalog, "catalog", "", "", "(Required) Catalog for Syndicate connector")
 	RootCmd.PersistentFlags().StringVarP(&state, "state", "", "", "(Required) State for Syndicate connector")
 	RootCmd.PersistentFlags().Int64VarP(&batchSize, "batch", "", 10000, "(Optional) Batch size for Syndicate connector")
+
+	// Disable Cobra CLI's built-in usage and error handling
+	RootCmd.SilenceUsage = true
+	RootCmd.SilenceErrors = true
+
+	// Disable logging
+	logrus.SetOutput(nil)
+
+	logger.SetupWriter(RootCmd.OutOrStdout(), RootCmd.ErrOrStderr())
 }
