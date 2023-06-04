@@ -10,10 +10,10 @@ import (
 	"strings"
 
 	unidecode "github.com/mozillazg/go-unidecode"
-	"github.com/piyushsingariya/syndicate/constants"
 	"github.com/piyushsingariya/syndicate/drivers/google-sheets/models"
 	"github.com/piyushsingariya/syndicate/logger"
 	syndicatemodels "github.com/piyushsingariya/syndicate/models"
+	"github.com/piyushsingariya/syndicate/types"
 	"github.com/piyushsingariya/syndicate/utils"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -188,13 +188,14 @@ func SafeNameConversion(text string) (string, error) {
 func headersToStream(sheetName string, headers []string) *syndicatemodels.Stream {
 	stream := syndicatemodels.Stream{}
 	stream.Name = sheetName
+	stream.SupportedSyncModes = []types.SyncMode{types.FullRefresh}
 	stream.JsonSchema = &syndicatemodels.Schema{}
 	stream.JsonSchema.Properties = make(map[string]*syndicatemodels.Property)
 
 	for _, header := range headers {
 		stream.JsonSchema.Properties[header] = &syndicatemodels.Property{
 			// for simplicity, every field is a string
-			Type: []constants.DataType{constants.String},
+			Type: []types.DataType{types.String},
 		}
 	}
 
