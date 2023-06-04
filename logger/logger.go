@@ -6,8 +6,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/piyushsingariya/syndicate/constants"
 	"github.com/piyushsingariya/syndicate/models"
+	"github.com/piyushsingariya/syndicate/types"
 )
 
 var (
@@ -80,7 +80,7 @@ func Log(format string, level Level, v ...interface{}) {
 		message = fmt.Sprintf(format, v...)
 	}
 	syndicateMessage := models.Message{
-		Type: constants.LogType,
+		Type: types.LogType,
 		Log: &models.Log{
 			Level:   level.String(),
 			Message: message,
