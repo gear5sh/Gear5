@@ -3,11 +3,22 @@ package logger
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/piyushsingariya/syndicate/constants"
 	"github.com/piyushsingariya/syndicate/models"
 )
+
+var (
+	writer      io.Writer
+	errorWriter io.Writer
+)
+
+func SetupWriter(w io.Writer, err io.Writer) {
+	writer = w
+	errorWriter = err
+}
 
 // Info writes record into os.stdout with log level INFO
 func Info(v ...interface{}) {
@@ -76,5 +87,9 @@ func Log(format string, level Level, v ...interface{}) {
 		},
 	}
 
-	json.NewEncoder(os.Stdout).Encode(syndicateMessage)
+	if level == ERROR {
+		json.NewEncoder(errorWriter).Encode(syndicateMessage)
+		return
+	}
+	json.NewEncoder(writer).Encode(syndicateMessage)
 }

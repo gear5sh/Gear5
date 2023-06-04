@@ -3,6 +3,7 @@ package protocol
 import (
 	"fmt"
 
+	"github.com/piyushsingariya/syndicate/logger"
 	"github.com/piyushsingariya/syndicate/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -73,4 +74,6 @@ func init() {
 
 	// Disable logging
 	logrus.SetOutput(nil)
+
+	logger.SetupWriter(RootCmd.OutOrStdout(), RootCmd.ErrOrStderr())
 }

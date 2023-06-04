@@ -2,7 +2,6 @@ package logger
 
 import (
 	"encoding/json"
-	"os"
 
 	"github.com/piyushsingariya/syndicate/constants"
 	"github.com/piyushsingariya/syndicate/models"
@@ -13,7 +12,7 @@ func LogRecord(record models.RecordRow) {
 	message.Type = constants.RecordType
 	message.Record = &record
 
-	json.NewEncoder(os.Stdout).Encode(message)
+	json.NewEncoder(writer).Encode(message)
 }
 
 func LogSpec(spec map[string]interface{}) {
@@ -22,7 +21,7 @@ func LogSpec(spec map[string]interface{}) {
 	message.Type = constants.SpecType
 
 	Info("logging spec")
-	json.NewEncoder(os.Stdout).Encode(message)
+	json.NewEncoder(writer).Encode(message)
 }
 
 func LogConnectionStatus(err error) {
@@ -36,5 +35,5 @@ func LogConnectionStatus(err error) {
 		message.ConnectionStatus.Status = constants.ConnectionSucceed
 	}
 
-	json.NewEncoder(os.Stdout).Encode(message)
+	json.NewEncoder(writer).Encode(message)
 }
