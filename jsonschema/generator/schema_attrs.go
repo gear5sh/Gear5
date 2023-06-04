@@ -1,11 +1,9 @@
 package generator
 
 import (
-	"encoding/json"
 	"fmt"
 	"go/ast"
 	"go/doc"
-	"os"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -258,7 +256,6 @@ func (g *JSONSchemaGenerator) addCommonAttrs(schema schema.JSONSchema, anno *sch
 			logger.Error("found error", err)
 			return fmt.Errorf("error setting 'oneOf' for %s: %s", name, err.Error())
 		}
-		json.NewEncoder(os.Stdout).Encode(schemas)
 		schema.SetOneOf(schemas)
 	}
 
