@@ -9,7 +9,7 @@ import (
 type Stream struct {
 	Name                       string            `json:"name,omitempty"`
 	Namespace                  string            `json:"namespace,omitempty"`
-	JsonSchema                 *Schema           `json:"json_schema,omitempty"`
+	JSONSchema                 *Schema           `json:"json_schema,omitempty"`
 	SupportedSyncModes         []types.SyncMode  `json:"supported_sync_modes,omitempty"`
 	SourceDefinedPrimaryKey    []string          `json:"source_defined_primary_key,omitempty"`
 	SourceDefinedCursor        bool              `json:"source_defined_cursor"`
