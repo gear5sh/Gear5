@@ -15,7 +15,6 @@ import (
 	"github.com/piyushsingariya/syndicate/logger"
 	syndicatemodels "github.com/piyushsingariya/syndicate/models"
 	"github.com/piyushsingariya/syndicate/utils"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"gopkg.in/Iwark/spreadsheet.v2"
@@ -105,17 +104,17 @@ func LoadHeaders(sheet spreadsheet.Sheet) ([]string, error) {
 	}
 
 	if sheet.Properties.GridProperties.ColumnCount == 0 {
-		logrus.Warn("[%s] The sheet %s (ID %s) columns are empty!", EmptySheetError, sheet.Properties.Title, sheet.Properties.ID)
+		logger.Warnf("[%s] The sheet %s (ID %s) columns are empty!", EmptySheetError, sheet.Properties.Title, sheet.Properties.ID)
 		return []string{}, nil
 	}
 
 	if sheet.Properties.GridProperties.RowCount == 0 {
-		logrus.Warn("[%s] The sheet %s (ID %s) rows are empty!", EmptySheetError, sheet.Properties.Title, sheet.Properties.ID)
+		logger.Warnf("[%s] The sheet %s (ID %s) rows are empty!", EmptySheetError, sheet.Properties.Title, sheet.Properties.ID)
 		return []string{}, nil
 	}
 
 	if sheet.Properties.GridProperties.RowCount == 1 {
-		logrus.Warn("[%s] no data found in the sheet %s (ID %s) rows are empty!", EmptySheetError, sheet.Properties.Title, sheet.Properties.ID)
+		logger.Warnf("[%s] no data found in the sheet %s (ID %s) rows are empty!", EmptySheetError, sheet.Properties.Title, sheet.Properties.ID)
 		return []string{}, nil
 	}
 
