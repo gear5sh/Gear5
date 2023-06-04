@@ -104,7 +104,7 @@ func (gs *GoogleSheets) Read(streamName string, channel chan<- syndicatemodels.R
 		return fmt.Errorf("failed to mark headers to index: %s", err)
 	}
 
-	logger.Infof("Row count in sheet %s[%s]:%d", sheet.Properties.Title, sheet.Properties.ID, sheet.Properties.GridProperties.RowCount-1)
+	logger.Infof("Row count in sheet %s[id: %d]:%d", sheet.Properties.Title, sheet.Properties.ID, sheet.Properties.GridProperties.RowCount-1)
 
 	for rowCursor := int64(1); rowCursor < int64(len(sheet.Rows)); rowCursor++ {
 		// make a batch of records
