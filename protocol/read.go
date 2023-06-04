@@ -28,7 +28,7 @@ var ReadCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		connector, not := rawConnector.(Driver)
 		if !not {
-			return fmt.Errorf("expected type to be: Connector, found %T", connector)
+			return fmt.Errorf("expected type to be: Driver, found %T", connector)
 		}
 
 		if state == "" {
