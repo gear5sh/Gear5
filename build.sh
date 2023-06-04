@@ -4,6 +4,8 @@ function fail() {
     exit 1
 }
 
+joined_arguments=""
+
 function build_and_run() {
     local connector="$1"
     if [[ $2 == "driver" ]]; then
@@ -17,8 +19,8 @@ function build_and_run() {
     go mod tidy
     go build -ldflags="-w -s -X constants/constants.version=${GIT_VERSION} -X constants/constants.commitsha=${GIT_COMMITSHA} -X constants/constants.releasechannel=${RELEASE_CHANNEL}" -o syndicate main.go
 
-    echo "============================== Executing connector: $connector =============================="
-    ./syndicate $3
+    echo "============================== Executing connector: $connector with args [$joined_arguments] =============================="
+    ./syndicate $joined_arguments
 }
 
 if [ $# -gt 0 ]; then

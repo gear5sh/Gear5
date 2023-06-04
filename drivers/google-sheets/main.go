@@ -1,8 +1,6 @@
 package main
 
 import (
-	"os"
-
 	"github.com/piyushsingariya/syndicate"
 	"github.com/piyushsingariya/syndicate/drivers/google-sheets/driver"
 	"github.com/piyushsingariya/syndicate/logger"
@@ -18,6 +16,6 @@ func main() {
 	// Execute the root command
 	err = cmd.Execute()
 	if err != nil {
-		os.Exit(1)
+		logger.Fatal(err)
 	}
 }

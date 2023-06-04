@@ -10,3 +10,10 @@ const (
 	CatalogType          MessageType = "CATALOG"
 	SpecType             MessageType = "SPEC"
 )
+
+type ConnectionStatus string
+
+const (
+	ConnectionSucceed ConnectionStatus = "SUCCEEDED"
+	ConnectionFailed  ConnectionStatus = "FAILED"
+)

@@ -3,7 +3,7 @@ package syndicate
 import (
 	"fmt"
 
-	protocol "github.com/piyushsingariya/syndicate/connector"
+	protocol "github.com/piyushsingariya/syndicate/protocol"
 	"github.com/spf13/cobra"
 )
 
