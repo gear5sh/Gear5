@@ -5,7 +5,6 @@ go 1.19
 require (
 	github.com/mozillazg/go-unidecode v0.2.0
 	github.com/piyushsingariya/syndicate v0.0.0-00010101000000-000000000000
-	github.com/sirupsen/logrus v1.9.2
 	golang.org/x/oauth2 v0.8.0
 	gopkg.in/Iwark/spreadsheet.v2 v2.0.0-20220412131121-41eea1483964
 )
@@ -16,6 +15,7 @@ require (
 	github.com/brainicorn/goblex v0.0.0-20210908194630-cfe0cfdf87dd // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/sirupsen/logrus v1.9.2 // indirect
 	github.com/spf13/cobra v1.7.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/net v0.10.0 // indirect

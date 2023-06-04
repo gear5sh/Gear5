@@ -15,12 +15,11 @@ import (
 
 type GoogleSheets struct {
 	*spreadsheet.Service
-	config    *models.Config
-	catalog   *syndicatemodels.ConfiguredCatalog
-	batchSize int64
+	config  *models.Config
+	catalog *syndicatemodels.Catalog
 }
 
-func (gs *GoogleSheets) Setup(config, _, catalog interface{}, batchSize int64) error {
+func (gs *GoogleSheets) Setup(config, _, catalog interface{}, _ int64) error {
 	conf := &models.Config{}
 	if err := utils.Unmarshal(config, conf); err != nil {
 		return err
@@ -31,7 +30,7 @@ func (gs *GoogleSheets) Setup(config, _, catalog interface{}, batchSize int64) e
 	}
 
 	if catalog != nil {
-		cat := &syndicatemodels.ConfiguredCatalog{}
+		cat := &syndicatemodels.Catalog{}
 		if err := utils.Unmarshal(catalog, cat); err != nil {
 			return err
 		}
@@ -45,13 +44,21 @@ func (gs *GoogleSheets) Setup(config, _, catalog interface{}, batchSize int64) e
 	}
 	gs.config = conf
 	gs.Service = client
-	gs.batchSize = batchSize
 
 	return nil
 }
 
 func (gs *GoogleSheets) Spec() (schema.JSONSchema, error) {
 	return jsonschema.Reflect(models.Config{})
+}
+
+func (gs *GoogleSheets) Streams() ([]*syndicatemodels.Stream, error) {
+	streams, _, err := gs.getAllSheetStreams()
+	return streams, err
+}
+
+func (gs *GoogleSheets) Catalog() *syndicatemodels.Catalog {
+	return gs.catalog
 }
 
 func (gs *GoogleSheets) Type() string {
@@ -76,71 +83,40 @@ func (gs *GoogleSheets) Discover() ([]*syndicatemodels.Stream, error) {
 	return streams, nil
 }
 
-func (gs *GoogleSheets) Read(channel chan<- syndicatemodels.RecordRow) error {
+func (gs *GoogleSheets) Read(streamName string, channel chan<- syndicatemodels.RecordRow) error {
 	spreadsheetID := gs.config.SpreadsheetID
-	batchSize := gs.batchSize
-	totalRecords := 0
-	records := []syndicatemodels.RecordRow{}
 
-	logger.Info("Starting sync for spreadsheet [%s]", spreadsheetID)
+	logger.Infof("Starting sync for spreadsheet [%s]", spreadsheetID)
 
 	_, streamNamesToSheet, err := gs.getAllSheetStreams()
 	if err != nil {
 		return err
 	}
 
-	selectedStreams := utils.GetStreamNamesFromConfiguredCatalog(gs.catalog)
-	for _, stream := range selectedStreams {
-		sheet, found := streamNamesToSheet[stream]
-		if !found {
-			logger.Info("sheet not found with stream name [%s] in spreadsheet; skipping", stream)
-			continue
-		}
-
-		indexToHeaders, err := GetIndexToColumn(sheet)
-		if err != nil {
-			return fmt.Errorf("failed to mark headers to index: %s", err)
-		}
-
-		logger.Infof("Row count in sheet %s[%s]:%d", sheet.Properties.Title, sheet.Properties.ID, sheet.Properties.GridProperties.RowCount-1)
-
-		for rowCursor := int64(1); rowCursor < int64(len(sheet.Rows)); rowCursor += batchSize {
-			// make a batch of records
-			for batchCursor := rowCursor; batchCursor < int64(len(sheet.Rows)) && batchCursor < rowCursor+batchSize; batchCursor++ {
-				record := syndicatemodels.RecordRow{Stream: stream, Data: make(map[string]interface{})}
-
-				for i, pointer := range sheet.Rows[batchCursor] {
-					record.Data[indexToHeaders[i]] = pointer.Value
-				}
-
-				records = append(records, record)
-			}
-
-			// flush the records after collecting the batch
-			if int64(len(records)) >= batchSize {
-				for _, record := range records {
-					channel <- record
-				}
-
-				// reset
-				records = []syndicatemodels.RecordRow{}
-				totalRecords += len(records)
-			}
-		}
+	sheet, found := streamNamesToSheet[streamName]
+	if !found {
+		logger.Infof("sheet not found with stream name [%s] in spreadsheet; skipping", streamName)
+		return nil
 	}
 
-	// flush pending records
-	if len(records) > 0 {
-		for _, record := range records {
-			channel <- record
-		}
-
-		// reset
-		records = []syndicatemodels.RecordRow{}
-		totalRecords += len(records)
+	indexToHeaders, err := GetIndexToColumn(sheet)
+	if err != nil {
+		return fmt.Errorf("failed to mark headers to index: %s", err)
 	}
 
-	logger.Infof("Total records fetched %d", totalRecords)
+	logger.Infof("Row count in sheet %s[%s]:%d", sheet.Properties.Title, sheet.Properties.ID, sheet.Properties.GridProperties.RowCount-1)
+
+	for rowCursor := int64(1); rowCursor < int64(len(sheet.Rows)); rowCursor++ {
+		// make a batch of records
+		record := syndicatemodels.RecordRow{Stream: streamName, Data: make(map[string]interface{})}
+		for i, pointer := range sheet.Rows[rowCursor] {
+			record.Data[indexToHeaders[i]] = pointer.Value
+		}
+
+		channel <- record
+	}
+
+	logger.Infof("Total records fetched %s[%d]", streamName, len(sheet.Rows)-1)
 
 	return err
 }
@@ -158,7 +134,7 @@ func (gs *GoogleSheets) getAllSheetStreams() ([]*syndicatemodels.Stream, map[str
 		headers, err := LoadHeaders(sheet)
 		if err != nil {
 			if strings.Contains(err.Error(), EmptySheetError) {
-				logger.Info("Skipping empty sheet: %s", err.Error())
+				logger.Infof("Skipping empty sheet: %s", err.Error())
 				continue
 			}
 			return nil, nil, err
@@ -179,6 +155,7 @@ func (gs *GoogleSheets) getAllSheetStreams() ([]*syndicatemodels.Stream, map[str
 		}
 
 		streams = append(streams, headersToStream(sheet.Properties.Title, headers))
+		streamNameToSheet[sheet.Properties.Title] = sheet
 	}
 
 	return streams, streamNameToSheet, nil

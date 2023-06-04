@@ -8,6 +8,14 @@ import (
 	"github.com/piyushsingariya/syndicate/models"
 )
 
+func LogRecord(record models.RecordRow) {
+	message := models.Message{}
+	message.Type = constants.RecordType
+	message.Record = &record
+
+	json.NewEncoder(os.Stdout).Encode(message)
+}
+
 func LogSpec(spec map[string]interface{}) {
 	message := models.Message{}
 	message.Spec = spec
@@ -29,6 +37,4 @@ func LogConnectionStatus(err error) {
 	}
 
 	json.NewEncoder(os.Stdout).Encode(message)
-
-	os.Exit(1)
 }

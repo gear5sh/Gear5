@@ -11,21 +11,18 @@ type Connector interface {
 	Check() error
 	Discover() ([]*models.Stream, error)
 
+	Catalog() *models.Catalog
 	Type() string
 }
 
 type Driver interface {
 	Connector
-	Read(channel chan<- models.RecordRow) error
+	Streams() ([]*models.Stream, error)
+	Read(name string, channel chan<- models.RecordRow) error
 }
 
 type Adapter interface {
 	Connector
 	Write(channel <-chan models.RecordRow) error
 	Create(streamName string) error
-}
-
-type Stream interface {
-	GetPrimaryKey() []string
-	GetStreamConfiguration() interface{}
 }

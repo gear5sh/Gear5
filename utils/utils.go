@@ -22,7 +22,7 @@ func IsValidSubcommand(available []*cobra.Command, sub string) bool {
 	return false
 }
 
-func GetStreamNamesFromConfiguredCatalog(catalog *models.ConfiguredCatalog) []string {
+func GetStreamNamesFromConfiguredCatalog(catalog *models.Catalog) []string {
 	result := []string{}
 	for _, stream := range catalog.Streams {
 		result = append(result, stream.Stream.Name)
