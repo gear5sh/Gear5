@@ -45,7 +45,7 @@ type Client struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
-// @jsonschema=(title=Private App Authentication)
+// Private App Authentication
 type PrivateApp struct {
 	// Hubspot Access Token
 	//

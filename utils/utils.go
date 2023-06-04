@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 
 	"github.com/piyushsingariya/syndicate/jsonschema"
 	"github.com/piyushsingariya/syndicate/logger"
@@ -32,9 +33,15 @@ func GetStreamsFromConfiguredCatalog(catalog *models.Catalog) []*models.Stream {
 	return result
 }
 
-func ArrayContainsString(arr []string, str string) bool {
-	for _, i := range arr {
-		if i == str {
+func ContainsValue(array interface{}, value interface{}) bool {
+	arrValue := reflect.ValueOf(array)
+	if arrValue.Kind() != reflect.Slice {
+		return false
+	}
+
+	for i := 0; i < arrValue.Len(); i++ {
+		item := arrValue.Index(i).Interface()
+		if reflect.DeepEqual(item, value) {
 			return true
 		}
 	}
@@ -42,7 +49,7 @@ func ArrayContainsString(arr []string, str string) bool {
 	return false
 }
 
-func ToJsonSchema(obj interface{}) (string, error) {
+func ToJSONSchema(obj interface{}) (string, error) {
 	schema, err := jsonschema.Reflect(obj)
 	if err != nil {
 		return "", err
@@ -57,7 +64,7 @@ func ToJsonSchema(obj interface{}) (string, error) {
 }
 
 func ToYamlSchema(obj interface{}) (string, error) {
-	jsonSchema, err := ToJsonSchema(obj)
+	jsonSchema, err := ToJSONSchema(obj)
 	if err != nil {
 		return "", err
 	}
@@ -193,9 +200,9 @@ func ProcessDataTypes(stream *models.Stream, record models.Record) {
 	Add into properties
 	Determine primitive type and all
 	*/
-	for key := range stream.JsonSchema.Properties {
+	for key := range stream.JSONSchema.Properties {
 		if value, found := record.Data[key]; !found || value == nil {
-			AppendDataType(stream.JsonSchema.Properties[key], types.Null)
+			AppendDataType(stream.JSONSchema.Properties[key], types.Null)
 		}
 	}
 }

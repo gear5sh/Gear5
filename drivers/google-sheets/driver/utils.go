@@ -189,11 +189,11 @@ func headersToStream(sheetName string, headers []string) *syndicatemodels.Stream
 	stream := syndicatemodels.Stream{}
 	stream.Name = sheetName
 	stream.SupportedSyncModes = []types.SyncMode{types.FullRefresh}
-	stream.JsonSchema = &syndicatemodels.Schema{}
-	stream.JsonSchema.Properties = make(map[string]*syndicatemodels.Property)
+	stream.JSONSchema = &syndicatemodels.Schema{}
+	stream.JSONSchema.Properties = make(map[string]*syndicatemodels.Property)
 
 	for _, header := range headers {
-		stream.JsonSchema.Properties[header] = &syndicatemodels.Property{
+		stream.JSONSchema.Properties[header] = &syndicatemodels.Property{
 			// for simplicity, every field is a string
 			Type: []types.DataType{types.String},
 		}
