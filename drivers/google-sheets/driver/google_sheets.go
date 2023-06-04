@@ -74,16 +74,16 @@ func (gs *GoogleSheets) Check() error {
 	return nil
 }
 
-func (gs *GoogleSheets) Discover() ([]*syndicatemodels.Stream, error) {
+func (gs *GoogleSheets) Discover() ([]*syndicatemodels.Stream, bool, error) {
 	streams, _, err := gs.getAllSheetStreams()
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
-	return streams, nil
+	return streams, true, nil
 }
 
-func (gs *GoogleSheets) Read(streamName string, channel chan<- syndicatemodels.RecordRow) error {
+func (gs *GoogleSheets) Read(stream *syndicatemodels.Stream, channel chan<- syndicatemodels.Record) error {
 	spreadsheetID := gs.config.SpreadsheetID
 
 	logger.Infof("Starting sync for spreadsheet [%s]", spreadsheetID)
@@ -93,9 +93,9 @@ func (gs *GoogleSheets) Read(streamName string, channel chan<- syndicatemodels.R
 		return err
 	}
 
-	sheet, found := streamNamesToSheet[streamName]
+	sheet, found := streamNamesToSheet[stream.Name]
 	if !found {
-		logger.Infof("sheet not found with stream name [%s] in spreadsheet; skipping", streamName)
+		logger.Infof("sheet not found with stream name [%s] in spreadsheet; skipping", stream.Name)
 		return nil
 	}
 
@@ -108,7 +108,7 @@ func (gs *GoogleSheets) Read(streamName string, channel chan<- syndicatemodels.R
 
 	for rowCursor := int64(1); rowCursor < int64(len(sheet.Rows)); rowCursor++ {
 		// make a batch of records
-		record := syndicatemodels.RecordRow{Stream: streamName, Data: make(map[string]interface{})}
+		record := syndicatemodels.Record{Stream: stream.Name, Namespace: stream.Namespace, Data: make(map[string]interface{})}
 		for i, pointer := range sheet.Rows[rowCursor] {
 			record.Data[indexToHeaders[i]] = pointer.Value
 		}
@@ -116,7 +116,7 @@ func (gs *GoogleSheets) Read(streamName string, channel chan<- syndicatemodels.R
 		channel <- record
 	}
 
-	logger.Infof("Total records fetched %s[%d]", streamName, len(sheet.Rows)-1)
+	logger.Infof("Total records fetched %s[%d]", stream.Name, len(sheet.Rows)-1)
 
 	return err
 }

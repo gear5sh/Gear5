@@ -6,10 +6,10 @@ import (
 )
 
 type Connector interface {
-	Setup(config, state, catalog interface{}, batchSize int64) error
+	Setup(config, catalog, state interface{}, batchSize int64) error
 	Spec() (schema.JSONSchema, error)
 	Check() error
-	Discover() ([]*models.Stream, error)
+	Discover() ([]*models.Stream, bool, error)
 
 	Catalog() *models.Catalog
 	Type() string
@@ -18,11 +18,11 @@ type Connector interface {
 type Driver interface {
 	Connector
 	Streams() ([]*models.Stream, error)
-	Read(name string, channel chan<- models.RecordRow) error
+	Read(stream *models.Stream, channel chan<- models.Record) error
 }
 
 type Adapter interface {
 	Connector
-	Write(channel <-chan models.RecordRow) error
+	Write(channel <-chan models.Record) error
 	Create(streamName string) error
 }

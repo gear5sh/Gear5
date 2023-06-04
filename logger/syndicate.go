@@ -2,15 +2,17 @@ package logger
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/piyushsingariya/syndicate/models"
 	"github.com/piyushsingariya/syndicate/types"
 )
 
-func LogRecord(record models.RecordRow) {
+func LogRecord(record models.Record) {
 	message := models.Message{}
 	message.Type = types.RecordType
 	message.Record = &record
+	message.Record.EmittedAt = time.Now()
 
 	json.NewEncoder(writer).Encode(message)
 }
@@ -27,16 +29,7 @@ func LogSpec(spec map[string]interface{}) {
 func LogCatalog(streams []*models.Stream) {
 	message := models.Message{}
 	message.Type = types.CatalogType
-	message.Catalog = &models.Catalog{
-		Streams: []*models.WrappedStream{},
-	}
-
-	for _, stream := range streams {
-		message.Catalog.Streams = append(message.Catalog.Streams, &models.WrappedStream{
-			Stream: stream,
-		})
-	}
-
+	message.Catalog = models.GetWrappedCatalog(streams)
 	Info("logging catalog")
 	json.NewEncoder(writer).Encode(message)
 }

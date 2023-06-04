@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/piyushsingariya/syndicate/logger"
@@ -32,18 +33,18 @@ var ReadCmd = &cobra.Command{
 		}
 
 		if state == "" {
-			if err := connector.Setup(utils.ReadFile(config), nil, utils.ReadFile(catalog), batchSize); err != nil {
+			if err := connector.Setup(utils.ReadFile(config), utils.ReadFile(catalog), nil, batchSize); err != nil {
 				return err
 			}
 		} else {
-			if err := connector.Setup(utils.ReadFile(config), utils.ReadFile(state), utils.ReadFile(catalog), batchSize); err != nil {
+			if err := connector.Setup(utils.ReadFile(config), utils.ReadFile(catalog), utils.ReadFile(state), batchSize); err != nil {
 				return err
 			}
 		}
 
 		waitgroup := sync.WaitGroup{}
 
-		recordStream := make(chan models.RecordRow, 2*batchSize)
+		recordStream := make(chan models.Record, 2*batchSize)
 
 		waitgroup.Add(1)
 		go func() {
@@ -52,10 +53,15 @@ var ReadCmd = &cobra.Command{
 				waitgroup.Done()
 			}()
 
-			selectedStreams := utils.GetStreamNamesFromConfiguredCatalog(connector.Catalog())
-			logger.Infof("Selected streams are %v", selectedStreams)
-			for _, streamName := range selectedStreams {
-				err := connector.Read(streamName, recordStream)
+			selectedStreams := utils.GetStreamsFromConfiguredCatalog(connector.Catalog())
+			streamNames := []string{}
+			for _, stream := range selectedStreams {
+				streamNames = append(streamNames, fmt.Sprintf("%s[%s]"), stream.Name, stream.Namespace)
+			}
+			logger.Infof("Selected streams are %s", strings.Join(streamNames, " ,"))
+
+			for _, stream := range selectedStreams {
+				err := connector.Read(stream, recordStream)
 				if err != nil {
 					logger.Fatalf("Error occurred while reading recrods from [%s]: %s", connector.Type(), err)
 				}

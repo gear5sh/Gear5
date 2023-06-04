@@ -25,3 +25,17 @@ func NewAbstractStream(name, namespace string, syncModes []types.SyncMode) *Stre
 		SupportedSyncModes: syncModes,
 	}
 }
+
+func GetWrappedCatalog(streams []*Stream) *Catalog {
+	catalog := &Catalog{
+		Streams: []*WrappedStream{},
+	}
+
+	for _, stream := range streams {
+		catalog.Streams = append(catalog.Streams, &WrappedStream{
+			Stream: stream,
+		})
+	}
+
+	return catalog
+}

@@ -8,6 +8,7 @@ import (
 	"github.com/piyushsingariya/syndicate/jsonschema"
 	"github.com/piyushsingariya/syndicate/logger"
 	"github.com/piyushsingariya/syndicate/models"
+	"github.com/piyushsingariya/syndicate/types"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 )
@@ -22,10 +23,10 @@ func IsValidSubcommand(available []*cobra.Command, sub string) bool {
 	return false
 }
 
-func GetStreamNamesFromConfiguredCatalog(catalog *models.Catalog) []string {
-	result := []string{}
+func GetStreamsFromConfiguredCatalog(catalog *models.Catalog) []*models.Stream {
+	result := []*models.Stream{}
 	for _, stream := range catalog.Streams {
-		result = append(result, stream.Stream.Name)
+		result = append(result, stream.Stream)
 	}
 
 	return result
@@ -170,4 +171,31 @@ func IsOfType(object interface{}, decidingKey string) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func StreamIdentifier(namespace, name string) string {
+	return namespace + name
+}
+
+func AppendDataType(property *models.Property, typ types.DataType) {
+	for _, tp := range property.Type {
+		if tp == typ {
+			return
+		}
+	}
+
+	property.Type = append(property.Type, typ)
+}
+
+func ProcessDataTypes(stream *models.Stream, record models.Record) {
+	/* TODO: check for datatype from values received from record
+	Most of the times data will be processed here, determined what is the type of key and all
+	Add into properties
+	Determine primitive type and all
+	*/
+	for key := range stream.JsonSchema.Properties {
+		if value, found := record.Data[key]; !found || value == nil {
+			AppendDataType(stream.JsonSchema.Properties[key], types.Null)
+		}
+	}
 }

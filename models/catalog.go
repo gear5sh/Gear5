@@ -1,6 +1,8 @@
 package models
 
 import (
+	"time"
+
 	"github.com/piyushsingariya/syndicate/types"
 )
 
@@ -20,7 +22,7 @@ type Message struct {
 	Log              *Log                   `json:"log,omitempty"`
 	ConnectionStatus *StatusRow             `json:"connectionStatus,omitempty"`
 	State            *State                 `json:"state,omitempty"`
-	Record           *RecordRow             `json:"record,omitempty"`
+	Record           *Record                `json:"record,omitempty"`
 	Catalog          *Catalog               `json:"catalog,omitempty"`
 	Action           *ActionRow             `json:"action,omitempty"`
 	Spec             map[string]interface{} `json:"spec,omitempty"`
@@ -51,10 +53,12 @@ type State struct {
 	Data map[string]interface{} `json:"data,omitempty"`
 }
 
-// RecordRow is a dto for airbyte record serialization
-type RecordRow struct {
-	Stream string                 `json:"stream,omitempty"`
-	Data   map[string]interface{} `json:"data,omitempty"`
+// Record is a dto for airbyte record serialization
+type Record struct {
+	Namespace string                 `json:"namespace,omitempty"`
+	Stream    string                 `json:"stream,omitempty"`
+	Data      map[string]interface{} `json:"data,omitempty"`
+	EmittedAt time.Time              `json:"emitted_at,omitempty"`
 }
 
 // ConfiguredCatalog is a dto for formatted airbyte catalog serialization
