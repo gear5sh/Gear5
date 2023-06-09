@@ -53,14 +53,13 @@ var ReadCmd = &cobra.Command{
 				waitgroup.Done()
 			}()
 
-			selectedStreams := utils.GetStreamsFromConfiguredCatalog(connector.Catalog())
 			streamNames := []string{}
-			for _, stream := range selectedStreams {
-				streamNames = append(streamNames, fmt.Sprintf("%s[%s]"), stream.Name, stream.Namespace)
+			for _, stream := range connector.Catalog().Streams {
+				streamNames = append(streamNames, fmt.Sprintf("%s[%s]"), stream.Name(), stream.Namespace())
 			}
 			logger.Infof("Selected streams are %s", strings.Join(streamNames, " ,"))
 
-			for _, stream := range selectedStreams {
+			for _, stream := range connector.Catalog().Streams {
 				err := connector.Read(stream, recordStream)
 				if err != nil {
 					logger.Fatalf("Error occurred while reading recrods from [%s]: %s", connector.Type(), err)

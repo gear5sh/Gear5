@@ -49,13 +49,14 @@ func formatEndpoint(urn string) string {
 	return fmt.Sprintf("%s/%s", strings.TrimSuffix(BaseURL, "/"), strings.TrimPrefix(urn, "/"))
 }
 
-func newClient(config *models.Config) (*http.Client, error) {
+func newClient(config *models.Config) (*http.Client, string, error) {
 	var client *http.Client
+	var accessToken string
 	if ok, _ := utils.IsOfType(config.Credentials, "client_id"); ok {
 		logger.Info("Credentials found to be OAuth")
 		oauth := &models.Client{}
 		if err := utils.Unmarshal(config.Credentials, oauth); err != nil {
-			return nil, err
+			return nil, "", err
 		}
 
 		// Create a new OAuth2 config
@@ -72,13 +73,21 @@ func newClient(config *models.Config) (*http.Client, error) {
 			RefreshToken: oauth.RefreshToken,
 		})
 
+		token, err := tokenSource.Token()
+		if err != nil {
+			return nil, "", fmt.Errorf("failed to retrive access token from refresh token: %s", err)
+		}
+
+		accessToken = token.AccessToken
+
 		// Create a new OAuth2 client
 		client = oauth2.NewClient(context.TODO(), tokenSource)
 	} else if ok, _ := utils.IsOfType(config.Credentials, "access_token"); ok {
 		logger.Info("Credentials found to be Private App")
 		privateApp := &models.PrivateApp{}
-		if err := utils.Unmarshal(config.Credentials, privateApp); err != nil {
-			return nil, err
+		err := utils.Unmarshal(config.Credentials, privateApp)
+		if err != nil {
+			return nil, "", err
 		}
 
 		// Create a new OAuth2 config
@@ -93,40 +102,33 @@ func newClient(config *models.Config) (*http.Client, error) {
 			AccessToken: privateApp.AccessToken,
 		})
 
+		accessToken = privateApp.AccessToken
+
 		// Create a new OAuth2 client
 		client = oauth2.NewClient(context.TODO(), tokenSource)
 	} else {
-		return nil, fmt.Errorf("invalid credentials format, expected formats are: %T and %T", models.Client{}, models.PrivateApp{})
+		return nil, "", fmt.Errorf("invalid credentials format, expected formats are: %T and %T", models.Client{}, models.PrivateApp{})
 	}
 
 	if client == nil {
-		return nil, fmt.Errorf("failed to create hubspot authorized client")
+		return nil, "", fmt.Errorf("failed to create hubspot authorized client")
 	}
 
-	return client, nil
+	return client, accessToken, nil
 }
 
 func getFieldProps(fieldType string) *syndicatemodels.Property {
-    if utils.ContainsValue(ValidJsonSchemaTypes, fieldType) {
-        return &syndicatemodels.Property{
-            Type: []types.DataType{types.Null, field_type},
-        }
-    }
-    // if field_type in VALID_JSON_SCHEMA_TYPES:
-    return
+	if utils.ContainsValue(ValidJsonSchemaTypes, fieldType) {
+		return &syndicatemodels.Property{
+			Type: []types.DataType{types.Null, types.DataType(fieldType)},
+		}
+	}
 
-converted_type, field_format = KNOWN_CONVERTIBLE_SCHEMA_TYPES.get(field_type) or (None, None)
-
-if not converted_type:
-    converted_type = "string"
-    logger.warn(f"Unsupported type {field_type} found")
-
-field_props = {
-    "type": ["null", converted_type or field_type],
-}
-
-if field_format:
-    field_props["format"] = field_format
-
-return field_props
+	if property, found := KnownConvertibleSchemaTypes[fieldType]; !found {
+		return &property
+	} else {
+		return &syndicatemodels.Property{
+			Type: []types.DataType{types.String},
+		}
+	}
 }

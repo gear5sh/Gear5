@@ -24,15 +24,6 @@ func IsValidSubcommand(available []*cobra.Command, sub string) bool {
 	return false
 }
 
-func GetStreamsFromConfiguredCatalog(catalog *models.Catalog) []*models.Stream {
-	result := []*models.Stream{}
-	for _, stream := range catalog.Streams {
-		result = append(result, stream.Stream)
-	}
-
-	return result
-}
-
 func ContainsValue(array interface{}, value interface{}) bool {
 	arrValue := reflect.ValueOf(array)
 	if arrValue.Kind() != reflect.Slice {

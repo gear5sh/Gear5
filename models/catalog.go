@@ -66,14 +66,6 @@ type Catalog struct {
 	Streams []*WrappedStream `json:"streams,omitempty"`
 }
 
-// WrappedStream is a dto for formatted stream
-type WrappedStream struct {
-	SyncMode            string   `json:"sync_mode,omitempty"`
-	DestinationSyncMode string   `json:"destination_sync_mode,omitempty"`
-	CursorField         []string `json:"cursor_field,omitempty"`
-	Stream              *Stream  `json:"stream,omitempty"`
-}
-
 // Schema is a dto for Airbyte catalog Schema object serialization
 type Schema struct {
 	Properties map[string]*Property `json:"properties,omitempty"`
