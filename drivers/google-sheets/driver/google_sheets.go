@@ -9,6 +9,7 @@ import (
 	"github.com/piyushsingariya/syndicate/jsonschema/schema"
 	"github.com/piyushsingariya/syndicate/logger"
 	syndicatemodels "github.com/piyushsingariya/syndicate/models"
+	"github.com/piyushsingariya/syndicate/protocol"
 	"github.com/piyushsingariya/syndicate/utils"
 	"gopkg.in/Iwark/spreadsheet.v2"
 )
@@ -74,16 +75,16 @@ func (gs *GoogleSheets) Check() error {
 	return nil
 }
 
-func (gs *GoogleSheets) Discover() ([]*syndicatemodels.Stream, bool, error) {
+func (gs *GoogleSheets) Discover() ([]*syndicatemodels.Stream, error) {
 	streams, _, err := gs.getAllSheetStreams()
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
-	return streams, true, nil
+	return streams, nil
 }
 
-func (gs *GoogleSheets) Read(stream *syndicatemodels.Stream, channel chan<- syndicatemodels.Record) error {
+func (gs *GoogleSheets) Read(stream protocol.Stream, channel chan<- syndicatemodels.Record) error {
 	spreadsheetID := gs.config.SpreadsheetID
 
 	logger.Infof("Starting sync for spreadsheet [%s]", spreadsheetID)
@@ -93,9 +94,9 @@ func (gs *GoogleSheets) Read(stream *syndicatemodels.Stream, channel chan<- synd
 		return err
 	}
 
-	sheet, found := streamNamesToSheet[stream.Name]
+	sheet, found := streamNamesToSheet[stream.Name()]
 	if !found {
-		logger.Infof("sheet not found with stream name [%s] in spreadsheet; skipping", stream.Name)
+		logger.Infof("sheet not found with stream name [%s] in spreadsheet; skipping", stream.Name())
 		return nil
 	}
 
@@ -108,7 +109,7 @@ func (gs *GoogleSheets) Read(stream *syndicatemodels.Stream, channel chan<- synd
 
 	for rowCursor := int64(1); rowCursor < int64(len(sheet.Rows)); rowCursor++ {
 		// make a batch of records
-		record := syndicatemodels.Record{Stream: stream.Name, Namespace: stream.Namespace, Data: make(map[string]interface{})}
+		record := syndicatemodels.Record{Stream: stream.Name(), Namespace: stream.Namespace(), Data: make(map[string]interface{})}
 		for i, pointer := range sheet.Rows[rowCursor] {
 			record.Data[indexToHeaders[i]] = pointer.Value
 		}
