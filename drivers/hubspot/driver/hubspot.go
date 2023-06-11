@@ -15,13 +15,13 @@ import (
 	"github.com/piyushsingariya/syndicate/utils"
 )
 
+var allHubspotStreams map[string]HubspotStream
+
 type Hubspot struct {
 	client      *http.Client
 	accessToken string
 	config      *models.Config
 	catalog     *syndicatemodels.Catalog
-
-	allStreams []protocol.Stream
 }
 
 func (h *Hubspot) Setup(config, catalog, state interface{}, batchSize int64) error {
@@ -112,5 +112,9 @@ func (h *Hubspot) getGrantedScopes() ([]string, error) {
 }
 
 func (h *Hubspot) setupAllStreams() {
-	h.allStreams = append(h.allStreams)
+
+}
+
+func init() {
+
 }

@@ -5,28 +5,28 @@ import "strings"
 type Level int
 
 const (
-	UNKNOWN Level = iota
-	DEBUG
-	INFO
-	WARN
-	ERROR
-	FATAL
+	unknown Level = iota
+	debug
+	info
+	warn
+	error
+	fatal
 )
 
 func (l Level) String() string {
 	switch l {
-	case UNKNOWN:
-		return "UNKNOWN"
-	case DEBUG:
-		return "DEBUG"
-	case INFO:
-		return "INFO"
-	case WARN:
-		return "WARN"
-	case ERROR:
-		return "ERROR"
-	case FATAL:
-		return "FATAL"
+	case unknown:
+		return "unknown"
+	case debug:
+		return "debug"
+	case info:
+		return "info"
+	case warn:
+		return "warn"
+	case error:
+		return "error"
+	case fatal:
+		return "fatal"
 	default:
 		return ""
 	}
@@ -35,16 +35,16 @@ func (l Level) String() string {
 func ToLevel(levelStr string) Level {
 	switch strings.TrimSpace(strings.ToLower(levelStr)) {
 	case "debug":
-		return DEBUG
+		return debug
 	case "info":
-		return INFO
+		return info
 	case "warn":
-		return WARN
+		return warn
 	case "error":
-		return ERROR
+		return error
 	case "fatal":
-		return FATAL
+		return fatal
 	default:
-		return UNKNOWN
+		return unknown
 	}
 }
