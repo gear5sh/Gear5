@@ -48,11 +48,6 @@ type StatusRow struct {
 	Message string                 `json:"message,omitempty"`
 }
 
-// State is a dto for airbyte state serialization
-type State struct {
-	Data map[string]interface{} `json:"data,omitempty"`
-}
-
 // Record is a dto for airbyte record serialization
 type Record struct {
 	Namespace string                 `json:"namespace,omitempty"`

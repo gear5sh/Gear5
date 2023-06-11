@@ -118,9 +118,9 @@ func newClient(config *models.Config) (*http.Client, string, error) {
 }
 
 func getFieldProps(fieldType string) *syndicatemodels.Property {
-	if utils.ContainsValue(ValidJsonSchemaTypes, fieldType) {
+	if utils.ArrayContains(ValidJsonSchemaTypes, fieldType) {
 		return &syndicatemodels.Property{
-			Type: []types.DataType{types.Null, types.DataType(fieldType)},
+			Type: []types.DataType{types.DataType(fieldType)},
 		}
 	}
 
@@ -128,7 +128,7 @@ func getFieldProps(fieldType string) *syndicatemodels.Property {
 		return &property
 	} else {
 		return &syndicatemodels.Property{
-			Type: []types.DataType{types.String},
+			Type: []types.DataType{types.DataType(fieldType)},
 		}
 	}
 }

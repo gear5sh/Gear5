@@ -36,6 +36,10 @@ func (s *WrappedStream) Name() string {
 	return s.Stream.Name
 }
 
+func (s *WrappedStream) GetStream() *Stream {
+	return s.Stream
+}
+
 func (s *WrappedStream) Namespace() string {
 	return s.Stream.Namespace
 }

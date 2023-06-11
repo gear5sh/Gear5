@@ -3,7 +3,7 @@ package models
 import (
 	"fmt"
 
-	"github.com/piyushsingariya/syndicate"
+	"github.com/piyushsingariya/syndicate/utils"
 )
 
 type Config struct {
@@ -37,7 +37,7 @@ type Service struct {
 
 func (c *Config) ValidateAndPopulateDefaults() error {
 	if c.NameConversion == nil {
-		c.NameConversion = syndicate.Bool(true)
+		c.NameConversion = utils.Bool(true)
 	}
 
 	if c.Credentials == nil {

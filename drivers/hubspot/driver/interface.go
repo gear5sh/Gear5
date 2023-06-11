@@ -1,8 +1,10 @@
 package driver
 
-import syndicatemodels "github.com/piyushsingariya/syndicate/models"
+import (
+	"github.com/piyushsingariya/syndicate/protocol"
+)
 
 type HubspotStream interface {
-	Read(channel <-chan syndicatemodels.Record) error
-	Stream() *syndicatemodels.Stream
+	protocol.Stream
+	ScopeIsGranted(grantedScopes []string) bool
 }
