@@ -1,10 +1,14 @@
 package driver
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -25,6 +29,7 @@ type Stream struct {
 	pageFilter        string
 	pageField         string
 	limitField        string
+	url               string
 	limit             int
 	offset            int
 	batchSize         int
@@ -46,8 +51,9 @@ func newStream(name, namespace, entity, groupByKey, lastModifiedKey string, scop
 	return &Stream{
 		WrappedStream: &syndicatemodels.WrappedStream{
 			Stream: &syndicatemodels.Stream{
-				Name:      name,
-				Namespace: namespace,
+				Name:       name,
+				Namespace:  namespace,
+				JSONSchema: &syndicatemodels.Schema{},
 			},
 		},
 		entity:            entity,
@@ -57,6 +63,10 @@ func newStream(name, namespace, entity, groupByKey, lastModifiedKey string, scop
 		client:            client,
 		startDate:         startDate,
 	}
+}
+
+func (s *Stream) path() string {
+	return s.url
 }
 
 func (s *Stream) properties() (map[string]*syndicatemodels.Property, error) {
@@ -95,6 +105,8 @@ func (s *Stream) properties() (map[string]*syndicatemodels.Property, error) {
 		properties[row["name"].(string)] = getFieldProps(row["type"].(string))
 	}
 
+	s.Stream.JSONSchema.Properties = properties
+
 	return properties, nil
 }
 
@@ -106,8 +118,17 @@ func (s *Stream) Read(channel <-chan syndicatemodels.Record) error {
 	return fmt.Errorf("no implementation on base stream")
 }
 
-func (s *Stream) getStream() *syndicatemodels.Stream {
-	return s.Stream
+func (s *Stream) getStream() (*syndicatemodels.Stream, error) {
+	if s.Stream.JSONSchema != nil {
+		return s.Stream, nil
+	}
+
+	_, err := s.properties()
+	if err != nil {
+		return nil, err
+	}
+
+	return s.Stream, nil
 }
 
 func (s *Stream) setStream(stream *syndicatemodels.Stream) {
@@ -168,30 +189,6 @@ func (s *Stream) nextPageToken(response any) (map[string]any, error) {
 	return nil, fmt.Errorf("failed to get next page token")
 }
 
-// def _cast_record_fields_if_needed(self, record: Mapping, properties: Mapping[str, Any] = None) -> Mapping:
-//         if not self.entity or not record.get("properties"):
-//             return record
-
-//         properties = properties or self.properties
-
-//         for field_name, field_value in record["properties"].items():
-//             if field_name not in properties:
-//                 self.logger.info(
-//                     "Property discarded: not maching with properties schema: record id:{}, property_value: {}".format(
-//                         record.get("id"), field_name
-//                     )
-//                 )
-//                 continue
-//             declared_field_types = properties[field_name].get("type", [])
-//             if not isinstance(declared_field_types, Iterable):
-//                 declared_field_types = [declared_field_types]
-//             format = properties[field_name].get("format")
-//             record["properties"][field_name] = self._cast_value(
-//                 declared_field_types=declared_field_types, field_name=field_name, field_value=field_value, declared_format=format
-//             )
-
-//         return record
-
 func (s *Stream) castRecordFieldsIfNeeded(record map[string]any) map[string]any {
 	if s.entity == "" {
 		return record
@@ -225,31 +222,34 @@ func (s *Stream) castRecordFieldsIfNeeded(record map[string]any) map[string]any 
 	return record
 }
 
-// def _transform_single_record(self, record: Mapping) -> Mapping:
-//         """Preprocess a single record"""
-//         record = self._cast_record_fields_if_needed(record)
-//         if self.created_at_field and self.updated_at_field and record.get(self.updated_at_field) is None:
-//             record[self.updated_at_field] = record[self.created_at_field]
-//         return record
-
-//     def _transform(self, records: Iterable) -> Iterable:
-//         """Preprocess record before emitting"""
-//         for record in records:
-//             record = self._cast_record_fields_if_needed(record)
-//             if self.created_at_field and self.updated_at_field and record.get(self.updated_at_field) is None:
-//                 record[self.updated_at_field] = record[self.created_at_field]
-//             yield record
-
 func (s *Stream) trasformSingleRecord(record map[string]any) map[string]any {
 	// Preprocess a single record
+	record = s.castRecordFieldsIfNeeded(record)
+	if s.createdAtField != "" && s.updatedAtField != "" && record[s.updatedAtField] == nil {
+		record[s.updatedAtField] = record[s.createdAtField]
+	}
 
-	//         record = self._cast_record_fields_if_needed(record)
-	//         if self.created_at_field and self.updated_at_field and record.get(self.updated_at_field) is None:
-	//             record[self.updated_at_field] = record[self.created_at_field]
-	//         return record
+	return record
 }
 
-func (s *Stream) filterOldRecords(records <-chan map[string]any) chan<- map[string]any {
+func (s *Stream) transform(records <-chan map[string]any) <-chan map[string]any {
+	// Preprocess record before emitting
+	stream := make(chan map[string]any)
+	go func() {
+		for record := range records {
+			record = s.castRecordFieldsIfNeeded(record)
+			if s.createdAtField != "" && s.updatedAtField != "" && record[s.updatedAtField] == nil {
+				record[s.updatedAtField] = record[s.createdAtField]
+			}
+
+			stream <- record
+		}
+	}()
+
+	return stream
+}
+
+func (s *Stream) filterOldRecords(records <-chan map[string]any) <-chan map[string]any {
 	stream := make(chan map[string]any)
 	go func() {
 		for record := range records {
@@ -273,7 +273,7 @@ func (s *Stream) filterOldRecords(records <-chan map[string]any) chan<- map[stri
 	return stream
 }
 
-func (s *Stream) flatAssociations(records <-chan map[string]any) chan<- map[string]any {
+func (s *Stream) flatAssociations(records <-chan map[string]any) <-chan map[string]any {
 	// When result has associations we prefer to have it flat, so we transform this
 
 	// "associations": {
@@ -319,4 +319,35 @@ func (s *Stream) flatAssociations(records <-chan map[string]any) chan<- map[stri
 	}()
 
 	return stream
+}
+
+func (s *Stream) handleRequest(nextPageToken map[string]any, properties map[string]string, urn string) (int, []byte, error) {
+	if urn == "" {
+		urn = s.path()
+	}
+	req, err := http.NewRequest("GET", formatEndpoint(s.path()), nil)
+	resp, err := s.client.Do(req)
+	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return 0, nil, utils.ErrServerTimeout
+		}
+		urlErr, ok := err.(*url.Error)
+		if ok && urlErr.Timeout() {
+			return 0, nil, utils.ErrServerTimeout
+		}
+
+		return 0, nil, fmt.Errorf("Error getting response: %v", err)
+	}
+	defer func() {
+		if resp.Body != nil {
+			resp.Body.Close()
+		}
+	}()
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return 0, nil, fmt.Errorf("Error reading response: %v", err)
+	}
+
+	return resp.StatusCode, respBody, nil
 }

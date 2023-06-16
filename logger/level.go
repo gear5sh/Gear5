@@ -9,7 +9,7 @@ const (
 	debug
 	info
 	warn
-	error
+	errorlevel
 	fatal
 )
 
@@ -23,7 +23,7 @@ func (l Level) String() string {
 		return "info"
 	case warn:
 		return "warn"
-	case error:
+	case errorlevel:
 		return "error"
 	case fatal:
 		return "fatal"
@@ -41,7 +41,7 @@ func ToLevel(levelStr string) Level {
 	case "warn":
 		return warn
 	case "error":
-		return error
+		return errorlevel
 	case "fatal":
 		return fatal
 	default:

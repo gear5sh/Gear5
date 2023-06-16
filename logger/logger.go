@@ -22,54 +22,54 @@ func SetupWriter(w io.Writer, err io.Writer) {
 
 // Info writes record into os.stdout with log level INFO
 func Info(v ...interface{}) {
-	Log("", INFO, v...)
+	Log("", info, v...)
 }
 
 // Info writes record into os.stdout with log level INFO
 func Infof(format string, v ...interface{}) {
-	Log(format, INFO, v...)
+	Log(format, info, v...)
 }
 
 // Info writes record into os.stdout with log level INFO
 func Debug(v ...interface{}) {
-	Log("", DEBUG, v...)
+	Log("", debug, v...)
 }
 
 // Info writes record into os.stdout with log level INFO
 func Debugf(format string, v ...interface{}) {
-	Log(format, DEBUG, v...)
+	Log(format, debug, v...)
 }
 
 // Error writes record into os.stdout with log level ERROR
 func Error(v ...interface{}) {
-	Log("", ERROR, v...)
+	Log("", errorlevel, v...)
 }
 
 // Fatal writes record into os.stdout with log level ERROR and exits
 func Fatal(v ...interface{}) {
-	Log("", ERROR, v...)
+	Log("", errorlevel, v...)
 	os.Exit(1)
 }
 
 // Fatal writes record into os.stdout with log level ERROR
 func Fatalf(format string, v ...interface{}) {
-	Log(format, ERROR, v...)
+	Log(format, errorlevel, v...)
 	os.Exit(1)
 }
 
 // Error writes record into os.stdout with log level ERROR
 func Errorf(format string, v ...interface{}) {
-	Log(format, ERROR, v...)
+	Log(format, errorlevel, v...)
 }
 
 // Warn writes record into os.stdout with log level WARN
 func Warn(v ...interface{}) {
-	Log("", WARN, v...)
+	Log("", warn, v...)
 }
 
 // Warn writes record into os.stdout with log level WARN
 func Warnf(format string, v ...interface{}) {
-	Log(format, WARN, v...)
+	Log(format, warn, v...)
 }
 
 func Log(format string, level Level, v ...interface{}) {
@@ -87,7 +87,7 @@ func Log(format string, level Level, v ...interface{}) {
 		},
 	}
 
-	if level == ERROR {
+	if level == errorlevel {
 		json.NewEncoder(errorWriter).Encode(syndicateMessage)
 		return
 	}
