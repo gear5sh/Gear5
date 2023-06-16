@@ -1,5 +1,7 @@
 package utils
 
+import "time"
+
 func String(str string) *string {
 	return &str
 }
@@ -39,4 +41,12 @@ func IsSubset[T any](setArray, subsetArray []T) bool {
 	}
 
 	return true
+}
+
+func MaxDate(v1, v2 time.Time) time.Time {
+	if v1.After(v2) {
+		return v1
+	}
+
+	return v2
 }
