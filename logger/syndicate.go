@@ -2,6 +2,9 @@ package logger
 
 import (
 	"encoding/json"
+	"log"
+	"net/http"
+	"net/http/httputil"
 	"time"
 
 	"github.com/piyushsingariya/syndicate/models"
@@ -46,4 +49,13 @@ func LogConnectionStatus(err error) {
 	}
 
 	json.NewEncoder(writer).Encode(message)
+}
+
+func LogResponse(response *http.Response) {
+	respDump, err := httputil.DumpResponse(response, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	Debug(respDump)
 }

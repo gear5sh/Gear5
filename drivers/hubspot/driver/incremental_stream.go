@@ -102,9 +102,3 @@ func (i *IncrementalStream) updateState(latestCursor time.Time, isLastRecord boo
 		i._state = &i._initSync
 	}
 }
-
-func (i *IncrementalStream) readRecords(mode types.SyncMode, cursorField []string) {
-
-}
-
-func (i *IncrementalStream) streamSlices(mode)

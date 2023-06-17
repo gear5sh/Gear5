@@ -11,3 +11,5 @@ const (
 	Object  DataType = "object"
 	Array   DataType = "array"
 )
+
+type RecordData = map[string]any

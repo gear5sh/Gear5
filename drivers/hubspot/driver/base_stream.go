@@ -9,12 +9,14 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/piyushsingariya/syndicate/logger"
 	syndicatemodels "github.com/piyushsingariya/syndicate/models"
+	"github.com/piyushsingariya/syndicate/types"
 	"github.com/piyushsingariya/syndicate/utils"
 )
 
@@ -29,12 +31,11 @@ type Stream struct {
 	pageFilter        string
 	pageField         string
 	limitField        string
-	url               string
 	limit             int
 	offset            int
 	batchSize         int
 
-	primaryKey []string
+	primaryKey string
 	groupByKey string
 
 	denormalizeRecords bool
@@ -62,11 +63,12 @@ func newStream(name, namespace, entity, groupByKey, lastModifiedKey string, scop
 		scopes:            scopes,
 		client:            client,
 		startDate:         startDate,
+		primaryKey:        "id",
 	}
 }
 
 func (s *Stream) path() string {
-	return s.url
+	return ""
 }
 
 func (s *Stream) properties() (map[string]*syndicatemodels.Property, error) {
@@ -108,6 +110,20 @@ func (s *Stream) properties() (map[string]*syndicatemodels.Property, error) {
 	s.Stream.JSONSchema.Properties = properties
 
 	return properties, nil
+}
+
+func (s *Stream) propertiesList() ([]string, error) {
+	properties, err := s.properties()
+	if err != nil {
+		return nil, err
+	}
+
+	list := []string{}
+	for key := range properties {
+		list = append(list, key)
+	}
+
+	return list, nil
 }
 
 func (s *Stream) propertiesScopeIsGranted() bool {
@@ -232,7 +248,11 @@ func (s *Stream) trasformSingleRecord(record map[string]any) map[string]any {
 	return record
 }
 
-func (s *Stream) transform(records <-chan map[string]any) <-chan map[string]any {
+func (s *Stream) transform(records <-chan map[string]any, err error) (<-chan map[string]any, error) {
+	if err != nil {
+		return nil, err
+	}
+
 	// Preprocess record before emitting
 	stream := make(chan map[string]any)
 	go func() {
@@ -246,12 +266,16 @@ func (s *Stream) transform(records <-chan map[string]any) <-chan map[string]any 
 		}
 	}()
 
-	return stream
+	return stream, nil
 }
 
 func (s *Stream) filterOldRecords(records <-chan map[string]any) <-chan map[string]any {
 	stream := make(chan map[string]any)
 	go func() {
+		defer func() {
+			close(stream)
+		}()
+
 		for record := range records {
 			if uat, found := record[s.updatedAtField]; found {
 				updatedAt, err := utils.ReformatDate(uat)
@@ -267,8 +291,6 @@ func (s *Stream) filterOldRecords(records <-chan map[string]any) <-chan map[stri
 
 			stream <- record
 		}
-
-		close(stream)
 	}()
 	return stream
 }
@@ -288,6 +310,10 @@ func (s *Stream) flatAssociations(records <-chan map[string]any) <-chan map[stri
 
 	stream := make(chan map[string]any, s.batchSize)
 	go func() {
+		defer func() {
+			close(stream)
+		}()
+
 		for record := range records {
 			if value, found := record["associations"]; found {
 				delete(record, "associations")
@@ -314,40 +340,167 @@ func (s *Stream) flatAssociations(records <-chan map[string]any) <-chan map[stri
 			// insert record
 			stream <- record
 		}
-
-		close(stream)
 	}()
 
 	return stream
 }
 
-func (s *Stream) handleRequest(nextPageToken map[string]any, properties map[string]string, urn string) (int, []byte, error) {
-	if urn == "" {
-		urn = s.path()
+func (s *Stream) handleRequest(request *utils.Request) (int, any, error) {
+	if request.URN == "" {
+		request.URN = s.path()
 	}
-	req, err := http.NewRequest("GET", formatEndpoint(s.path()), nil)
-	resp, err := s.client.Do(req)
+
+	req, err := request.ToHTTPRequest()
 	if err != nil {
-		if errors.Is(err, context.DeadlineExceeded) {
-			return 0, nil, utils.ErrServerTimeout
-		}
-		urlErr, ok := err.(*url.Error)
-		if ok && urlErr.Timeout() {
-			return 0, nil, utils.ErrServerTimeout
-		}
-
-		return 0, nil, fmt.Errorf("Error getting response: %v", err)
+		return 0, nil, err
 	}
-	defer func() {
-		if resp.Body != nil {
-			resp.Body.Close()
-		}
-	}()
 
-	respBody, err := ioutil.ReadAll(resp.Body)
+	statusCode := 0
+	var response any
+	retryAfter := time.Duration(1)
+
+	// only 3 attempts
+	err = utils.RetryOnFailure(3, &retryAfter, func() error {
+		resp, err := s.client.Do(req)
+		if err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				return utils.ErrServerTimeout
+			}
+			urlErr, ok := err.(*url.Error)
+			if ok && urlErr.Timeout() {
+				return utils.ErrServerTimeout
+			}
+
+			return fmt.Errorf("Error getting response: %v", err)
+		}
+		defer func() {
+			if resp.Body != nil {
+				resp.Body.Close()
+			}
+		}()
+
+		respBody, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("Error reading response: %v", err)
+		}
+		err = json.Unmarshal(respBody, &response)
+		if err != nil {
+			return fmt.Errorf("Error reading response: %v", err)
+		}
+
+		if resp.Header.Get("content-type") == "application/json;charset=utf-8" && resp.StatusCode != http.StatusOK {
+			data := response.(map[string]any)
+			logger.LogResponse(resp)
+			return fmt.Errorf("%v", data["message"])
+		} else if resp.StatusCode == http.StatusTooManyRequests {
+			retryAfterValue := resp.Header.Get("Retry-After")
+			if value, err := strconv.Atoi(retryAfterValue); err != nil {
+				return err
+			} else {
+				retryAfter = time.Duration(value)
+			}
+
+			logger.Warnf(`Status 429 Rate Limit Exceeded: API rate-limit has been reached until %s seconds.
+			See https://developers.hubspot.com/docs/api/usage-details.`,
+				retryAfterValue,
+			)
+		}
+
+		statusCode = resp.StatusCode
+		return nil
+	})
 	if err != nil {
-		return 0, nil, fmt.Errorf("Error reading response: %v", err)
+		return statusCode, nil, err
 	}
 
-	return resp.StatusCode, respBody, nil
+	return statusCode, response, nil
+}
+
+func (s *Stream) parseResponse(response interface{}) (<-chan map[string]any, error) {
+	records := make(chan map[string]any)
+
+	if utils.IsInstance(response, reflect.Map) {
+		go func() {
+			defer func() {
+				close(records)
+			}()
+
+			response := response.(map[string]any)
+			if response["status"] != nil && response["status"] == "error" {
+				logger.Warnf("Stream `%s` cannot be procced. {%v}", s.Name(), response["message"])
+				return
+			}
+
+			if response[s.dataField] == nil {
+				logger.Fatalf("Unexpected API response: %s not in %v", s.dataField, utils.Keys(response))
+			}
+
+			// read records in the data field of response
+			if data, ok := response[s.dataField].([]interface{}); ok {
+				for _, rcd := range data {
+					if record, ok := rcd.(map[string]any); ok {
+						records <- record
+					} else {
+						logger.Fatalf("Unexpected API response: expected Map[string]any not %T", rcd)
+					}
+				}
+			} else {
+				logger.Fatalf("Unexpected API response: expected Array not %T", response[s.dataField])
+			}
+		}()
+	} else if utils.IsInstance(response, reflect.Array) || utils.IsInstance(response, reflect.Slice) {
+		go func() {
+			defer func() {
+				close(records)
+			}()
+
+			if arr, ok := response.([]interface{}); ok {
+				for _, element := range arr {
+					if record, ok := element.(map[string]any); ok {
+						records <- record
+					} else {
+						logger.Fatalf("Unexpected API response: expected Map[string]any not %T", element)
+					}
+				}
+			} else {
+				logger.Fatalf("Unexpected API response: expected Array not %T", response)
+			}
+		}()
+	}
+
+	return records, nil
+}
+
+func (s *Stream) readStreamRecords(nextPageToken map[string]any) ([]types.RecordData, any, error) {
+	// properties = self._property_wrapper
+	//     for chunk in properties.split():
+	//         response = self.handle_request(
+	//             stream_slice=stream_slice, stream_state=stream_state, next_page_token=next_page_token, properties=chunk, url=url
+	//         )
+	//         for record in self._transform(self.parse_response(response)):
+	//             post_processor.add_record(record)
+	_, response, err := s.handleRequest(&utils.Request{
+		URN:         formatEndpoint(s.path()),
+		Method:      "POST",
+		QueryParams: nextPageToken,
+	})
+
+	arr := []types.RecordData{}
+	records, err := s.transform(s.parseResponse(response))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for record := range records {
+		arr = append(arr, record)
+	}
+
+	return arr, response, nil
+}
+
+func (s *Stream) reformatRecord(record map[string]any) syndicatemodels.Record {
+	return syndicatemodels.Record{
+		Stream: s.Name(),
+		Data:   record,
+	}
 }
