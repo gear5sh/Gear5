@@ -132,3 +132,28 @@ func getFieldProps(fieldType string) *syndicatemodels.Property {
 		}
 	}
 }
+
+// def _parse_and_handle_errors(response) -> Union[MutableMapping[str, Any], List[MutableMapping[str, Any]]]:
+//         """Handle response"""
+//         message = "Unknown error"
+//         if response.headers.get("content-type") == "application/json;charset=utf-8" and response.status_code != HTTPStatus.OK:
+//             message = response.json().get("message")
+
+//         if response.status_code == HTTPStatus.FORBIDDEN:
+//             """Once hit the forbidden endpoint, we return the error message from response."""
+//             pass
+//         elif response.status_code in (HTTPStatus.UNAUTHORIZED, CLOUDFLARE_ORIGIN_DNS_ERROR):
+//             raise HubspotInvalidAuth(message, response=response)
+//         elif response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
+//             retry_after = response.headers.get("Retry-After")
+//             raise HubspotRateLimited(
+//                 f"429 Rate Limit Exceeded: API rate-limit has been reached until {retry_after} seconds."
+//                 " See https://developers.hubspot.com/docs/api/usage-details",
+//                 response=response,
+//             )
+//         elif response.status_code in (HTTPStatus.BAD_GATEWAY, HTTPStatus.SERVICE_UNAVAILABLE):
+//             raise HubspotTimeout(message, response=response)
+//         else:
+//             response.raise_for_status()
+
+//         return response.json()

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"time"
 
 	"github.com/piyushsingariya/syndicate/jsonschema"
 	"github.com/piyushsingariya/syndicate/logger"
@@ -80,6 +81,10 @@ func Unmarshal(from interface{}, object interface{}) error {
 	}
 
 	return nil
+}
+
+func IsInstance(val any, typ reflect.Kind) bool {
+	return reflect.ValueOf(val).Kind() == typ
 }
 
 // reformatInnerMaps converts all map[interface{}]interface{} into map[string]interface{}
@@ -185,4 +190,17 @@ func ToSyndicateSchema(obj interface{}) (string, error) {
 	}
 
 	return string(j), nil
+}
+
+func RetryOnFailure(attempts int, sleep *time.Duration, f func() error) (err error) {
+	for i := 0; i < attempts; i++ {
+		if err = f(); err == nil {
+			return nil
+		}
+
+		logger.Infof("Retrying after %v...", sleep)
+		time.Sleep(*sleep)
+	}
+
+	return err
 }
