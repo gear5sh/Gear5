@@ -21,7 +21,7 @@ import (
 )
 
 type Stream struct {
-	*syndicatemodels.WrappedStream
+	name              string
 	entity            string
 	updatedAtField    string
 	createdAtField    string
@@ -34,6 +34,7 @@ type Stream struct {
 	limit             int
 	offset            int
 	batchSize         int
+	availableSyncMode []types.SyncMode
 
 	primaryKey string
 	groupByKey string
@@ -48,15 +49,9 @@ type Stream struct {
 	startDate time.Time
 }
 
-func newStream(name, namespace, entity, groupByKey, lastModifiedKey string, scopes []string, client *http.Client, startDate time.Time) *Stream {
+func newStream(name, entity, groupByKey, lastModifiedKey string, scopes []string, client *http.Client, startDate time.Time) *Stream {
 	return &Stream{
-		WrappedStream: &syndicatemodels.WrappedStream{
-			Stream: &syndicatemodels.Stream{
-				Name:       name,
-				Namespace:  namespace,
-				JSONSchema: &syndicatemodels.Schema{},
-			},
-		},
+		name:              name,
 		entity:            entity,
 		groupByKey:        groupByKey,
 		lastModifiedField: lastModifiedKey,
@@ -64,6 +59,7 @@ func newStream(name, namespace, entity, groupByKey, lastModifiedKey string, scop
 		client:            client,
 		startDate:         startDate,
 		primaryKey:        "id",
+		availableSyncMode: []types.SyncMode{types.FullRefresh},
 	}
 }
 
@@ -107,8 +103,6 @@ func (s *Stream) properties() (map[string]*syndicatemodels.Property, error) {
 		properties[row["name"].(string)] = getFieldProps(row["type"].(string))
 	}
 
-	s.Stream.JSONSchema.Properties = properties
-
 	return properties, nil
 }
 
@@ -134,21 +128,21 @@ func (s *Stream) Read(channel <-chan syndicatemodels.Record) error {
 	return fmt.Errorf("no implementation on base stream")
 }
 
-func (s *Stream) getStream() (*syndicatemodels.Stream, error) {
-	if s.Stream.JSONSchema != nil {
-		return s.Stream, nil
+func (s *Stream) setSyncModes(modes []types.SyncMode) {
+	s.availableSyncMode = modes
+}
+
+func (s *Stream) GetStream() (*syndicatemodels.Stream, error) {
+	syndstream := &syndicatemodels.Stream{
+		Name: s.name,
+		JSONSchema: ,
 	}
 
-	_, err := s.properties()
-	if err != nil {
-		return nil, err
-	}
-
-	return s.Stream, nil
+	return syndstream, nil
 }
 
 func (s *Stream) setStream(stream *syndicatemodels.Stream) {
-	s.Stream = stream
+
 }
 
 func (s *Stream) ScopeIsGranted(grantedScopes []string) bool {

@@ -15,9 +15,8 @@ import (
 	"github.com/piyushsingariya/syndicate/utils"
 )
 
-var allHubspotStreams map[string]HubspotStream
-
 type Hubspot struct {
+	allStreams  map[string]HubspotStream
 	client      *http.Client
 	accessToken string
 	config      *models.Config
@@ -111,10 +110,17 @@ func (h *Hubspot) getGrantedScopes() ([]string, error) {
 	return response["scopes"].([]string), nil
 }
 
-func (h *Hubspot) setupAllStreams() {
-
+func (h *Hubspot) register(streamName string, stream HubspotStream) {
+	h.allStreams[streamName] = stream
 }
 
-func init() {
-
+func (h *Hubspot) setupAllStreams() {
+	h.register("contacts",
+		newCRMSearchStream(
+			*newIncrementalStream(
+				*newStream("contacts", "contacts", "id", "lastmodifieddate", []string{"crm.objects.contacts.read"},
+					h.client, h.config.StartDate),
+				"updatedAt"),
+			[]string{"contacts", "companies"},
+		))
 }

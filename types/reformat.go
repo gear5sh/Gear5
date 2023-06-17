@@ -1,12 +1,10 @@
-package utils
+package types
 
 import (
 	"database/sql"
 	"fmt"
 	"strconv"
 	"time"
-
-	"github.com/piyushsingariya/syndicate/types"
 )
 
 var DateTimeFormats = []string{
@@ -17,42 +15,42 @@ var DateTimeFormats = []string{
 	"2006-01-02T15:04:05.000000",
 }
 
-func getFirstNotNullType(datatypes []types.DataType) types.DataType {
+func getFirstNotNullType(datatypes []DataType) DataType {
 	for _, datatype := range datatypes {
-		if datatype != types.Null {
+		if datatype != Null {
 			return datatype
 		}
 	}
 
-	return types.Null
+	return Null
 }
 
-func ReformatValueOnDataTypes(datatypes []types.DataType, format string, v any) (any, error) {
+func ReformatValueOnDataTypes(datatypes []DataType, format string, v any) (any, error) {
 	return ReformatValue(getFirstNotNullType(datatypes), format, v)
 }
 
-func ReformatValue(dataType types.DataType, format string, v any) (any, error) {
+func ReformatValue(dataType DataType, format string, v any) (any, error) {
 	switch dataType {
-	case types.Null:
+	case Null:
 		return nil, nil
-	case types.Boolean:
+	case Boolean:
 		// reformat boolean
 		booleanValue, ok := v.(bool)
 		if ok {
 			return booleanValue, nil
 		}
 		return v, fmt.Errorf("found to be boolean, but value is not boolean : %v", v)
-	case types.Integer:
+	case Integer:
 		return ReformatInt64(v)
-	case types.String:
+	case String:
 		if format == "date" || format == "date-time" {
 			return ReformatDate(v)
 		}
 
 		return fmt.Sprintf("%v", v), nil
-	case types.Number:
+	case Number:
 		return ReformatFloat64(v)
-	case types.Array:
+	case Array:
 		if value, isArray := v.([]any); isArray {
 			return value, nil
 		}
