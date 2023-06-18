@@ -117,7 +117,7 @@ func (gs *GoogleSheets) Read(stream protocol.Stream, channel chan<- syndicatemod
 		channel <- record
 	}
 
-	logger.Infof("Total records fetched %s[%d]", stream.Name, len(sheet.Rows)-1)
+	logger.Infof("Total records fetched %s[%d]", stream.Name(), len(sheet.Rows)-1)
 
 	return err
 }

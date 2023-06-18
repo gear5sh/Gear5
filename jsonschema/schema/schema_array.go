@@ -52,7 +52,7 @@ func (s *defaultArraySchema) UnmarshalJSON(b []byte) error {
 		for k, v := range stuff {
 			switch k {
 			case "items":
-				mb, xerr := json.Marshal(v.(interface{}))
+				mb, xerr := json.Marshal(v)
 				if xerr != nil {
 					return xerr
 				}

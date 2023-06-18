@@ -55,7 +55,7 @@ var ReadCmd = &cobra.Command{
 
 			streamNames := []string{}
 			for _, stream := range connector.Catalog().Streams {
-				streamNames = append(streamNames, fmt.Sprintf("%s[%s]"), stream.Name(), stream.Namespace())
+				streamNames = append(streamNames, fmt.Sprintf("%s[%s]", stream.Name(), stream.Namespace()))
 			}
 			logger.Infof("Selected streams are %s", strings.Join(streamNames, " ,"))
 

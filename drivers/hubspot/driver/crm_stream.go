@@ -7,6 +7,7 @@ import (
 	"github.com/piyushsingariya/syndicate/logger"
 	syndicatemodels "github.com/piyushsingariya/syndicate/models"
 	"github.com/piyushsingariya/syndicate/types"
+	"github.com/piyushsingariya/syndicate/typing"
 	"github.com/piyushsingariya/syndicate/utils"
 )
 
@@ -104,7 +105,7 @@ func (c *CRMSearchStream) readRecords(send chan<- syndicatemodels.Record) error 
 		}
 
 		for record := range c.filterOldRecords(c.flatAssociations(utils.ToChannel(records, 0))) {
-			cursor, err := utils.ReformatDate(record[c.updatedAtField])
+			cursor, err := typing.ReformatDate(record[c.updatedAtField])
 			if err != nil {
 				return err
 			}

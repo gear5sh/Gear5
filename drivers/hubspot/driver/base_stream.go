@@ -17,6 +17,7 @@ import (
 	"github.com/piyushsingariya/syndicate/logger"
 	syndicatemodels "github.com/piyushsingariya/syndicate/models"
 	"github.com/piyushsingariya/syndicate/types"
+	"github.com/piyushsingariya/syndicate/typing"
 	"github.com/piyushsingariya/syndicate/utils"
 )
 
@@ -61,6 +62,10 @@ func newStream(name, entity, groupByKey, lastModifiedKey string, scopes []string
 		primaryKey:        "id",
 		availableSyncMode: []types.SyncMode{types.FullRefresh},
 	}
+}
+
+func (s *Stream) Name() string {
+	return s.name
 }
 
 func (s *Stream) path() string {
@@ -130,19 +135,6 @@ func (s *Stream) Read(channel <-chan syndicatemodels.Record) error {
 
 func (s *Stream) setSyncModes(modes []types.SyncMode) {
 	s.availableSyncMode = modes
-}
-
-func (s *Stream) GetStream() (*syndicatemodels.Stream, error) {
-	syndstream := &syndicatemodels.Stream{
-		Name: s.name,
-		JSONSchema: ,
-	}
-
-	return syndstream, nil
-}
-
-func (s *Stream) setStream(stream *syndicatemodels.Stream) {
-
 }
 
 func (s *Stream) ScopeIsGranted(grantedScopes []string) bool {
@@ -219,8 +211,7 @@ func (s *Stream) castRecordFieldsIfNeeded(record map[string]any) map[string]any 
 				continue
 			}
 			declaredFieldTypes := properties[fieldName].Type
-			format := properties[fieldName].Format
-			reformattedFieldValue, err := utils.ReformatValueOnDataTypes(declaredFieldTypes, format, fieldValue)
+			reformattedFieldValue, err := typing.ReformatValueOnDataTypes(declaredFieldTypes, fieldValue)
 			if err != nil {
 				logger.Warnf("failed to reformat for field[%s] to data-type:%v for record id:%v", fieldName, declaredFieldTypes, record["id"])
 				continue
@@ -272,7 +263,7 @@ func (s *Stream) filterOldRecords(records <-chan map[string]any) <-chan map[stri
 
 		for record := range records {
 			if uat, found := record[s.updatedAtField]; found {
-				updatedAt, err := utils.ReformatDate(uat)
+				updatedAt, err := typing.ReformatDate(uat)
 				if err != nil {
 					logger.Warnf("failed to reformat[%s] for record %v: %s", s.updatedAtField, record, err)
 					continue
