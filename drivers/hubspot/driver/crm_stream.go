@@ -2,10 +2,12 @@ package driver
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/piyushsingariya/syndicate/logger"
 	syndicatemodels "github.com/piyushsingariya/syndicate/models"
+	"github.com/piyushsingariya/syndicate/safego"
 	"github.com/piyushsingariya/syndicate/types"
 	"github.com/piyushsingariya/syndicate/typing"
 	"github.com/piyushsingariya/syndicate/utils"
@@ -23,11 +25,11 @@ func newCRMSearchStream(incrementalStream IncrementalStream, associations []stri
 	}
 }
 
-func (c *CRMSearchStream) url() string {
+func (c *CRMSearchStream) path() (string, string) {
 	if c._state != nil {
-		return fmt.Sprintf("/crm/v3/objects/%s/search", c.entity)
+		return fmt.Sprintf("/crm/v3/objects/%s/search", c.entity), http.MethodPost
 	}
-	return fmt.Sprintf("/crm/v3/objects/%s", c.entity)
+	return fmt.Sprintf("/crm/v3/objects/%s", c.entity), http.MethodGet
 }
 
 func (c *CRMSearchStream) search() (any, []byte, error) {
@@ -78,16 +80,11 @@ func (c *CRMSearchStream) processSearch(nextPageToken map[string]any) ([]map[str
 }
 
 func (c *CRMSearchStream) readRecords(send chan<- syndicatemodels.Record) error {
-	// stream_state = stream_state or {}
-	// pagination_complete = False
 	paginationComplete := false
-	// next_page_token = None
 	var nextPageToken map[string]any
 	latest_cursor := &time.Time{}
 
-	// latest_cursor = None
-
-	for paginationComplete {
+	for !paginationComplete {
 		var records []types.RecordData
 		var rawResponse any
 		var err error
@@ -98,7 +95,7 @@ func (c *CRMSearchStream) readRecords(send chan<- syndicatemodels.Record) error 
 				return err
 			}
 		} else {
-			records, rawResponse, err = c.readStreamRecords(nextPageToken)
+			records, rawResponse, err = c.readStreamRecords(nextPageToken, c.path)
 			if err != nil {
 				return err
 			}
@@ -115,7 +112,10 @@ func (c *CRMSearchStream) readRecords(send chan<- syndicatemodels.Record) error 
 				latest_cursor = &cursor
 			}
 
-			send <- c.reformatRecord(record)
+			if !safego.Insert(send, c.reformatRecord(record)) {
+				// channel was closed
+				return nil
+			}
 		}
 
 		nextPageToken, err = c.nextPageToken(rawResponse)

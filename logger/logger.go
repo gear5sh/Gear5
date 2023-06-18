@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/piyushsingariya/syndicate/models"
 	"github.com/piyushsingariya/syndicate/types"
@@ -75,7 +76,11 @@ func Warnf(format string, v ...interface{}) {
 func Log(format string, level Level, v ...interface{}) {
 	message := ""
 	if format == "" {
-		message = fmt.Sprint(v...)
+		formatted := []string{}
+		for _, elem := range v {
+			formatted = append(formatted, fmt.Sprint(elem))
+		}
+		message = strings.Join(formatted, ", ")
 	} else {
 		message = fmt.Sprintf(format, v...)
 	}

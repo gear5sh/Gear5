@@ -11,4 +11,5 @@ type HubspotStream interface {
 	readRecords(channel chan<- syndicatemodels.Record) error
 	Modes() []types.SyncMode
 	PrimaryKey() []string
+	path() (string, string)
 }

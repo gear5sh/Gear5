@@ -60,6 +60,7 @@ func newStream(name, entity, groupByKey, lastModifiedKey string, scopes []string
 		client:            client,
 		startDate:         startDate,
 		primaryKey:        "id",
+		dataField:         "results",
 		availableSyncMode: []types.SyncMode{types.FullRefresh},
 	}
 }
@@ -77,10 +78,6 @@ func (s *Stream) PrimaryKey() []string {
 		return []string{s.primaryKey}
 	}
 	return nil
-}
-
-func (s *Stream) path() string {
-	return ""
 }
 
 func (s *Stream) properties() (map[string]*syndicatemodels.Property, error) {
@@ -343,7 +340,7 @@ func (s *Stream) flatAssociations(records <-chan map[string]any) <-chan map[stri
 
 func (s *Stream) handleRequest(request *utils.Request) (int, any, error) {
 	if request.URN == "" {
-		request.URN = s.path()
+		return 0, nil, fmt.Errorf("empty request url")
 	}
 
 	req, err := request.ToHTTPRequest()
@@ -353,7 +350,7 @@ func (s *Stream) handleRequest(request *utils.Request) (int, any, error) {
 
 	statusCode := 0
 	var response any
-	retryAfter := time.Duration(1)
+	retryAfter := time.Second
 
 	// only 3 attempts
 	err = utils.RetryOnFailure(3, &retryAfter, func() error {
@@ -386,14 +383,13 @@ func (s *Stream) handleRequest(request *utils.Request) (int, any, error) {
 
 		if resp.Header.Get("content-type") == "application/json;charset=utf-8" && resp.StatusCode != http.StatusOK {
 			data := response.(map[string]any)
-			logger.LogResponse(resp)
-			return fmt.Errorf("%v", data["message"])
+			return fmt.Errorf("%v", fmt.Sprintf("%s: %s", data["message"], string(respBody)))
 		} else if resp.StatusCode == http.StatusTooManyRequests {
 			retryAfterValue := resp.Header.Get("Retry-After")
 			if value, err := strconv.Atoi(retryAfterValue); err != nil {
 				return err
 			} else {
-				retryAfter = time.Duration(value)
+				retryAfter = time.Second * time.Duration(value)
 			}
 
 			logger.Warnf(`Status 429 Rate Limit Exceeded: API rate-limit has been reached until %s seconds.
@@ -467,7 +463,7 @@ func (s *Stream) parseResponse(response interface{}) (<-chan map[string]any, err
 	return records, nil
 }
 
-func (s *Stream) readStreamRecords(nextPageToken map[string]any) ([]types.RecordData, any, error) {
+func (s *Stream) readStreamRecords(nextPageToken map[string]any, f func() (path, method string)) ([]types.RecordData, any, error) {
 	// properties = self._property_wrapper
 	//     for chunk in properties.split():
 	//         response = self.handle_request(
@@ -475,11 +471,15 @@ func (s *Stream) readStreamRecords(nextPageToken map[string]any) ([]types.Record
 	//         )
 	//         for record in self._transform(self.parse_response(response)):
 	//             post_processor.add_record(record)
+	url, method := f()
 	_, response, err := s.handleRequest(&utils.Request{
-		URN:         formatEndpoint(s.path()),
-		Method:      "POST",
+		URN:         formatEndpoint(url),
+		Method:      method,
 		QueryParams: nextPageToken,
 	})
+	if err != nil {
+		return nil, nil, err
+	}
 
 	arr := []types.RecordData{}
 	records, err := s.transform(s.parseResponse(response))
