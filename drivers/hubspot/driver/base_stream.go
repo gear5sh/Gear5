@@ -68,6 +68,17 @@ func (s *Stream) Name() string {
 	return s.name
 }
 
+func (s *Stream) Modes() []types.SyncMode {
+	return s.availableSyncMode
+}
+
+func (s *Stream) PrimaryKey() []string {
+	if s.primaryKey == "" {
+		return []string{s.primaryKey}
+	}
+	return nil
+}
+
 func (s *Stream) path() string {
 	return ""
 }

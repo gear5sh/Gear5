@@ -44,6 +44,7 @@ func newIncrementalStream(stream Stream, statePK string) *IncrementalStream {
 		s.statePk = "timestamp"
 	}
 
+	s.availableSyncMode = append(s.availableSyncMode, types.Incremental)
 	return s
 }
 
@@ -93,7 +94,7 @@ func (i *IncrementalStream) updateState(latestCursor time.Time, isLastRecord boo
 		newState = latestCursor
 	}
 
-	if newState != *i._state {
+	if i._state != nil && newState != *i._state {
 		logger.Infof("Advancing bookmark for %s stream from %s to %s", i.Name(), i._state.GoString(), newState.GoString())
 		i._state = &newState
 		i.startDate = *i._state

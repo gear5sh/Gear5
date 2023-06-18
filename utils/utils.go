@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"runtime/debug"
 	"time"
 
 	"github.com/piyushsingariya/syndicate/jsonschema"
@@ -12,6 +13,16 @@ import (
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 )
+
+func Recovery() {
+	err := recover()
+	if err != nil {
+		logger.Error(err)
+		// capture stacks trace
+		stackTrace := string(debug.Stack())
+		logger.Debug(stackTrace)
+	}
+}
 
 // IsValidSubcommand checks if the passed subcommand is supported by the parent command
 func IsValidSubcommand(available []*cobra.Command, sub string) bool {
