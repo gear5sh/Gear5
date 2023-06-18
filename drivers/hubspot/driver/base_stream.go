@@ -241,54 +241,48 @@ func (s *Stream) trasformSingleRecord(record map[string]any) map[string]any {
 	return record
 }
 
-func (s *Stream) transform(records <-chan map[string]any, err error) (<-chan map[string]any, error) {
+func (s *Stream) transform(records []types.RecordData, err error) ([]types.RecordData, error) {
 	if err != nil {
 		return nil, err
 	}
 
 	// Preprocess record before emitting
-	stream := make(chan map[string]any)
-	go func() {
-		for record := range records {
-			record = s.castRecordFieldsIfNeeded(record)
-			if s.createdAtField != "" && s.updatedAtField != "" && record[s.updatedAtField] == nil {
-				record[s.updatedAtField] = record[s.createdAtField]
-			}
-
-			stream <- record
+	transformed := []types.RecordData{}
+	for _, record := range records {
+		record = s.castRecordFieldsIfNeeded(record)
+		if s.createdAtField != "" && s.updatedAtField != "" && record[s.updatedAtField] == nil {
+			record[s.updatedAtField] = record[s.createdAtField]
 		}
-	}()
 
-	return stream, nil
+		transformed = append(transformed, record)
+	}
+
+	return transformed, nil
 }
 
-func (s *Stream) filterOldRecords(records <-chan map[string]any) <-chan map[string]any {
-	stream := make(chan map[string]any)
-	go func() {
-		defer func() {
-			close(stream)
-		}()
+func (s *Stream) filterOldRecords(records []types.RecordData) []map[string]any {
+	stream := []types.RecordData{}
 
-		for record := range records {
-			if uat, found := record[s.updatedAtField]; found {
-				updatedAt, err := typing.ReformatDate(uat)
-				if err != nil {
-					logger.Warnf("failed to reformat[%s] for record %v: %s", s.updatedAtField, record, err)
-					continue
-				}
-
-				if updatedAt.Before(s.startDate) {
-					continue
-				}
+	for _, record := range records {
+		if uat, found := record[s.updatedAtField]; found {
+			updatedAt, err := typing.ReformatDate(uat)
+			if err != nil {
+				logger.Warnf("failed to reformat[%s] for record %v: %s", s.updatedAtField, record, err)
+				continue
 			}
 
-			stream <- record
+			if updatedAt.Before(s.startDate) {
+				continue
+			}
 		}
-	}()
+
+		stream = append(stream, record)
+	}
+
 	return stream
 }
 
-func (s *Stream) flatAssociations(records <-chan map[string]any) <-chan map[string]any {
+func (s *Stream) flatAssociations(records []types.RecordData) []types.RecordData {
 	// When result has associations we prefer to have it flat, so we transform this
 
 	// "associations": {
@@ -301,39 +295,33 @@ func (s *Stream) flatAssociations(records <-chan map[string]any) <-chan map[stri
 
 	// "contacts": [201, 251]
 
-	stream := make(chan map[string]any, s.batchSize)
-	go func() {
-		defer func() {
-			close(stream)
-		}()
-
-		for record := range records {
-			if value, found := record["associations"]; found {
-				delete(record, "associations")
-				if associations, ok := value.(map[string]any); ok {
-					for name, value := range associations {
-						tempArray := []any{}
-						if association, ok := value.(map[string]any); ok {
-							if value, found := association["results"]; found {
-								if results, ok := value.([]any); ok {
-									for _, value := range results {
-										if row, ok := value.(map[string]any); ok {
-											tempArray = append(tempArray, row["id"])
-										}
+	stream := []types.RecordData{}
+	for _, record := range records {
+		if value, found := record["associations"]; found {
+			delete(record, "associations")
+			if associations, ok := value.(map[string]any); ok {
+				for name, value := range associations {
+					tempArray := []any{}
+					if association, ok := value.(map[string]any); ok {
+						if value, found := association["results"]; found {
+							if results, ok := value.([]any); ok {
+								for _, value := range results {
+									if row, ok := value.(map[string]any); ok {
+										tempArray = append(tempArray, row["id"])
 									}
 								}
-
 							}
+
 						}
-						record[strings.ReplaceAll(name, " ", "_")] = tempArray
 					}
+					record[strings.ReplaceAll(name, " ", "_")] = tempArray
 				}
 			}
-
-			// insert record
-			stream <- record
 		}
-	}()
+
+		// insert record
+		stream = append(stream, record)
+	}
 
 	return stream
 }
@@ -408,56 +396,45 @@ func (s *Stream) handleRequest(request *utils.Request) (int, any, error) {
 	return statusCode, response, nil
 }
 
-func (s *Stream) parseResponse(response interface{}) (<-chan map[string]any, error) {
-	records := make(chan map[string]any)
-
+func (s *Stream) parseResponse(response interface{}) ([]types.RecordData, error) {
+	records := []types.RecordData{}
 	if utils.IsInstance(response, reflect.Map) {
-		go func() {
-			defer func() {
-				close(records)
-			}()
 
-			response := response.(map[string]any)
-			if response["status"] != nil && response["status"] == "error" {
-				logger.Warnf("Stream `%s` cannot be procced. {%v}", s.Name(), response["message"])
-				return
-			}
+		response := response.(map[string]any)
+		if response["status"] != nil && response["status"] == "error" {
+			logger.Warnf("Stream `%s` cannot be procced. {%v}", s.Name(), response["message"])
+			return nil, nil
+		}
 
-			if response[s.dataField] == nil {
-				logger.Fatalf("Unexpected API response: %s not in %v", s.dataField, utils.Keys(response))
-			}
+		if response[s.dataField] == nil {
+			logger.Fatalf("Unexpected API response: %s not in %v", s.dataField, utils.Keys(response))
+		}
 
-			// read records in the data field of response
-			if data, ok := response[s.dataField].([]interface{}); ok {
-				for _, rcd := range data {
-					if record, ok := rcd.(map[string]any); ok {
-						records <- record
-					} else {
-						logger.Fatalf("Unexpected API response: expected Map[string]any not %T", rcd)
-					}
+		// read records in the data field of response
+		if data, ok := response[s.dataField].([]interface{}); ok {
+			for _, rcd := range data {
+				if record, ok := rcd.(map[string]any); ok {
+					records = append(records, record)
+				} else {
+					logger.Fatalf("Unexpected API response: expected Map[string]any not %T", rcd)
 				}
-			} else {
-				logger.Fatalf("Unexpected API response: expected Array not %T", response[s.dataField])
 			}
-		}()
+		} else {
+			logger.Fatalf("Unexpected API response: expected Array not %T", response[s.dataField])
+		}
 	} else if utils.IsInstance(response, reflect.Array) || utils.IsInstance(response, reflect.Slice) {
-		go func() {
-			defer func() {
-				close(records)
-			}()
-
-			if arr, ok := response.([]interface{}); ok {
-				for _, element := range arr {
-					if record, ok := element.(map[string]any); ok {
-						records <- record
-					} else {
-						logger.Fatalf("Unexpected API response: expected Map[string]any not %T", element)
-					}
+		if arr, ok := response.([]interface{}); ok {
+			for _, element := range arr {
+				if record, ok := element.(map[string]any); ok {
+					records = append(records, record)
+				} else {
+					logger.Fatalf("Unexpected API response: expected Map[string]any not %T", element)
 				}
-			} else {
-				logger.Fatalf("Unexpected API response: expected Array not %T", response)
 			}
-		}()
+		} else {
+			logger.Fatalf("Unexpected API response: expected Array not %T", response)
+		}
+
 	}
 
 	return records, nil
@@ -472,11 +449,18 @@ func (s *Stream) readStreamRecords(nextPageToken map[string]any, f func() (path,
 	//         for record in self._transform(self.parse_response(response)):
 	//             post_processor.add_record(record)
 	url, method := f()
-	_, response, err := s.handleRequest(&utils.Request{
+	request := &utils.Request{
 		URN:         formatEndpoint(url),
 		Method:      method,
 		QueryParams: nextPageToken,
-	})
+	}
+	// populating defaults
+	if request.QueryParams == nil {
+		request.QueryParams = make(map[string]any)
+	}
+	request.QueryParams["limit"] = 100
+
+	_, response, err := s.handleRequest(request)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -487,7 +471,7 @@ func (s *Stream) readStreamRecords(nextPageToken map[string]any, f func() (path,
 		return nil, nil, err
 	}
 
-	for record := range records {
+	for _, record := range records {
 		arr = append(arr, record)
 	}
 

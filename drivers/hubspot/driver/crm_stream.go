@@ -72,7 +72,7 @@ func (c *CRMSearchStream) processSearch(nextPageToken map[string]any) ([]map[str
 		return nil, nil, err
 	}
 
-	for record := range records {
+	for _, record := range records {
 		streamRecords = append(streamRecords, record)
 	}
 
@@ -101,7 +101,7 @@ func (c *CRMSearchStream) readRecords(send chan<- syndicatemodels.Record) error 
 			}
 		}
 
-		for record := range c.filterOldRecords(c.flatAssociations(utils.ToChannel(records, 0))) {
+		for _, record := range c.filterOldRecords(c.flatAssociations(records)) {
 			cursor, err := typing.ReformatDate(record[c.updatedAtField])
 			if err != nil {
 				return err
