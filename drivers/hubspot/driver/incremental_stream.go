@@ -5,6 +5,7 @@ import (
 
 	"github.com/piyushsingariya/syndicate/logger"
 	"github.com/piyushsingariya/syndicate/types"
+	"github.com/piyushsingariya/syndicate/typing"
 	"github.com/piyushsingariya/syndicate/utils"
 )
 
@@ -69,7 +70,7 @@ func (i *IncrementalStream) setup(mode types.SyncMode, state map[string]any) {
 	i._mode = &mode
 	if state != nil {
 		if value, found := state[i.cursorField()]; found {
-			date, err := utils.ReformatDate(value)
+			date, err := typing.ReformatDate(value)
 			if err != nil {
 				logger.Fatalf("failed to reformate date in state map: %v : %s", value, err)
 			}
