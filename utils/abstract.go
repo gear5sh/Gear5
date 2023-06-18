@@ -1,6 +1,10 @@
 package utils
 
-import "time"
+import (
+	"time"
+
+	"github.com/piyushsingariya/syndicate/types"
+)
 
 func String(str string) *string {
 	return &str
@@ -20,6 +24,10 @@ func Duration(d time.Duration) *time.Duration {
 
 func Time(t time.Time) *time.Time {
 	return &t
+}
+
+func DataTypePtr(dt types.DataType) *types.DataType {
+	return &dt
 }
 
 func Set[T any](array []T) []T {

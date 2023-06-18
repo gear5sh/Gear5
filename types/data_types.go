@@ -3,13 +3,15 @@ package types
 type DataType string
 
 const (
-	Null    DataType = "null"
-	Integer DataType = "integer"
-	Number  DataType = "number"
-	String  DataType = "string"
-	Boolean DataType = "boolean"
-	Object  DataType = "object"
-	Array   DataType = "array"
+	NULL      DataType = "null"
+	INT64     DataType = "integer"
+	FLOAT64   DataType = "number"
+	STRING    DataType = "string"
+	BOOL      DataType = "boolean"
+	OBJECT    DataType = "object"
+	ARRAY     DataType = "array"
+	UNKNOWN   DataType = "unknown"
+	TIMESTAMP DataType = "timestamp"
 )
 
 type RecordData = map[string]any
