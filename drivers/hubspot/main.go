@@ -7,6 +7,8 @@ import (
 )
 
 func main() {
+	// defer utils.Recovery()
+
 	driver := &driver.Hubspot{}
 	cmd, err := syndicate.RegisterDriver(driver)
 	if err != nil {
