@@ -29,11 +29,11 @@ func (r *Request) ToHTTPRequest() (*http.Request, error) {
 	}
 
 	// Set query parameters
-	query := urlObj.Query()
+	query := req.URL.Query()
 	for key, value := range r.QueryParams {
 		query.Add(key, fmt.Sprintf("%v", value))
 	}
-	urlObj.RawQuery = query.Encode()
+	req.URL.RawQuery = query.Encode()
 
 	// Set headers
 	for key, value := range r.Headers {
