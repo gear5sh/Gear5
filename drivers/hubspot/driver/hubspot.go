@@ -74,18 +74,18 @@ func (h *Hubspot) Discover() ([]*syndicatemodels.Stream, error) {
 		channel := make(chan syndicatemodels.Record)
 		count := int64(0)
 		go func() {
-			err := h.readForDiscover(stream, channel)
-			if err != nil {
-				logger.Fatalf("Error occurred while reading records from [%s]: %s", streamName, err)
+			for record := range channel {
+				count++
+				objects = append(objects, record.Data)
+				if count >= h.batchSize {
+					close(channel)
+				}
 			}
 		}()
 
-		for record := range channel {
-			count++
-			objects = append(objects, record.Data)
-			if count >= h.batchSize {
-				close(channel)
-			}
+		err := h.readForDiscover(stream, channel)
+		if err != nil {
+			logger.Fatalf("Error occurred while reading records from [%s]: %s", streamName, err)
 		}
 
 		properties, err := typing.Resolve(objects...)
