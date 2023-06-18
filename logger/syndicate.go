@@ -2,6 +2,7 @@ package logger
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -57,5 +58,13 @@ func LogResponse(response *http.Response) {
 		log.Fatal(err)
 	}
 
-	Debug(respDump)
+	fmt.Println(string(respDump))
+}
+func LogRequest(req *http.Request) {
+	requestDump, err := httputil.DumpRequest(req, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(string(requestDump))
 }
