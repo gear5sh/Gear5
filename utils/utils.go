@@ -23,15 +23,9 @@ func IsValidSubcommand(available []*cobra.Command, sub string) bool {
 	return false
 }
 
-func ArrayContains(array interface{}, value interface{}) bool {
-	arrValue := reflect.ValueOf(array)
-	if arrValue.Kind() != reflect.Slice {
-		return false
-	}
-
-	for i := 0; i < arrValue.Len(); i++ {
-		item := arrValue.Index(i).Interface()
-		if reflect.DeepEqual(item, value) {
+func ArrayContains[T comparable](array []T, value T) bool {
+	for _, elem := range array {
+		if elem == value {
 			return true
 		}
 	}

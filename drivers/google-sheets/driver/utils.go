@@ -195,7 +195,7 @@ func headersToStream(sheetName string, headers []string) *syndicatemodels.Stream
 	for _, header := range headers {
 		stream.JSONSchema.Properties[header] = &syndicatemodels.Property{
 			// for simplicity, every field is a string
-			Type: []types.DataType{types.String},
+			Type: []types.DataType{types.STRING},
 		}
 	}
 

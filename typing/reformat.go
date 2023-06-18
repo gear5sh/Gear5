@@ -1,56 +1,59 @@
-package types
+package typing
 
 import (
 	"database/sql"
 	"fmt"
 	"strconv"
 	"time"
+
+	"github.com/piyushsingariya/syndicate/types"
 )
 
 var DateTimeFormats = []string{
+	"2006-01-02",
 	"2006-01-02 15:04:05",
 	"2006-01-02 15:04:05 -07:00",
 	"2006-01-02 15:04:05-07:00",
 	"2006-01-02T15:04:05",
 	"2006-01-02T15:04:05.000000",
+	"2006-01-02T15:04:05.999999999Z07:00",
+	"2006-01-02T15:04:05+0000",
 }
 
-func getFirstNotNullType(datatypes []DataType) DataType {
+func getFirstNotNullType(datatypes []types.DataType) types.DataType {
 	for _, datatype := range datatypes {
-		if datatype != Null {
+		if datatype != types.NULL {
 			return datatype
 		}
 	}
 
-	return Null
+	return types.NULL
 }
 
-func ReformatValueOnDataTypes(datatypes []DataType, format string, v any) (any, error) {
-	return ReformatValue(getFirstNotNullType(datatypes), format, v)
+func ReformatValueOnDataTypes(datatypes []types.DataType, v any) (any, error) {
+	return ReformatValue(getFirstNotNullType(datatypes), v)
 }
 
-func ReformatValue(dataType DataType, format string, v any) (any, error) {
+func ReformatValue(dataType types.DataType, v any) (any, error) {
 	switch dataType {
-	case Null:
+	case types.NULL:
 		return nil, nil
-	case Boolean:
+	case types.BOOL:
 		// reformat boolean
 		booleanValue, ok := v.(bool)
 		if ok {
 			return booleanValue, nil
 		}
 		return v, fmt.Errorf("found to be boolean, but value is not boolean : %v", v)
-	case Integer:
+	case types.INT64:
 		return ReformatInt64(v)
-	case String:
-		if format == "date" || format == "date-time" {
-			return ReformatDate(v)
-		}
-
+	case types.TIMESTAMP:
+		return ReformatDate(v)
+	case types.STRING:
 		return fmt.Sprintf("%v", v), nil
-	case Number:
+	case types.FLOAT64:
 		return ReformatFloat64(v)
-	case Array:
+	case types.ARRAY:
 		if value, isArray := v.([]any); isArray {
 			return value, nil
 		}

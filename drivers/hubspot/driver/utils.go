@@ -16,22 +16,22 @@ import (
 )
 
 var ValidJsonSchemaTypes = []types.DataType{
-	types.String,
-	types.Integer,
-	types.Number,
-	types.Boolean,
-	types.Object,
-	types.Array,
+	types.STRING,
+	types.INT64,
+	types.FLOAT64,
+	types.BOOL,
+	types.OBJECT,
+	types.ARRAY,
 }
 
 var KnownConvertibleSchemaTypes = map[string]syndicatemodels.Property{
-	"bool":         {Type: []types.DataType{types.Boolean}},
-	"enumeration":  {Type: []types.DataType{types.String}},
-	"date":         {Type: []types.DataType{types.String}, Format: "date"},
-	"date-time":    {Type: []types.DataType{types.String}, Format: "date-time"},
-	"datetime":     {Type: []types.DataType{types.String}, Format: "date-time"},
-	"json":         {Type: []types.DataType{types.String}},
-	"phone_number": {Type: []types.DataType{types.String}},
+	"bool":         {Type: []types.DataType{types.BOOL}},
+	"enumeration":  {Type: []types.DataType{types.STRING}},
+	"date":         {Type: []types.DataType{types.TIMESTAMP}},
+	"date-time":    {Type: []types.DataType{types.TIMESTAMP}},
+	"datetime":     {Type: []types.DataType{types.TIMESTAMP}},
+	"json":         {Type: []types.DataType{types.STRING}},
+	"phone_number": {Type: []types.DataType{types.STRING}},
 }
 
 var CustomFieldTypeToValue = map[reflect.Type]string{
@@ -118,7 +118,7 @@ func newClient(config *models.Config) (*http.Client, string, error) {
 }
 
 func getFieldProps(fieldType string) *syndicatemodels.Property {
-	if utils.ArrayContains(ValidJsonSchemaTypes, fieldType) {
+	if utils.ArrayContains(ValidJsonSchemaTypes, types.DataType(fieldType)) {
 		return &syndicatemodels.Property{
 			Type: []types.DataType{types.DataType(fieldType)},
 		}
