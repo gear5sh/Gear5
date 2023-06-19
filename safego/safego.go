@@ -81,7 +81,7 @@ func Recovery() {
 		// capture stacks trace
 		logger.Error(string(debug.Stack()))
 	}
-	logger.Infof("Time of execution %v", time.Now().Sub(startTime).String())
+	logger.Infof("Time of execution %v", time.Since(startTime).String())
 }
 
 func Insert[T any](ch chan<- T, value T) bool {
@@ -91,6 +91,14 @@ func Insert[T any](ch chan<- T, value T) bool {
 	default:
 		return false
 	}
+}
+
+func Close[T any](ch chan T) {
+	if ChannelClosed(ch) {
+		return
+	}
+
+	close(ch)
 }
 
 func ChannelClosed[T any](ch chan T) bool {

@@ -29,7 +29,6 @@ type Adapter interface {
 }
 
 type Stream interface {
-	Read(channel <-chan models.Record) error
 	Name() string
 	Namespace() string
 	JSONSchema() *models.Schema
