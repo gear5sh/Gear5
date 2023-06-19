@@ -18,6 +18,7 @@ var DateTimeFormats = []string{
 	"2006-01-02T15:04:05.000000",
 	"2006-01-02T15:04:05.999999999Z07:00",
 	"2006-01-02T15:04:05+0000",
+	"2020-08-17T05:50:22.895Z",
 }
 
 func getFirstNotNullType(datatypes []types.DataType) types.DataType {
@@ -77,7 +78,7 @@ func ReformatDate(v interface{}) (time.Time, error) {
 			case v != nil:
 				return time.Unix(*v, 0), nil
 			default:
-				return time.Time{}, nil
+				return time.Time{}, fmt.Errorf("null time passed")
 			}
 		case time.Time:
 			return v, nil
@@ -86,21 +87,21 @@ func ReformatDate(v interface{}) (time.Time, error) {
 			case v != nil:
 				return *v, nil
 			default:
-				return time.Time{}, nil
+				return time.Time{}, fmt.Errorf("null time passed")
 			}
 		case sql.NullTime:
 			switch v.Valid {
 			case true:
 				return v.Time, nil
 			default:
-				return time.Time{}, nil
+				return time.Time{}, fmt.Errorf("invalid null time")
 			}
 		case *sql.NullTime:
 			switch v.Valid {
 			case true:
 				return v.Time, nil
 			default:
-				return time.Time{}, nil
+				return time.Time{}, fmt.Errorf("invalid null time")
 			}
 		case nil:
 			return time.Time{}, nil
@@ -108,12 +109,12 @@ func ReformatDate(v interface{}) (time.Time, error) {
 			return parseCHDateTime(v)
 		case *string:
 			if v == nil || *v == "" {
-				return time.Time{}, nil
+				return time.Time{}, fmt.Errorf("empty string passed")
 			} else {
 				return parseCHDateTime(*v)
 			}
 		}
-		return time.Time{}, nil
+		return time.Time{}, fmt.Errorf("unknown type passed: unable to parse into time")
 	}()
 	if err != nil {
 		return time.Time{}, err

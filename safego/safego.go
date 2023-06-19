@@ -13,6 +13,10 @@ type RecoverHandler func(value interface{})
 
 var GlobalRecoverHandler RecoverHandler
 
+var (
+	startTime time.Time
+)
+
 type Execution struct {
 	f              func()
 	recoverHandler RecoverHandler
@@ -77,6 +81,7 @@ func Recovery() {
 		// capture stacks trace
 		logger.Error(string(debug.Stack()))
 	}
+	logger.Infof("Time of execution %v", time.Now().Sub(startTime).String())
 }
 
 func Insert[T any](ch chan<- T, value T) bool {
@@ -96,4 +101,8 @@ func ChannelClosed[T any](ch chan T) bool {
 	default:
 		return false
 	}
+}
+
+func init() {
+	startTime = time.Now()
 }
