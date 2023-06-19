@@ -399,7 +399,6 @@ func (s *Stream) handleRequest(request *utils.Request) (int, any, error) {
 func (s *Stream) parseResponse(response interface{}) ([]types.RecordData, error) {
 	records := []types.RecordData{}
 	if utils.IsInstance(response, reflect.Map) {
-
 		response := response.(map[string]any)
 		if response["status"] != nil && response["status"] == "error" {
 			logger.Warnf("Stream `%s` cannot be procced. {%v}", s.Name(), response["message"])

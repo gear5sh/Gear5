@@ -22,7 +22,7 @@ func TypeFromValue(v interface{}) types.DataType {
 		// Check for specific formats
 		if value, ok := v.(string); ok {
 			// Check for email format
-			if _, err := ReformatDate(value); err != nil {
+			if _, err := ReformatDate(value); err == nil {
 				return types.TIMESTAMP
 			}
 		}
