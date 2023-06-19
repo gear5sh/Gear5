@@ -12,8 +12,6 @@ import (
 	"github.com/piyushsingariya/syndicate/logger"
 	syndicatemodels "github.com/piyushsingariya/syndicate/models"
 	"github.com/piyushsingariya/syndicate/protocol"
-	"github.com/piyushsingariya/syndicate/types"
-	"github.com/piyushsingariya/syndicate/typing"
 	"github.com/piyushsingariya/syndicate/utils"
 )
 
@@ -66,43 +64,16 @@ func (h *Hubspot) Spec() (schema.JSONSchema, error) {
 func (h *Hubspot) Check() error {
 	return nil
 }
+
 func (h *Hubspot) Discover() ([]*syndicatemodels.Stream, error) {
 	streams := []*syndicatemodels.Stream{}
-	recordsPerStream := 100
 
 	for streamName, stream := range h.allStreams {
-		objects := []types.RecordData{}
-		channel := make(chan syndicatemodels.Record, recordsPerStream)
-		count := 0
-		go func() {
-			err := h.readForDiscover(stream, channel)
-			if err != nil {
-				logger.Fatalf("Error occurred while reading records from [%s]: %s", streamName, err)
-			}
-		}()
-
-		for record := range channel {
-			count++
-			objects = append(objects, record.Data)
-			if count >= recordsPerStream {
-				close(channel)
-			}
-		}
-
-		properties, err := typing.Resolve(objects...)
-		if err != nil {
-			return nil, err
-		}
-
 		streams = append(streams, &syndicatemodels.Stream{
-			Name: streamName,
-			JSONSchema: &syndicatemodels.Schema{
-				Properties: properties,
-			},
+			Name:                    streamName,
 			SupportedSyncModes:      stream.Modes(),
 			SourceDefinedPrimaryKey: stream.PrimaryKey(),
 		})
-
 	}
 
 	return streams, nil
@@ -127,10 +98,6 @@ func (h *Hubspot) Streams() ([]*syndicatemodels.Stream, error) {
 
 func (h *Hubspot) Read(stream protocol.Stream, channel chan<- syndicatemodels.Record) error {
 	return nil
-}
-
-func (h *Hubspot) readForDiscover(stream HubspotStream, channel chan<- syndicatemodels.Record) error {
-	return stream.readRecords(channel)
 }
 
 func (h *Hubspot) getGrantedScopes() ([]string, error) {

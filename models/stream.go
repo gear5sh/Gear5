@@ -1,8 +1,6 @@
 package models
 
 import (
-	"fmt"
-
 	"github.com/piyushsingariya/syndicate/jsonschema/schema"
 	"github.com/piyushsingariya/syndicate/types"
 )
@@ -26,10 +24,6 @@ type Stream struct {
 	DefaultCursorField         []string          `json:"default_cursor_field,omitempty"`
 	AdditionalProperties       string            `json:"additional_properties,omitempty"`
 	AdditionalPropertiesSchema schema.JSONSchema `json:"additional_properties_schema,omitempty"`
-}
-
-func (s *WrappedStream) Read(channel <-chan Record) error {
-	return fmt.Errorf("abstract method not implemented")
 }
 
 func (s *WrappedStream) Name() string {
