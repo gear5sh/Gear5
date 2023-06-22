@@ -68,9 +68,23 @@ var ReadCmd = &cobra.Command{
 		}()
 
 		numRecords := int64(0)
+		batch := int64(0)
 		for message := range recordStream {
 			logger.LogRecord(message)
 			numRecords++
+			batch++
+
+			if batch >= batchSize {
+				state, err := connector.GetState()
+				if err != nil {
+					logger.Fatalf("failed to get state from connector")
+				}
+
+				logger.LogState(state)
+
+				// reset batch
+				batch = 0
+			}
 		}
 
 		logger.Infof("Total records read: %d", numRecords)
