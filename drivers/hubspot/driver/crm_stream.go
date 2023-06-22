@@ -32,13 +32,17 @@ func (c *CRMSearchStream) path() (string, string) {
 	return fmt.Sprintf("/crm/v3/objects/%s", c.entity), http.MethodGet
 }
 
-func (c *CRMSearchStream) search() (any, []byte, error) {
-	// TODO:
+func (c *CRMSearchStream) search() (int, any, error) {
+	method, path := c.path()
+	request := &utils.Request{
+		URN:    formatEndpoint(path),
+		Method: method,
+	}
 
-	return nil, nil, nil
+	return c.handleRequest(request)
 }
 
-func (c *CRMSearchStream) processSearch(nextPageToken map[string]any) ([]map[string]any, []byte, error) {
+func (c *CRMSearchStream) processSearch(nextPageToken map[string]any) ([]map[string]any, any, error) {
 	streamRecords := []map[string]any{}
 	properties, err := c.propertiesList()
 	if err != nil {
