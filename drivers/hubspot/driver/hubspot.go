@@ -12,6 +12,7 @@ import (
 	"github.com/piyushsingariya/kaku/logger"
 	kakumodels "github.com/piyushsingariya/kaku/models"
 	"github.com/piyushsingariya/kaku/protocol"
+	"github.com/piyushsingariya/kaku/types"
 	"github.com/piyushsingariya/kaku/utils"
 )
 
@@ -97,8 +98,24 @@ func (h *Hubspot) Streams() ([]*kakumodels.Stream, error) {
 }
 
 func (h *Hubspot) GetState() (*kakumodels.State, error) {
-	// TODO
-	return nil, nil
+	state := &kakumodels.State{}
+	for _, stream := range h.Catalog().Streams {
+		if stream.SyncMode == types.Incremental {
+			hubspotStream, found := h.allStreams[stream.Name()]
+			if !found {
+				logger.Fatalf("hubspot stream not found while getting state of incremental stream[%s]", stream.Name())
+			}
+
+			if utils.ArrayContains(hubspotStream.Modes(), types.Incremental) {
+				logger.Warnf("Skipping getting state from stream[%s], this stream doesn't support incremental", stream.Name())
+				continue
+			}
+
+			state.Add(stream.Name(), stream.Name(), hubspotStream.state())
+		}
+	}
+
+	return state, nil
 }
 
 func (h *Hubspot) Read(stream protocol.Stream, channel chan<- kakumodels.Record) error {

@@ -60,6 +60,7 @@ func LogResponse(response *http.Response) {
 
 	fmt.Println(string(respDump))
 }
+
 func LogRequest(req *http.Request) {
 	requestDump, err := httputil.DumpRequest(req, true)
 	if err != nil {
@@ -67,4 +68,12 @@ func LogRequest(req *http.Request) {
 	}
 
 	fmt.Println(string(requestDump))
+}
+
+func LogState(state *models.State) {
+	message := models.Message{}
+	message.Type = types.StateType
+	message.State = state
+
+	json.NewEncoder(writer).Encode(message)
 }
