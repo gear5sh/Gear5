@@ -3,10 +3,10 @@ package driver
 import (
 	"time"
 
-	"github.com/piyushsingariya/syndicate/logger"
-	"github.com/piyushsingariya/syndicate/types"
-	"github.com/piyushsingariya/syndicate/typing"
-	"github.com/piyushsingariya/syndicate/utils"
+	"github.com/piyushsingariya/kaku/logger"
+	"github.com/piyushsingariya/kaku/types"
+	"github.com/piyushsingariya/kaku/typing"
+	"github.com/piyushsingariya/kaku/utils"
 )
 
 type IncrementalStream struct {

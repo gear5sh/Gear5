@@ -3,7 +3,7 @@ package utils
 import (
 	"time"
 
-	"github.com/piyushsingariya/syndicate/types"
+	"github.com/piyushsingariya/kaku/types"
 )
 
 func String(str string) *string {

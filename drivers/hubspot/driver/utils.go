@@ -7,11 +7,11 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/piyushsingariya/syndicate/drivers/hubspot/models"
-	"github.com/piyushsingariya/syndicate/logger"
-	syndicatemodels "github.com/piyushsingariya/syndicate/models"
-	"github.com/piyushsingariya/syndicate/types"
-	"github.com/piyushsingariya/syndicate/utils"
+	"github.com/piyushsingariya/kaku/drivers/hubspot/models"
+	"github.com/piyushsingariya/kaku/logger"
+	kakumodels "github.com/piyushsingariya/kaku/models"
+	"github.com/piyushsingariya/kaku/types"
+	"github.com/piyushsingariya/kaku/utils"
 	"golang.org/x/oauth2"
 )
 
@@ -24,7 +24,7 @@ var ValidJsonSchemaTypes = []types.DataType{
 	types.ARRAY,
 }
 
-var KnownConvertibleSchemaTypes = map[string]syndicatemodels.Property{
+var KnownConvertibleSchemaTypes = map[string]kakumodels.Property{
 	"bool":         {Type: []types.DataType{types.BOOL}},
 	"enumeration":  {Type: []types.DataType{types.STRING}},
 	"date":         {Type: []types.DataType{types.TIMESTAMP}},
@@ -117,9 +117,9 @@ func newClient(config *models.Config) (*http.Client, string, error) {
 	return client, accessToken, nil
 }
 
-func getFieldProps(fieldType string) *syndicatemodels.Property {
+func getFieldProps(fieldType string) *kakumodels.Property {
 	if utils.ArrayContains(ValidJsonSchemaTypes, types.DataType(fieldType)) {
-		return &syndicatemodels.Property{
+		return &kakumodels.Property{
 			Type: []types.DataType{types.DataType(fieldType)},
 		}
 	}
@@ -127,7 +127,7 @@ func getFieldProps(fieldType string) *syndicatemodels.Property {
 	if property, found := KnownConvertibleSchemaTypes[fieldType]; !found {
 		return &property
 	} else {
-		return &syndicatemodels.Property{
+		return &kakumodels.Property{
 			Type: []types.DataType{types.DataType(fieldType)},
 		}
 	}

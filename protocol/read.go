@@ -5,16 +5,16 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/piyushsingariya/syndicate/logger"
-	"github.com/piyushsingariya/syndicate/models"
-	"github.com/piyushsingariya/syndicate/utils"
+	"github.com/piyushsingariya/kaku/logger"
+	"github.com/piyushsingariya/kaku/models"
+	"github.com/piyushsingariya/kaku/utils"
 	"github.com/spf13/cobra"
 )
 
 // ReadCmd represents the read command
 var ReadCmd = &cobra.Command{
 	Use:   "read",
-	Short: "Syndicate read command",
+	Short: "Kaku read command",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		if err := utils.CheckIfFilesExists(config, catalog); err != nil {
 			return err

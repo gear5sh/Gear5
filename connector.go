@@ -1,9 +1,9 @@
-package syndicate
+package kaku
 
 import (
 	"fmt"
 
-	protocol "github.com/piyushsingariya/syndicate/protocol"
+	protocol "github.com/piyushsingariya/kaku/protocol"
 	"github.com/spf13/cobra"
 )
 

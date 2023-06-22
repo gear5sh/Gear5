@@ -14,11 +14,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/piyushsingariya/syndicate/logger"
-	syndicatemodels "github.com/piyushsingariya/syndicate/models"
-	"github.com/piyushsingariya/syndicate/types"
-	"github.com/piyushsingariya/syndicate/typing"
-	"github.com/piyushsingariya/syndicate/utils"
+	"github.com/piyushsingariya/kaku/logger"
+	kakumodels "github.com/piyushsingariya/kaku/models"
+	"github.com/piyushsingariya/kaku/types"
+	"github.com/piyushsingariya/kaku/typing"
+	"github.com/piyushsingariya/kaku/utils"
 )
 
 type Stream struct {
@@ -80,7 +80,7 @@ func (s *Stream) PrimaryKey() []string {
 	return nil
 }
 
-func (s *Stream) properties() (map[string]*syndicatemodels.Property, error) {
+func (s *Stream) properties() (map[string]*kakumodels.Property, error) {
 	if s.entity == "" {
 		return nil, fmt.Errorf("entity found to be empty")
 	}
@@ -110,7 +110,7 @@ func (s *Stream) properties() (map[string]*syndicatemodels.Property, error) {
 		return nil, err
 	}
 
-	properties := make(map[string]*syndicatemodels.Property)
+	properties := make(map[string]*kakumodels.Property)
 
 	for _, row := range response {
 		properties[row["name"].(string)] = getFieldProps(row["type"].(string))
@@ -137,7 +137,7 @@ func (s *Stream) propertiesScopeIsGranted() bool {
 	return utils.IsSubset(s.grantedScopes, s.propertiesScopes)
 }
 
-func (s *Stream) Read(channel <-chan syndicatemodels.Record) error {
+func (s *Stream) Read(channel <-chan kakumodels.Record) error {
 	return fmt.Errorf("no implementation on base stream")
 }
 
@@ -477,8 +477,8 @@ func (s *Stream) readStreamRecords(nextPageToken map[string]any, f func() (path,
 	return arr, response, nil
 }
 
-func (s *Stream) reformatRecord(record map[string]any) syndicatemodels.Record {
-	return syndicatemodels.Record{
+func (s *Stream) reformatRecord(record map[string]any) kakumodels.Record {
+	return kakumodels.Record{
 		Stream: s.Name(),
 		Data:   record,
 	}

@@ -1,7 +1,7 @@
 package typing
 
 import (
-	"github.com/piyushsingariya/syndicate/models"
+	"github.com/piyushsingariya/kaku/models"
 )
 
 func Resolve(objects ...map[string]interface{}) (map[string]*models.Property, error) {

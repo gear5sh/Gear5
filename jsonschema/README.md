@@ -1,25 +1,26 @@
 [![Build Status](https://travis-ci.org/brainicorn/jsonschemagen.svg?branch=master)](https://travis-ci.org/brainicorn/jsonschemagen)
 [![codecov](https://codecov.io/gh/brainicorn/jsonschemagen/branch/master/graph/badge.svg)](https://codecov.io/gh/brainicorn/jsonschemagen)
-[![Go Report Card](https://goreportcard.com/badge/github.com/piyushsingariya/syndicate/jsonschema)](https://goreportcard.com/report/github.com/piyushsingariya/syndicate/jsonschema)
-[![GoDoc](https://godoc.org/github.com/piyushsingariya/syndicate/jsonschema?status.svg)](https://godoc.org/github.com/piyushsingariya/syndicate/jsonschema)
+[![Go Report Card](https://goreportcard.com/badge/github.com/piyushsingariya/kaku/jsonschema)](https://goreportcard.com/report/github.com/piyushsingariya/kaku/jsonschema)
+[![GoDoc](https://godoc.org/github.com/piyushsingariya/kaku/jsonschema?status.svg)](https://godoc.org/github.com/piyushsingariya/kaku/jsonschema)
 
-# jsonschemagen #
+# jsonschemagen
 
 JSON SchemaGen is a library and command-line tool that allows generating a JSON-Schema by annotating (java-style) the same GO structs used for your JSON representations.
 
 Essentially, the same structs you use to consume JSON can also be used to generate a JSON-Schema.
 
-**API Documentation:** [https://godoc.org/github.com/piyushsingariya/syndicate/jsonschema](https://godoc.org/github.com/piyushsingariya/syndicate/jsonschema)
+**API Documentation:** [https://godoc.org/github.com/piyushsingariya/kaku/jsonschema](https://godoc.org/github.com/piyushsingariya/kaku/jsonschema)
 
-[Issue Tracker](https://github.com/piyushsingariya/syndicate/jsonschema/issues)
+[Issue Tracker](https://github.com/piyushsingariya/kaku/jsonschema/issues)
 
 **Annotation Guide:** [jsonSchema annotation guide](annotation_guide.md)
 
-## Installation ##
+## Installation
+
 The most common way to use jsonschemagen is as a command-line tool executed via `go generate`. To install the CLI tool, simply run:
 
 ```bash
-> go get -v github.com/piyushsingariya/syndicate/jsonschema
+> go get -v github.com/piyushsingariya/kaku/jsonschema
 ```
 
 Once installed, you can add a comment in your main.go (or some other go file in your root package) to integrate jsonschemagen with the go generate tool.
@@ -28,16 +29,18 @@ Something along the lines of:
 ```go
 //go:generate jsonschemagen <options> <root package> <root type>
 ```
+
 With that in place, you can generate your schema by simply running
 
 ```bash
 > go generate
 ```
+
 in the root of your project.
 
 _options, root package and root type are explained below_
 
-## Usage ##
+## Usage
 
 ### Basic command-line help
 
@@ -89,25 +92,28 @@ example: github.com/exampletstore
 example: Store
 
 Putting it all together we get:
+
 ```go
 > jsonschemagen github.com/exampletstore Store
 ```
+
 #### Options In-Depth
 
-| Option               | Description                                                                                                                                                                                                                                                                                          |
-|----------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `-c, --codegen`        | This option will generate a file named _schema_accessor.go_ which contains the main schema and any/all definition schemas as string constants. This is useful for doing validation within GO code without having to use io to load the schema                                                        |
-| `-f, --filename string`| The filename for the root schema. By default it will be calculated using the import path and type of the root object. This option let's you name it something predictable like "schema.json"
-| `-o, --output string`  | The output directory for files. Can be absolute or relative to where the command was run. Defaults to ./schema  When using with _go generate_ it's important to put the go:generate comment in a file that's in the root of your project so relative output paths are relative to your project root. |
-| `-t, --include-tests`  | This will tell the code parser to load/consider test files. This is usually not needed and adds a lot of time to the code parsing operations.                                                                                                                                                        |
-| `-i, --inline-def`     | If this flag is passed, all definitions will be included as full inline schemas rather than using $ref with a definitions node. This is usually not passed in favor of reusing definitions with $refs.                                                                                               |
-| `-r, --remove-dir`     | When this flag is passed the tool will remove the output folder and all files within it before generation. This ensures old schemas are removed, however, be careful not to use an actual go package with source code as your output with this option or your go code will also be deleted.          |
-| `-s, --separate-files` | When this option is passed, the complete root schema will be generated as well as individual files for each encountered definition. Each definition file is complete (with it's own definitions) and can be used standalone to validate a subset of the complete root schema.                        |
-| `-d, --debug`          | Turns on debug logging. You can turn it on but the output is very ugly at this point                                                                                                                                                                                                                 |
-| `-v, --verbose`        | Turns on verbose logging which is even more non-sensical than debug logging.                                                                                                                                                                                                                         |
-| `-q, --quiet`          | Turns off all log output entirely                                                                                                                                                                                                                                                                    |
+| Option                  | Description                                                                                                                                                                                                                                                                                         |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-c, --codegen`         | This option will generate a file named _schema_accessor.go_ which contains the main schema and any/all definition schemas as string constants. This is useful for doing validation within GO code without having to use io to load the schema                                                       |
+| `-f, --filename string` | The filename for the root schema. By default it will be calculated using the import path and type of the root object. This option let's you name it something predictable like "schema.json"                                                                                                        |
+| `-o, --output string`   | The output directory for files. Can be absolute or relative to where the command was run. Defaults to ./schema When using with _go generate_ it's important to put the go:generate comment in a file that's in the root of your project so relative output paths are relative to your project root. |
+| `-t, --include-tests`   | This will tell the code parser to load/consider test files. This is usually not needed and adds a lot of time to the code parsing operations.                                                                                                                                                       |
+| `-i, --inline-def`      | If this flag is passed, all definitions will be included as full inline schemas rather than using $ref with a definitions node. This is usually not passed in favor of reusing definitions with $refs.                                                                                              |
+| `-r, --remove-dir`      | When this flag is passed the tool will remove the output folder and all files within it before generation. This ensures old schemas are removed, however, be careful not to use an actual go package with source code as your output with this option or your go code will also be deleted.         |
+| `-s, --separate-files`  | When this option is passed, the complete root schema will be generated as well as individual files for each encountered definition. Each definition file is complete (with it's own definitions) and can be used standalone to validate a subset of the complete root schema.                       |
+| `-d, --debug`           | Turns on debug logging. You can turn it on but the output is very ugly at this point                                                                                                                                                                                                                |
+| `-v, --verbose`         | Turns on verbose logging which is even more non-sensical than debug logging.                                                                                                                                                                                                                        |
+| `-q, --quiet`           | Turns off all log output entirely                                                                                                                                                                                                                                                                   |
 
 **Example:** With the following go:generate comment in our main.go, we'll generate a root schema, separate definition schemas, and a go file with schema contants in a folder named "petschema" which is deleted before each run.
+
 ```go
 //go:generate jsonschemagen -s -c -r -o ./petschema github.com/exampletstore Store
 ```
@@ -198,24 +204,23 @@ func main() {
 }
 ```
 
-**API Documentation:** [https://godoc.org/github.com/piyushsingariya/syndicate/jsonschema](https://godoc.org/github.com/piyushsingariya/syndicate/jsonschema)
+**API Documentation:** [https://godoc.org/github.com/piyushsingariya/kaku/jsonschema](https://godoc.org/github.com/piyushsingariya/kaku/jsonschema)
 
-[Issue Tracker](https://github.com/piyushsingariya/syndicate/jsonschema/issues)
+[Issue Tracker](https://github.com/piyushsingariya/kaku/jsonschema/issues)
 
-
-## Contributors ##
+## Contributors
 
 Pull requests, issues and comments welcome. For pull requests:
 
-* Add tests for new features and bug fixes
-* Follow the existing style
-* Separate unrelated changes into multiple pull requests
+- Add tests for new features and bug fixes
+- Follow the existing style
+- Separate unrelated changes into multiple pull requests
 
 See the existing issues for things to start contributing.
 
 For bigger changes, make sure you start a discussion first by creating
 an issue and explaining the intended change.
 
-## License ##
+## License
 
 Apache 2.0 licensed, see [LICENSE](LICENSE) file.

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/piyushsingariya/syndicate/types"
+	"github.com/piyushsingariya/kaku/types"
 )
 
 var DateTimeFormats = []string{

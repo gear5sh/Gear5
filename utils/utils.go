@@ -7,8 +7,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/piyushsingariya/syndicate/jsonschema"
-	"github.com/piyushsingariya/syndicate/logger"
+	"github.com/piyushsingariya/kaku/jsonschema"
+	"github.com/piyushsingariya/kaku/logger"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 )
@@ -172,7 +172,7 @@ func StreamIdentifier(namespace, name string) string {
 	return namespace + name
 }
 
-func ToSyndicateSchema(obj interface{}) (string, error) {
+func ToKakuSchema(obj interface{}) (string, error) {
 	schema, err := jsonschema.Reflect(obj)
 	if err != nil {
 		return "", err

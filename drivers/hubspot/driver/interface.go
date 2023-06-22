@@ -1,14 +1,14 @@
 package driver
 
 import (
-	syndicatemodels "github.com/piyushsingariya/syndicate/models"
-	"github.com/piyushsingariya/syndicate/types"
+	kakumodels "github.com/piyushsingariya/kaku/models"
+	"github.com/piyushsingariya/kaku/types"
 )
 
 type HubspotStream interface {
 	ScopeIsGranted(grantedScopes []string) bool
 	Name() string
-	readRecords(channel chan<- syndicatemodels.Record) error
+	readRecords(channel chan<- kakumodels.Record) error
 	Modes() []types.SyncMode
 	PrimaryKey() []string
 	path() (string, string)

@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/piyushsingariya/syndicate/logger"
-	syndicatemodels "github.com/piyushsingariya/syndicate/models"
-	"github.com/piyushsingariya/syndicate/safego"
-	"github.com/piyushsingariya/syndicate/types"
-	"github.com/piyushsingariya/syndicate/typing"
-	"github.com/piyushsingariya/syndicate/utils"
+	"github.com/piyushsingariya/kaku/logger"
+	kakumodels "github.com/piyushsingariya/kaku/models"
+	"github.com/piyushsingariya/kaku/safego"
+	"github.com/piyushsingariya/kaku/types"
+	"github.com/piyushsingariya/kaku/typing"
+	"github.com/piyushsingariya/kaku/utils"
 )
 
 type CRMSearchStream struct {
@@ -83,7 +83,7 @@ func (c *CRMSearchStream) processSearch(nextPageToken map[string]any) ([]map[str
 	return streamRecords, rawResponse, nil
 }
 
-func (c *CRMSearchStream) readRecords(send chan<- syndicatemodels.Record) error {
+func (c *CRMSearchStream) readRecords(send chan<- kakumodels.Record) error {
 	paginationComplete := false
 	var nextPageToken map[string]any
 	latest_cursor := &time.Time{}

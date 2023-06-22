@@ -8,8 +8,8 @@ import (
 	"net/http/httputil"
 	"time"
 
-	"github.com/piyushsingariya/syndicate/models"
-	"github.com/piyushsingariya/syndicate/types"
+	"github.com/piyushsingariya/kaku/models"
+	"github.com/piyushsingariya/kaku/types"
 )
 
 func LogRecord(record models.Record) {
