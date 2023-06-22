@@ -4,7 +4,7 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/piyushsingariya/syndicate/logger"
+	"github.com/piyushsingariya/kaku/logger"
 )
 
 const defaultRestartTimeout = 2 * time.Second

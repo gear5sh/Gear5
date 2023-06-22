@@ -1,9 +1,9 @@
 package protocol
 
 import (
-	"github.com/piyushsingariya/syndicate/jsonschema/schema"
-	"github.com/piyushsingariya/syndicate/models"
-	"github.com/piyushsingariya/syndicate/types"
+	"github.com/piyushsingariya/kaku/jsonschema/schema"
+	"github.com/piyushsingariya/kaku/models"
+	"github.com/piyushsingariya/kaku/types"
 )
 
 type Connector interface {

@@ -3,7 +3,7 @@ package models
 import (
 	"fmt"
 
-	"github.com/piyushsingariya/syndicate/utils"
+	"github.com/piyushsingariya/kaku/utils"
 )
 
 type Config struct {

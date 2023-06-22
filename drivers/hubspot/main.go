@@ -1,17 +1,17 @@
 package main
 
 import (
-	"github.com/piyushsingariya/syndicate"
-	"github.com/piyushsingariya/syndicate/drivers/hubspot/driver"
-	"github.com/piyushsingariya/syndicate/logger"
-	"github.com/piyushsingariya/syndicate/safego"
+	"github.com/piyushsingariya/kaku"
+	"github.com/piyushsingariya/kaku/drivers/hubspot/driver"
+	"github.com/piyushsingariya/kaku/logger"
+	"github.com/piyushsingariya/kaku/safego"
 )
 
 func main() {
 	defer safego.Recovery()
 
 	driver := &driver.Hubspot{}
-	cmd, err := syndicate.RegisterDriver(driver)
+	cmd, err := kaku.RegisterDriver(driver)
 	if err != nil {
 		logger.Fatal(err)
 	}

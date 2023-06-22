@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/piyushsingariya/syndicate/models"
-	"github.com/piyushsingariya/syndicate/types"
+	"github.com/piyushsingariya/kaku/models"
+	"github.com/piyushsingariya/kaku/types"
 )
 
 var (
@@ -84,7 +84,7 @@ func Log(format string, level Level, v ...interface{}) {
 	} else {
 		message = fmt.Sprintf(format, v...)
 	}
-	syndicateMessage := models.Message{
+	kakuMessage := models.Message{
 		Type: types.LogType,
 		Log: &models.Log{
 			Level:   level.String(),
@@ -93,8 +93,8 @@ func Log(format string, level Level, v ...interface{}) {
 	}
 
 	if level == errorlevel {
-		json.NewEncoder(errorWriter).Encode(syndicateMessage)
+		json.NewEncoder(errorWriter).Encode(kakuMessage)
 		return
 	}
-	json.NewEncoder(writer).Encode(syndicateMessage)
+	json.NewEncoder(writer).Encode(kakuMessage)
 }

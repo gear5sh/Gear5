@@ -3,19 +3,19 @@ package protocol
 import (
 	"fmt"
 
-	"github.com/piyushsingariya/syndicate/logger"
-	"github.com/piyushsingariya/syndicate/models"
-	"github.com/piyushsingariya/syndicate/safego"
-	"github.com/piyushsingariya/syndicate/types"
-	"github.com/piyushsingariya/syndicate/typing"
-	"github.com/piyushsingariya/syndicate/utils"
+	"github.com/piyushsingariya/kaku/logger"
+	"github.com/piyushsingariya/kaku/models"
+	"github.com/piyushsingariya/kaku/safego"
+	"github.com/piyushsingariya/kaku/types"
+	"github.com/piyushsingariya/kaku/typing"
+	"github.com/piyushsingariya/kaku/utils"
 	"github.com/spf13/cobra"
 )
 
 // DiscoverCmd represents the read command
 var DiscoverCmd = &cobra.Command{
 	Use:   "discover",
-	Short: "Syndicate discover command",
+	Short: "Kaku discover command",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		return utils.CheckIfFilesExists(config)
 	},

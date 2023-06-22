@@ -6,13 +6,13 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/piyushsingariya/syndicate/drivers/hubspot/models"
-	"github.com/piyushsingariya/syndicate/jsonschema"
-	"github.com/piyushsingariya/syndicate/jsonschema/schema"
-	"github.com/piyushsingariya/syndicate/logger"
-	syndicatemodels "github.com/piyushsingariya/syndicate/models"
-	"github.com/piyushsingariya/syndicate/protocol"
-	"github.com/piyushsingariya/syndicate/utils"
+	"github.com/piyushsingariya/kaku/drivers/hubspot/models"
+	"github.com/piyushsingariya/kaku/jsonschema"
+	"github.com/piyushsingariya/kaku/jsonschema/schema"
+	"github.com/piyushsingariya/kaku/logger"
+	kakumodels "github.com/piyushsingariya/kaku/models"
+	"github.com/piyushsingariya/kaku/protocol"
+	"github.com/piyushsingariya/kaku/utils"
 )
 
 type Hubspot struct {
@@ -21,7 +21,7 @@ type Hubspot struct {
 	client      *http.Client
 	accessToken string
 	config      *models.Config
-	catalog     *syndicatemodels.Catalog
+	catalog     *kakumodels.Catalog
 }
 
 func (h *Hubspot) Setup(config, catalog, state interface{}, batchSize int64) error {
@@ -35,7 +35,7 @@ func (h *Hubspot) Setup(config, catalog, state interface{}, batchSize int64) err
 	}
 
 	if catalog != nil {
-		cat := &syndicatemodels.Catalog{}
+		cat := &kakumodels.Catalog{}
 		if err := utils.Unmarshal(catalog, cat); err != nil {
 			return err
 		}
@@ -65,11 +65,11 @@ func (h *Hubspot) Check() error {
 	return nil
 }
 
-func (h *Hubspot) Discover() ([]*syndicatemodels.Stream, error) {
-	streams := []*syndicatemodels.Stream{}
+func (h *Hubspot) Discover() ([]*kakumodels.Stream, error) {
+	streams := []*kakumodels.Stream{}
 
 	for streamName, stream := range h.allStreams {
-		streams = append(streams, &syndicatemodels.Stream{
+		streams = append(streams, &kakumodels.Stream{
 			Name:                    streamName,
 			SupportedSyncModes:      stream.Modes(),
 			SourceDefinedPrimaryKey: stream.PrimaryKey(),
@@ -79,14 +79,14 @@ func (h *Hubspot) Discover() ([]*syndicatemodels.Stream, error) {
 	return streams, nil
 }
 
-func (h *Hubspot) Catalog() *syndicatemodels.Catalog {
+func (h *Hubspot) Catalog() *kakumodels.Catalog {
 	return h.catalog
 }
 func (h *Hubspot) Type() string {
 	return "Hubspot"
 }
 
-func (h *Hubspot) Streams() ([]*syndicatemodels.Stream, error) {
+func (h *Hubspot) Streams() ([]*kakumodels.Stream, error) {
 	scopes, err := h.getGrantedScopes()
 	if err != nil {
 		return nil, err
@@ -96,12 +96,12 @@ func (h *Hubspot) Streams() ([]*syndicatemodels.Stream, error) {
 	return nil, nil
 }
 
-func (h *Hubspot) GetState() (*syndicatemodels.State, error) {
+func (h *Hubspot) GetState() (*kakumodels.State, error) {
 	// TODO
 	return nil, nil
 }
 
-func (h *Hubspot) Read(stream protocol.Stream, channel chan<- syndicatemodels.Record) error {
+func (h *Hubspot) Read(stream protocol.Stream, channel chan<- kakumodels.Record) error {
 	return nil
 }
 

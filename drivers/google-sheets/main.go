@@ -1,14 +1,14 @@
 package main
 
 import (
-	"github.com/piyushsingariya/syndicate"
-	"github.com/piyushsingariya/syndicate/drivers/google-sheets/driver"
-	"github.com/piyushsingariya/syndicate/logger"
+	"github.com/piyushsingariya/kaku"
+	"github.com/piyushsingariya/kaku/drivers/google-sheets/driver"
+	"github.com/piyushsingariya/kaku/logger"
 )
 
 func main() {
 	driver := &driver.GoogleSheets{}
-	cmd, err := syndicate.RegisterDriver(driver)
+	cmd, err := kaku.RegisterDriver(driver)
 	if err != nil {
 		logger.Fatal(err)
 	}
