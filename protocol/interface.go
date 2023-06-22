@@ -20,6 +20,7 @@ type Driver interface {
 	Connector
 	Streams() ([]*models.Stream, error)
 	Read(stream Stream, channel chan<- models.Record) error
+	GetState() (*models.State, error)
 }
 
 type Adapter interface {

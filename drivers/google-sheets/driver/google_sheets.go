@@ -66,6 +66,10 @@ func (gs *GoogleSheets) Type() string {
 	return "Google-Sheets"
 }
 
+func (gs *GoogleSheets) GetState() (*syndicatemodels.State, error) {
+	return nil, fmt.Errorf("Connector %s doesn't support incremental streams", gs.Type())
+}
+
 func (gs *GoogleSheets) Check() error {
 	_, _, err := gs.getAllSheetStreams()
 	if err != nil {

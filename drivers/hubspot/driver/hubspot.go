@@ -96,6 +96,11 @@ func (h *Hubspot) Streams() ([]*syndicatemodels.Stream, error) {
 	return nil, nil
 }
 
+func (h *Hubspot) GetState() (*syndicatemodels.State, error) {
+	// TODO
+	return nil, nil
+}
+
 func (h *Hubspot) Read(stream protocol.Stream, channel chan<- syndicatemodels.Record) error {
 	return nil
 }
