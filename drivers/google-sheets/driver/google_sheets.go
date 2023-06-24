@@ -67,7 +67,7 @@ func (gs *GoogleSheets) Type() string {
 }
 
 func (gs *GoogleSheets) GetState() (*kakumodels.State, error) {
-	return nil, fmt.Errorf("Connector %s doesn't support incremental streams", gs.Type())
+	return nil, nil
 }
 
 func (gs *GoogleSheets) Check() error {

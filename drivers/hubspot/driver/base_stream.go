@@ -46,6 +46,7 @@ type Stream struct {
 	grantedScopes    []string
 	scopes           []string
 	propertiesScopes []string
+	_properties      map[string]*kakumodels.Property
 
 	startDate time.Time
 }
@@ -92,6 +93,10 @@ func (s *Stream) properties() (map[string]*kakumodels.Property, error) {
 			fmt.Errorf("Check your API key has the following permissions granted: %v to be able to fetch all properties available.", s.propertiesScopes)
 	}
 
+	if s._properties != nil {
+		return s._properties, nil
+	}
+
 	req, err := http.NewRequest("GET", formatEndpoint(fmt.Sprintf("/properties/v2/%s/properties", s.entity)), nil)
 	if err != nil {
 		return nil, err
@@ -112,13 +117,13 @@ func (s *Stream) properties() (map[string]*kakumodels.Property, error) {
 		return nil, err
 	}
 
-	properties := make(map[string]*kakumodels.Property)
+	s._properties = make(map[string]*kakumodels.Property)
 
 	for _, row := range response {
-		properties[row["name"].(string)] = getFieldProps(row["type"].(string))
+		s._properties[row["name"].(string)] = getFieldProps(row["type"].(string))
 	}
 
-	return properties, nil
+	return s._properties, nil
 }
 
 func (s *Stream) propertiesList() ([]string, error) {
@@ -459,24 +464,19 @@ func (s *Stream) readStreamRecords(nextPageToken map[string]any, f func() (path,
 	if request.QueryParams == nil {
 		request.QueryParams = make(map[string]any)
 	}
-	request.QueryParams["limit"] = 100
+	request.QueryParams["limit"] = s.limit
 
 	_, response, err := s.handleRequest(request)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	arr := []types.RecordData{}
 	records, err := s.transform(s.parseResponse(response))
 	if err != nil {
 		return nil, nil, err
 	}
 
-	for _, record := range records {
-		arr = append(arr, record)
-	}
-
-	return arr, response, nil
+	return records, response, nil
 }
 
 func (s *Stream) reformatRecord(record map[string]any) kakumodels.Record {
