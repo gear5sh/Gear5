@@ -50,17 +50,19 @@ type Stream struct {
 	startDate time.Time
 }
 
-func newStream(name, entity, groupByKey, lastModifiedKey string, scopes []string, client *http.Client, startDate time.Time) *Stream {
+func newStream(name, entity string, client *http.Client, startDate time.Time) *Stream {
 	return &Stream{
 		name:              name,
 		entity:            entity,
-		groupByKey:        groupByKey,
-		lastModifiedField: lastModifiedKey,
-		scopes:            scopes,
 		client:            client,
 		startDate:         startDate,
 		primaryKey:        "id",
 		dataField:         "results",
+		pageFilter:        "offset",
+		pageField:         "offset",
+		limitField:        "limit",
+		limit:             100,
+		offset:            0,
 		availableSyncMode: []types.SyncMode{types.FullRefresh},
 	}
 }
