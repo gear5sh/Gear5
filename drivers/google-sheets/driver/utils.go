@@ -10,11 +10,11 @@ import (
 	"strings"
 
 	unidecode "github.com/mozillazg/go-unidecode"
-	"github.com/piyushsingariya/syndicate/constants"
-	"github.com/piyushsingariya/syndicate/drivers/google-sheets/models"
-	"github.com/piyushsingariya/syndicate/logger"
-	syndicatemodels "github.com/piyushsingariya/syndicate/models"
-	"github.com/piyushsingariya/syndicate/utils"
+	"github.com/piyushsingariya/kaku/drivers/google-sheets/models"
+	"github.com/piyushsingariya/kaku/logger"
+	kakumodels "github.com/piyushsingariya/kaku/models"
+	"github.com/piyushsingariya/kaku/types"
+	"github.com/piyushsingariya/kaku/utils"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"gopkg.in/Iwark/spreadsheet.v2"
@@ -185,16 +185,17 @@ func SafeNameConversion(text string) (string, error) {
 	return strings.ToLower(text), nil
 }
 
-func headersToStream(sheetName string, headers []string) *syndicatemodels.Stream {
-	stream := syndicatemodels.Stream{}
+func headersToStream(sheetName string, headers []string) *kakumodels.Stream {
+	stream := kakumodels.Stream{}
 	stream.Name = sheetName
-	stream.JsonSchema = &syndicatemodels.Schema{}
-	stream.JsonSchema.Properties = make(map[string]*syndicatemodels.Property)
+	stream.SupportedSyncModes = []types.SyncMode{types.FullRefresh}
+	stream.JSONSchema = &kakumodels.Schema{}
+	stream.JSONSchema.Properties = make(map[string]*kakumodels.Property)
 
 	for _, header := range headers {
-		stream.JsonSchema.Properties[header] = &syndicatemodels.Property{
+		stream.JSONSchema.Properties[header] = &kakumodels.Property{
 			// for simplicity, every field is a string
-			Type: []constants.DataType{constants.String},
+			Type: []types.DataType{types.STRING},
 		}
 	}
 

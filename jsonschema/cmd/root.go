@@ -14,8 +14,8 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/piyushsingariya/syndicate/jsonschema/generator"
-	"github.com/piyushsingariya/syndicate/jsonschema/schema"
+	"github.com/piyushsingariya/kaku/jsonschema/generator"
+	"github.com/piyushsingariya/kaku/jsonschema/schema"
 
 	"github.com/spf13/cobra"
 )

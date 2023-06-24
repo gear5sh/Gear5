@@ -1,4 +1,4 @@
-module github.com/piyushsingariya/syndicate
+module github.com/piyushsingariya/kaku
 
 go 1.19
 

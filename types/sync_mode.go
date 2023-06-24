@@ -1,4 +1,4 @@
-package constants
+package types
 
 type SyncMode string
 

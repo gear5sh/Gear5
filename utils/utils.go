@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
+	"time"
 
-	"github.com/piyushsingariya/syndicate/jsonschema"
-	"github.com/piyushsingariya/syndicate/logger"
-	"github.com/piyushsingariya/syndicate/models"
+	"github.com/piyushsingariya/kaku/jsonschema"
+	"github.com/piyushsingariya/kaku/logger"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 )
@@ -22,18 +23,9 @@ func IsValidSubcommand(available []*cobra.Command, sub string) bool {
 	return false
 }
 
-func GetStreamNamesFromConfiguredCatalog(catalog *models.Catalog) []string {
-	result := []string{}
-	for _, stream := range catalog.Streams {
-		result = append(result, stream.Stream.Name)
-	}
-
-	return result
-}
-
-func ArrayContainsString(arr []string, str string) bool {
-	for _, i := range arr {
-		if i == str {
+func ArrayContains[T comparable](array []T, value T) bool {
+	for _, elem := range array {
+		if elem == value {
 			return true
 		}
 	}
@@ -41,7 +33,7 @@ func ArrayContainsString(arr []string, str string) bool {
 	return false
 }
 
-func ToJsonSchema(obj interface{}) (string, error) {
+func ToJSONSchema(obj interface{}) (string, error) {
 	schema, err := jsonschema.Reflect(obj)
 	if err != nil {
 		return "", err
@@ -56,7 +48,7 @@ func ToJsonSchema(obj interface{}) (string, error) {
 }
 
 func ToYamlSchema(obj interface{}) (string, error) {
-	jsonSchema, err := ToJsonSchema(obj)
+	jsonSchema, err := ToJSONSchema(obj)
 	if err != nil {
 		return "", err
 	}
@@ -83,6 +75,10 @@ func Unmarshal(from interface{}, object interface{}) error {
 	}
 
 	return nil
+}
+
+func IsInstance(val any, typ reflect.Kind) bool {
+	return reflect.ValueOf(val).Kind() == typ
 }
 
 // reformatInnerMaps converts all map[interface{}]interface{} into map[string]interface{}
@@ -117,12 +113,12 @@ func CheckIfFilesExists(files ...string) error {
 		// Check if the file or directory exists
 		_, err := os.Stat(file)
 		if os.IsNotExist(err) {
-			return fmt.Errorf("%s does not exist", file)
+			return fmt.Errorf("%s does not exist: %s", file, err)
 		}
 
 		_, err = os.ReadFile(file)
 		if err != nil {
-			return fmt.Errorf("failed to read %s", file)
+			return fmt.Errorf("failed to read %s: %s", file, err)
 		}
 	}
 
@@ -170,4 +166,35 @@ func IsOfType(object interface{}, decidingKey string) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func StreamIdentifier(namespace, name string) string {
+	return namespace + name
+}
+
+func ToKakuSchema(obj interface{}) (string, error) {
+	schema, err := jsonschema.Reflect(obj)
+	if err != nil {
+		return "", err
+	}
+
+	j, err := json.MarshalIndent(schema, "", " ")
+	if err != nil {
+		return "", err
+	}
+
+	return string(j), nil
+}
+
+func RetryOnFailure(attempts int, sleep *time.Duration, f func() error) (err error) {
+	for i := 0; i < attempts; i++ {
+		if err = f(); err == nil {
+			return nil
+		}
+
+		logger.Infof("Retrying after %v...", sleep)
+		time.Sleep(*sleep)
+	}
+
+	return err
 }

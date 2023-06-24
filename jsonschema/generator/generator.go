@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/brainicorn/ganno"
-	"github.com/piyushsingariya/syndicate/jsonschema/schema"
+	"github.com/piyushsingariya/kaku/jsonschema/schema"
 	"golang.org/x/tools/go/loader"
 )
 
@@ -143,11 +143,15 @@ func (g *JSONSchemaGenerator) Generate() (schema.JSONSchema, error) {
 
 	start := time.Now()
 	program, err = g.loadProgram(g.basePackage, g.options)
+	if err != nil {
+		return nil, err
+	}
 
-	if err == nil {
-		g.program = program
+	g.program = program
 
-		rootSchema, err = g.doGenerate()
+	rootSchema, err = g.doGenerate()
+	if err != nil {
+		return nil, err
 	}
 
 	g.LogInfoF("generation completed in %s for %s\n", time.Since(start), g.basePackage+"/"+g.rootType)

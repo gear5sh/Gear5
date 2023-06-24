@@ -1,16 +1,13 @@
-module github.com/piyushsingariya/kaku/drivers/google-sheets
+module github.com/piyushsingariya/kaku/drivers/hubspot
 
 go 1.19
 
 require (
-	github.com/mozillazg/go-unidecode v0.2.0
 	github.com/piyushsingariya/kaku v0.0.0-00010101000000-000000000000
 	golang.org/x/oauth2 v0.8.0
-	gopkg.in/Iwark/spreadsheet.v2 v2.0.0-20220412131121-41eea1483964
 )
 
 require (
-	cloud.google.com/go/compute/metadata v0.2.0 // indirect
 	github.com/brainicorn/ganno v0.0.0-20220304182003-e638228cd865 // indirect
 	github.com/brainicorn/goblex v0.0.0-20210908194630-cfe0cfdf87dd // indirect
 	github.com/golang/protobuf v1.5.2 // indirect

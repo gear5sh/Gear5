@@ -1,7 +1,9 @@
 package models
 
 import (
-	"github.com/piyushsingariya/syndicate/constants"
+	"time"
+
+	"github.com/piyushsingariya/kaku/types"
 )
 
 const (
@@ -14,20 +16,20 @@ const (
 	ActionType           = "ACTION"
 )
 
-// Message is a dto for syndicate output row representation
+// Message is a dto for kaku output row representation
 type Message struct {
-	Type             constants.MessageType  `json:"type"`
+	Type             types.MessageType      `json:"type"`
 	Log              *Log                   `json:"log,omitempty"`
 	ConnectionStatus *StatusRow             `json:"connectionStatus,omitempty"`
 	State            *State                 `json:"state,omitempty"`
-	Record           *RecordRow             `json:"record,omitempty"`
+	Record           *Record                `json:"record,omitempty"`
 	Catalog          *Catalog               `json:"catalog,omitempty"`
 	Action           *ActionRow             `json:"action,omitempty"`
 	Spec             map[string]interface{} `json:"spec,omitempty"`
 }
 
 type ActionRow struct {
-	Type constants.Action `json:"type"`
+	Type types.Action `json:"type"`
 	// Add alter
 	// add create
 	// add drop
@@ -42,32 +44,21 @@ type Log struct {
 
 // StatusRow is a dto for airbyte result status serialization
 type StatusRow struct {
-	Status  constants.ConnectionStatus `json:"status,omitempty"`
-	Message string                     `json:"message,omitempty"`
+	Status  types.ConnectionStatus `json:"status,omitempty"`
+	Message string                 `json:"message,omitempty"`
 }
 
-// State is a dto for airbyte state serialization
-type State struct {
-	Data map[string]interface{} `json:"data,omitempty"`
-}
-
-// RecordRow is a dto for airbyte record serialization
-type RecordRow struct {
-	Stream string                 `json:"stream,omitempty"`
-	Data   map[string]interface{} `json:"data,omitempty"`
+// Record is a dto for airbyte record serialization
+type Record struct {
+	Namespace string                 `json:"namespace,omitempty"`
+	Stream    string                 `json:"stream,omitempty"`
+	Data      map[string]interface{} `json:"data,omitempty"`
+	EmittedAt time.Time              `json:"emitted_at,omitempty"`
 }
 
 // ConfiguredCatalog is a dto for formatted airbyte catalog serialization
 type Catalog struct {
 	Streams []*WrappedStream `json:"streams,omitempty"`
-}
-
-// WrappedStream is a dto for formatted stream
-type WrappedStream struct {
-	SyncMode            string   `json:"sync_mode,omitempty"`
-	DestinationSyncMode string   `json:"destination_sync_mode,omitempty"`
-	CursorField         []string `json:"cursor_field,omitempty"`
-	Stream              *Stream  `json:"stream,omitempty"`
 }
 
 // Schema is a dto for Airbyte catalog Schema object serialization
@@ -78,7 +69,7 @@ type Schema struct {
 // Property is a dto for catalog properties representation
 type Property struct {
 	//might be string or []string or nil
-	Type       []constants.DataType `json:"type,omitempty"`
+	Type       []types.DataType     `json:"type,omitempty"`
 	Format     string               `json:"format,omitempty"`
 	Properties map[string]*Property `json:"properties,omitempty"`
 }
