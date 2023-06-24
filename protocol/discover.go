@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/piyushsingariya/kaku/logger"
 	"github.com/piyushsingariya/kaku/models"
@@ -41,39 +42,47 @@ var DiscoverCmd = &cobra.Command{
 		}
 
 		recordsPerStream := 100
+		group := sync.WaitGroup{}
+		for streamName, wrappedStream := range wrapForSchemaDiscovery(streams) {
+			stream := wrappedStream
+			group.Add(1)
 
-		for streamName, stream := range wrapForSchemaDiscovery(streams) {
-			objects := []types.RecordData{}
-			channel := make(chan models.Record, recordsPerStream)
-			count := 0
 			go func() {
-				err := connector.Read(stream, channel)
-				if err != nil {
-					logger.Fatalf("Error occurred while reading records from [%s]: %s", streamName, err)
-				}
+				objects := []types.RecordData{}
+				channel := make(chan models.Record, recordsPerStream)
+				count := 0
+				go func() {
+					err := connector.Read(stream, channel)
+					if err != nil {
+						logger.Fatalf("Error occurred while reading records from [%s]: %s", streamName, err)
+					}
 
-				// close channel incase records are less than recordsPerStream
-				safego.Close(channel)
-			}()
-
-			for record := range channel {
-				count++
-				objects = append(objects, record.Data)
-				if count >= recordsPerStream {
+					// close channel incase records are less than recordsPerStream
 					safego.Close(channel)
+				}()
+
+				for record := range channel {
+					count++
+					objects = append(objects, record.Data)
+					if count >= recordsPerStream {
+						safego.Close(channel)
+					}
 				}
-			}
 
-			properties, err := typing.Resolve(objects...)
-			if err != nil {
-				logger.Fatal(err)
-			}
+				properties, err := typing.Resolve(objects...)
+				if err != nil {
+					logger.Fatal(err)
+				}
 
-			stream.Stream.JSONSchema = &models.Schema{
-				Properties: properties,
-			}
+				stream.Stream.JSONSchema = &models.Schema{
+					Properties: properties,
+				}
+
+				group.Done()
+			}()
 		}
 
+		group.Wait()
 		logger.LogCatalog(streams)
 		return nil
 	},

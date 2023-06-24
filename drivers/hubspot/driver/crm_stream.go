@@ -124,7 +124,7 @@ func (c *CRMSearchStream) readRecords(send chan<- kakumodels.Record) error {
 
 		nextPageToken, err = c.nextPageToken(rawResponse)
 		if err != nil {
-			logger.Warnf("Error occured while getting next page token for stream %s: %s", c.Name(), err)
+			logger.Warnf("Error occured while getting next page token from response[%v] for stream %s: %s", rawResponse, c.Name(), err)
 			paginationComplete = true
 		} else if c._state != nil && nextPageToken["after"].(int) >= 10000 {
 			// Hubspot documentation states that the search endpoints are limited to 10,000 total results

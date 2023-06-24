@@ -23,9 +23,10 @@ type Hubspot struct {
 	accessToken string
 	config      *models.Config
 	catalog     *kakumodels.Catalog
+	state       kakumodels.State
 }
 
-func (h *Hubspot) Setup(config, catalog, state interface{}, batchSize int64) error {
+func (h *Hubspot) Setup(config, catalog interface{}, state kakumodels.State, batchSize int64) error {
 	conf := &models.Config{}
 	if err := utils.Unmarshal(config, conf); err != nil {
 		return err
@@ -50,6 +51,7 @@ func (h *Hubspot) Setup(config, catalog, state interface{}, batchSize int64) err
 	}
 
 	h.config = conf
+	h.state = state
 	h.batchSize = batchSize
 	h.client = client
 	h.accessToken = accessToken
@@ -119,6 +121,18 @@ func (h *Hubspot) GetState() (*kakumodels.State, error) {
 }
 
 func (h *Hubspot) Read(stream protocol.Stream, channel chan<- kakumodels.Record) error {
+	hstream, found := h.allStreams[stream.Name()]
+	if !found {
+		return fmt.Errorf("invalid stream passed: %s", stream.Name())
+	}
+
+	hstream.setup(stream.GetSyncMode(), h.state.Get(stream.Name(), stream.Namespace()))
+
+	err := hstream.readRecords(channel)
+	if err != nil {
+		return fmt.Errorf("error occurred: %s", err)
+	}
+
 	return nil
 }
 
@@ -157,9 +171,28 @@ func (h *Hubspot) setupAllStreams() {
 	h.register("contacts",
 		newCRMSearchStream(
 			*newIncrementalStream(
-				*newStream("contacts", "contacts", "id", "lastmodifieddate", []string{"crm.objects.contacts.read"},
+				*newStream("contacts", "contact", "id", "lastmodifieddate", []string{"crm.objects.contacts.read"},
 					h.client, h.config.StartDate),
 				"updatedAt"),
 			[]string{"contacts", "companies"},
 		))
+
+	h.register("companies",
+		newCRMSearchStream(
+			*newIncrementalStream(
+				*newStream("companies", "company", "id", "hs_lastmodifieddate", []string{"crm.objects.contacts.read", "crm.objects.companies.read"},
+					h.client, h.config.StartDate),
+				"updatedAt"),
+			[]string{"contacts"},
+		))
+
+	h.register("engagementscalls",
+		newCRMSearchStream(
+			*newIncrementalStream(
+				*newStream("engagementscalls", "calls", "id", "hs_lastmodifieddate", []string{"crm.objects.contacts.read"},
+					h.client, h.config.StartDate),
+				"updatedAt"),
+			[]string{"contacts", "deal", "company", "tickets"},
+		))
+
 }

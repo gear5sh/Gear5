@@ -20,7 +20,7 @@ type GoogleSheets struct {
 	catalog *kakumodels.Catalog
 }
 
-func (gs *GoogleSheets) Setup(config, _, catalog interface{}, _ int64) error {
+func (gs *GoogleSheets) Setup(config, catalog interface{}, _ kakumodels.State, _ int64) error {
 	conf := &models.Config{}
 	if err := utils.Unmarshal(config, conf); err != nil {
 		return err
