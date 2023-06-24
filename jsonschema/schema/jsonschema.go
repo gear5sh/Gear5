@@ -98,7 +98,7 @@ type JSONSchema interface {
 // RFC draft-wright-json-schema-validation-00, section 5.26
 type Definitions map[string]*JSONSchema
 
-// BasicSchema is the base implementation of the JsonSchema interface.
+// BasicSchema is the base implementation of the JSONSchema interface.
 type basicSchema struct {
 	SchemaURI    string                `json:"$schema,omitempty"`
 	ID           string                `json:"id,omitempty"`

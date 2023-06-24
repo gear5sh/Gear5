@@ -2,18 +2,19 @@ package protocol
 
 import (
 	"fmt"
-	"sync"
+	"strings"
+	"time"
 
-	"github.com/piyushsingariya/syndicate/logger"
-	"github.com/piyushsingariya/syndicate/models"
-	"github.com/piyushsingariya/syndicate/utils"
+	"github.com/piyushsingariya/kaku/logger"
+	"github.com/piyushsingariya/kaku/models"
+	"github.com/piyushsingariya/kaku/utils"
 	"github.com/spf13/cobra"
 )
 
 // ReadCmd represents the read command
 var ReadCmd = &cobra.Command{
 	Use:   "read",
-	Short: "Syndicate read command",
+	Short: "Kaku read command",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		if err := utils.CheckIfFilesExists(config, catalog); err != nil {
 			return err
@@ -32,44 +33,83 @@ var ReadCmd = &cobra.Command{
 		}
 
 		if state == "" {
-			if err := connector.Setup(utils.ReadFile(config), nil, utils.ReadFile(catalog), batchSize); err != nil {
+			if err := connector.Setup(utils.ReadFile(config), utils.ReadFile(catalog), nil, batchSize); err != nil {
 				return err
 			}
 		} else {
-			if err := connector.Setup(utils.ReadFile(config), utils.ReadFile(state), utils.ReadFile(catalog), batchSize); err != nil {
+			st := models.State{}
+			err := utils.Unmarshal(utils.ReadFile(state), &st)
+			if err != nil {
+				return fmt.Errorf("failed to unmarshal state file")
+			}
+			if err := connector.Setup(utils.ReadFile(config), utils.ReadFile(catalog), st, batchSize); err != nil {
 				return err
 			}
 		}
 
-		waitgroup := sync.WaitGroup{}
+		recordStream := make(chan models.Record, 2*batchSize)
+		numRecords := int64(0)
+		batch := int64(0)
 
-		recordStream := make(chan models.RecordRow, 2*batchSize)
-
-		waitgroup.Add(1)
 		go func() {
-			defer func() {
-				close(recordStream)
-				waitgroup.Done()
-			}()
+			for message := range recordStream {
+				logger.LogRecord(message)
+				numRecords++
+				batch++
 
-			selectedStreams := utils.GetStreamNamesFromConfiguredCatalog(connector.Catalog())
-			logger.Infof("Selected streams are %v", selectedStreams)
-			for _, streamName := range selectedStreams {
-				err := connector.Read(streamName, recordStream)
-				if err != nil {
-					logger.Fatalf("Error occurred while reading recrods from [%s]: %s", connector.Type(), err)
+				// log state after a batch
+				if batch >= batchSize {
+					state, err := connector.GetState()
+					if err != nil {
+						logger.Fatalf("failed to get state from connector")
+					}
+					if state != nil {
+						logger.LogState(state)
+					}
+					// reset batch
+					batch = 0
 				}
 			}
 		}()
 
-		numRecords := int64(0)
-		for message := range recordStream {
-			logger.LogRecord(message)
-			numRecords++
+		streamNames := []string{}
+		for _, stream := range connector.Catalog().Streams {
+			if stream.Namespace() != "" {
+				streamNames = append(streamNames, fmt.Sprintf("%s[%s]", stream.Name(), stream.Namespace()))
+			} else {
+				streamNames = append(streamNames, stream.Name())
+			}
+		}
+		logger.Infof("Selected streams are %s", strings.Join(streamNames, ", "))
+
+		for _, stream := range connector.Catalog().Streams {
+			if stream.Namespace() != "" {
+				logger.Infof("Reading stream %s[%s]", stream.Name(), stream.Namespace())
+			} else {
+				logger.Infof("Reading stream %s", stream.Name())
+			}
+
+			streamStartTime := time.Now()
+			err := connector.Read(stream, recordStream)
+			if err != nil {
+				logger.Fatalf("Error occurred while reading recrods from [%s]: %s", connector.Type(), err)
+			}
+
+			logger.Infof("Finished reading stream %s[%s] in %s", stream.Name(), stream.Namespace(), time.Since(streamStartTime).String())
 		}
 
+		close(recordStream)
+
 		logger.Infof("Total records read: %d", numRecords)
-		waitgroup.Wait()
+		state, err := connector.GetState()
+		if err != nil {
+			logger.Fatalf("failed to get state from connector")
+		}
+
+		if state != nil {
+			logger.LogState(state)
+		}
+
 		return nil
 	},
 }

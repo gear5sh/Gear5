@@ -17,10 +17,10 @@ function build_and_run() {
     fi
     cd $path
     go mod tidy
-    go build -ldflags="-w -s -X constants/constants.version=${GIT_VERSION} -X constants/constants.commitsha=${GIT_COMMITSHA} -X constants/constants.releasechannel=${RELEASE_CHANNEL}" -o syndicate main.go
+    go build -ldflags="-w -s -X constants/constants.version=${GIT_VERSION} -X constants/constants.commitsha=${GIT_COMMITSHA} -X constants/constants.releasechannel=${RELEASE_CHANNEL}" -o kaku main.go
 
     echo "============================== Executing connector: $connector with args [$joined_arguments] =============================="
-    ./syndicate $joined_arguments
+    ./kaku $joined_arguments
 }
 
 if [ $# -gt 0 ]; then

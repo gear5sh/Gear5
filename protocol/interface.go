@@ -1,12 +1,13 @@
 package protocol
 
 import (
-	"github.com/piyushsingariya/syndicate/jsonschema/schema"
-	"github.com/piyushsingariya/syndicate/models"
+	"github.com/piyushsingariya/kaku/jsonschema/schema"
+	"github.com/piyushsingariya/kaku/models"
+	"github.com/piyushsingariya/kaku/types"
 )
 
 type Connector interface {
-	Setup(config, state, catalog interface{}, batchSize int64) error
+	Setup(config, catalog interface{}, state models.State, batchSize int64) error
 	Spec() (schema.JSONSchema, error)
 	Check() error
 	Discover() ([]*models.Stream, error)
@@ -18,11 +19,22 @@ type Connector interface {
 type Driver interface {
 	Connector
 	Streams() ([]*models.Stream, error)
-	Read(name string, channel chan<- models.RecordRow) error
+	Read(stream Stream, channel chan<- models.Record) error
+	GetState() (*models.State, error)
 }
 
 type Adapter interface {
 	Connector
-	Write(channel <-chan models.RecordRow) error
+	Write(channel <-chan models.Record) error
 	Create(streamName string) error
+}
+
+type Stream interface {
+	Name() string
+	Namespace() string
+	JSONSchema() *models.Schema
+	GetStream() *models.Stream
+	SupportedSyncModes() []types.SyncMode
+	GetSyncMode() types.SyncMode
+	GetCursorField() string
 }

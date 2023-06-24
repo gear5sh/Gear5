@@ -4,22 +4,23 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/piyushsingariya/syndicate/drivers/google-sheets/models"
-	"github.com/piyushsingariya/syndicate/jsonschema"
-	"github.com/piyushsingariya/syndicate/jsonschema/schema"
-	"github.com/piyushsingariya/syndicate/logger"
-	syndicatemodels "github.com/piyushsingariya/syndicate/models"
-	"github.com/piyushsingariya/syndicate/utils"
+	"github.com/piyushsingariya/kaku/drivers/google-sheets/models"
+	"github.com/piyushsingariya/kaku/jsonschema"
+	"github.com/piyushsingariya/kaku/jsonschema/schema"
+	"github.com/piyushsingariya/kaku/logger"
+	kakumodels "github.com/piyushsingariya/kaku/models"
+	"github.com/piyushsingariya/kaku/protocol"
+	"github.com/piyushsingariya/kaku/utils"
 	"gopkg.in/Iwark/spreadsheet.v2"
 )
 
 type GoogleSheets struct {
 	*spreadsheet.Service
 	config  *models.Config
-	catalog *syndicatemodels.Catalog
+	catalog *kakumodels.Catalog
 }
 
-func (gs *GoogleSheets) Setup(config, _, catalog interface{}, _ int64) error {
+func (gs *GoogleSheets) Setup(config, catalog interface{}, _ kakumodels.State, _ int64) error {
 	conf := &models.Config{}
 	if err := utils.Unmarshal(config, conf); err != nil {
 		return err
@@ -30,7 +31,7 @@ func (gs *GoogleSheets) Setup(config, _, catalog interface{}, _ int64) error {
 	}
 
 	if catalog != nil {
-		cat := &syndicatemodels.Catalog{}
+		cat := &kakumodels.Catalog{}
 		if err := utils.Unmarshal(catalog, cat); err != nil {
 			return err
 		}
@@ -52,17 +53,21 @@ func (gs *GoogleSheets) Spec() (schema.JSONSchema, error) {
 	return jsonschema.Reflect(models.Config{})
 }
 
-func (gs *GoogleSheets) Streams() ([]*syndicatemodels.Stream, error) {
+func (gs *GoogleSheets) Streams() ([]*kakumodels.Stream, error) {
 	streams, _, err := gs.getAllSheetStreams()
 	return streams, err
 }
 
-func (gs *GoogleSheets) Catalog() *syndicatemodels.Catalog {
+func (gs *GoogleSheets) Catalog() *kakumodels.Catalog {
 	return gs.catalog
 }
 
 func (gs *GoogleSheets) Type() string {
 	return "Google-Sheets"
+}
+
+func (gs *GoogleSheets) GetState() (*kakumodels.State, error) {
+	return nil, nil
 }
 
 func (gs *GoogleSheets) Check() error {
@@ -74,7 +79,7 @@ func (gs *GoogleSheets) Check() error {
 	return nil
 }
 
-func (gs *GoogleSheets) Discover() ([]*syndicatemodels.Stream, error) {
+func (gs *GoogleSheets) Discover() ([]*kakumodels.Stream, error) {
 	streams, _, err := gs.getAllSheetStreams()
 	if err != nil {
 		return nil, err
@@ -83,7 +88,7 @@ func (gs *GoogleSheets) Discover() ([]*syndicatemodels.Stream, error) {
 	return streams, nil
 }
 
-func (gs *GoogleSheets) Read(streamName string, channel chan<- syndicatemodels.RecordRow) error {
+func (gs *GoogleSheets) Read(stream protocol.Stream, channel chan<- kakumodels.Record) error {
 	spreadsheetID := gs.config.SpreadsheetID
 
 	logger.Infof("Starting sync for spreadsheet [%s]", spreadsheetID)
@@ -93,9 +98,9 @@ func (gs *GoogleSheets) Read(streamName string, channel chan<- syndicatemodels.R
 		return err
 	}
 
-	sheet, found := streamNamesToSheet[streamName]
+	sheet, found := streamNamesToSheet[stream.Name()]
 	if !found {
-		logger.Infof("sheet not found with stream name [%s] in spreadsheet; skipping", streamName)
+		logger.Infof("sheet not found with stream name [%s] in spreadsheet; skipping", stream.Name())
 		return nil
 	}
 
@@ -108,7 +113,7 @@ func (gs *GoogleSheets) Read(streamName string, channel chan<- syndicatemodels.R
 
 	for rowCursor := int64(1); rowCursor < int64(len(sheet.Rows)); rowCursor++ {
 		// make a batch of records
-		record := syndicatemodels.RecordRow{Stream: streamName, Data: make(map[string]interface{})}
+		record := kakumodels.Record{Stream: stream.Name(), Namespace: stream.Namespace(), Data: make(map[string]interface{})}
 		for i, pointer := range sheet.Rows[rowCursor] {
 			record.Data[indexToHeaders[i]] = pointer.Value
 		}
@@ -116,19 +121,19 @@ func (gs *GoogleSheets) Read(streamName string, channel chan<- syndicatemodels.R
 		channel <- record
 	}
 
-	logger.Infof("Total records fetched %s[%d]", streamName, len(sheet.Rows)-1)
+	logger.Infof("Total records fetched %s[%d]", stream.Name(), len(sheet.Rows)-1)
 
 	return err
 }
 
-func (gs *GoogleSheets) getAllSheetStreams() ([]*syndicatemodels.Stream, map[string]spreadsheet.Sheet, error) {
+func (gs *GoogleSheets) getAllSheetStreams() ([]*kakumodels.Stream, map[string]spreadsheet.Sheet, error) {
 	logger.Infof("fetching spreadsheet[%s]", gs.config.SpreadsheetID)
 	googleSpreadsheet, err := gs.FetchSpreadsheet(gs.config.SpreadsheetID)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	streams := []*syndicatemodels.Stream{}
+	streams := []*kakumodels.Stream{}
 	streamNameToSheet := make(map[string]spreadsheet.Sheet)
 	for _, sheet := range googleSpreadsheet.Sheets {
 		headers, err := LoadHeaders(sheet)
