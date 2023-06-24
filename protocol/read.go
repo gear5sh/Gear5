@@ -37,7 +37,12 @@ var ReadCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			if err := connector.Setup(utils.ReadFile(config), utils.ReadFile(catalog), utils.ReadFile(state), batchSize); err != nil {
+			st := models.State{}
+			err := utils.Unmarshal(utils.ReadFile(state), &st)
+			if err != nil {
+				return fmt.Errorf("failed to unmarshal state file")
+			}
+			if err := connector.Setup(utils.ReadFile(config), utils.ReadFile(catalog), st, batchSize); err != nil {
 				return err
 			}
 		}
@@ -60,10 +65,12 @@ var ReadCmd = &cobra.Command{
 			logger.Infof("Selected streams are %s", strings.Join(streamNames, " ,"))
 
 			for _, stream := range connector.Catalog().Streams {
+				logger.Info("Reading stream %s[%s]", stream.Name(), stream.Namespace())
 				err := connector.Read(stream, recordStream)
 				if err != nil {
 					logger.Fatalf("Error occurred while reading recrods from [%s]: %s", connector.Type(), err)
 				}
+				logger.Info("Finished reading stream %s[%s]", stream.Name(), stream.Namespace())
 			}
 		}()
 

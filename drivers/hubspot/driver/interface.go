@@ -13,4 +13,5 @@ type HubspotStream interface {
 	PrimaryKey() []string
 	path() (string, string)
 	state() map[string]any
+	setup(mode types.SyncMode, state map[string]any)
 }
