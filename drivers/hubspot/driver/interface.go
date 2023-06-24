@@ -14,4 +14,5 @@ type HubspotStream interface {
 	path() (string, string)
 	state() map[string]any
 	setup(mode types.SyncMode, state map[string]any)
+	cursorField() string
 }
