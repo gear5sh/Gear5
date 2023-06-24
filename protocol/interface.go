@@ -36,4 +36,5 @@ type Stream interface {
 	GetStream() *models.Stream
 	SupportedSyncModes() []types.SyncMode
 	GetSyncMode() types.SyncMode
+	GetCursorField() string
 }

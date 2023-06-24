@@ -9,7 +9,7 @@ import (
 type WrappedStream struct {
 	SyncMode            types.SyncMode `json:"sync_mode,omitempty"`
 	DestinationSyncMode string         `json:"destination_sync_mode,omitempty"`
-	CursorField         []string       `json:"cursor_field,omitempty"`
+	CursorField         string         `json:"cursor_field,omitempty"`
 	Stream              *Stream        `json:"stream,omitempty"`
 }
 
@@ -48,6 +48,10 @@ func (s *WrappedStream) SupportedSyncModes() []types.SyncMode {
 
 func (s *WrappedStream) GetSyncMode() types.SyncMode {
 	return s.SyncMode
+}
+
+func (s *WrappedStream) GetCursorField() string {
+	return s.CursorField
 }
 
 func GetWrappedCatalog(streams []*Stream) *Catalog {

@@ -71,12 +71,17 @@ func (h *Hubspot) Check() error {
 func (h *Hubspot) Discover() ([]*kakumodels.Stream, error) {
 	streams := []*kakumodels.Stream{}
 
-	for streamName, stream := range h.allStreams {
-		streams = append(streams, &kakumodels.Stream{
+	for streamName, hstream := range h.allStreams {
+		stream := &kakumodels.Stream{
 			Name:                    streamName,
-			SupportedSyncModes:      stream.Modes(),
-			SourceDefinedPrimaryKey: stream.PrimaryKey(),
-		})
+			SupportedSyncModes:      hstream.Modes(),
+			SourceDefinedPrimaryKey: hstream.PrimaryKey(),
+		}
+
+		if hstream.cursorField() != "" {
+			stream.DefaultCursorField = append(stream.DefaultCursorField, hstream.cursorField())
+			stream.SourceDefinedCursor = true
+		}
 	}
 
 	return streams, nil
