@@ -1,6 +1,7 @@
 package driver
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/piyushsingariya/kaku/logger"
@@ -29,19 +30,14 @@ type IncrementalStream struct {
 	_initSync time.Time
 }
 
-func newIncrementalStream(stream Stream, statePK string) *IncrementalStream {
+func newIncrementalStream(name, entity string, client *http.Client, startDate time.Time) *IncrementalStream {
 	s := &IncrementalStream{
-		Stream:                  stream,
+		Stream:                  *newStream(name, entity, client, startDate),
 		limit:                   1000,
 		stateCheckpointInterval: 500,
 		needChunk:               true,
 		_initSync:               time.Now(),
-		statePk:                 statePK,
-	}
-
-	// populating defaults
-	if s.statePk == "" {
-		s.statePk = "timestamp"
+		statePk:                 "timestamp",
 	}
 
 	s.availableSyncMode = append(s.availableSyncMode, types.Incremental)

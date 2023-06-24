@@ -41,9 +41,13 @@ var DiscoverCmd = &cobra.Command{
 			logger.Fatal(err)
 		}
 
+		if len(streams) == 0 {
+			logger.Fatal("no streams found in connector")
+		}
+
 		recordsPerStream := 100
 		group := sync.WaitGroup{}
-		for streamName, wrappedStream := range wrapForSchemaDiscovery(streams) {
+		for _, wrappedStream := range wrapForSchemaDiscovery(streams) {
 			stream := wrappedStream
 			group.Add(1)
 
@@ -54,7 +58,7 @@ var DiscoverCmd = &cobra.Command{
 				go func() {
 					err := connector.Read(stream, channel)
 					if err != nil {
-						logger.Fatalf("Error occurred while reading records from [%s]: %s", streamName, err)
+						logger.Fatalf("Error occurred while reading records from [%s]: %s", stream.Name(), err)
 					}
 
 					// close channel incase records are less than recordsPerStream

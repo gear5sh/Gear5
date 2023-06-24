@@ -18,11 +18,18 @@ type CRMSearchStream struct {
 	associations []string
 }
 
-func newCRMSearchStream(incrementalStream IncrementalStream, associations []string) *CRMSearchStream {
-	return &CRMSearchStream{
+func newCRMSearchStream(incrementalStream IncrementalStream, primaryKey, lastModifiedField string, associations, scopes []string) *CRMSearchStream {
+	crm := &CRMSearchStream{
 		IncrementalStream: incrementalStream,
 		associations:      associations,
 	}
+
+	crm.statePk = "updatedAt"
+	crm.updatedAtField = "updatedAt"
+	crm.primaryKey = primaryKey
+	crm.limit = 100
+	crm.lastModifiedField = lastModifiedField
+	return crm
 }
 
 func (c *CRMSearchStream) path() (string, string) {
@@ -58,7 +65,7 @@ func (c *CRMSearchStream) processSearch(nextPageToken map[string]any) ([]map[str
 				{"propertyName": c.lastModifiedField, "direction": "ASCENDING"},
 			},
 			"properties": properties,
-			"limit":      100,
+			"limit":      c.limit,
 		}
 	}
 

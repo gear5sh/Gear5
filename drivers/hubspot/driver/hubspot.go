@@ -82,6 +82,8 @@ func (h *Hubspot) Discover() ([]*kakumodels.Stream, error) {
 			stream.DefaultCursorField = append(stream.DefaultCursorField, hstream.cursorField())
 			stream.SourceDefinedCursor = true
 		}
+
+		streams = append(streams, stream)
 	}
 
 	return streams, nil
@@ -174,30 +176,20 @@ func (h *Hubspot) setupAllStreams() {
 	h.allStreams = map[string]HubspotStream{}
 
 	h.register("contacts",
-		newCRMSearchStream(
-			*newIncrementalStream(
-				*newStream("contacts", "contact", "id", "lastmodifieddate", []string{"crm.objects.contacts.read"},
-					h.client, h.config.StartDate),
-				"updatedAt"),
-			[]string{"contacts", "companies"},
-		))
+		newCRMSearchStream(*newIncrementalStream("contacts", "contact", h.client, h.config.StartDate),
+			"id", "lastmodifieddate",
+			[]string{"contacts", "companies"}, []string{"crm.objects.contacts.read"}))
 
 	h.register("companies",
 		newCRMSearchStream(
-			*newIncrementalStream(
-				*newStream("companies", "company", "id", "hs_lastmodifieddate", []string{"crm.objects.contacts.read", "crm.objects.companies.read"},
-					h.client, h.config.StartDate),
-				"updatedAt"),
-			[]string{"contacts"},
-		))
+			*newIncrementalStream("companies", "company", h.client, h.config.StartDate),
+			"id", "hs_lastmodifieddate",
+			[]string{"contacts"}, []string{"crm.objects.contacts.read", "crm.objects.companies.read"}))
 
 	h.register("engagementscalls",
 		newCRMSearchStream(
-			*newIncrementalStream(
-				*newStream("engagementscalls", "calls", "id", "hs_lastmodifieddate", []string{"crm.objects.contacts.read"},
-					h.client, h.config.StartDate),
-				"updatedAt"),
-			[]string{"contacts", "deal", "company", "tickets"},
-		))
+			*newIncrementalStream("engagementscalls", "calls", h.client, h.config.StartDate),
+			"id", "hs_lastmodifieddate",
+			[]string{"contacts", "deal", "company", "tickets"}, []string{"crm.objects.contacts.read"}))
 
 }
