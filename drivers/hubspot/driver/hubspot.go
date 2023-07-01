@@ -71,7 +71,7 @@ func (h *Hubspot) Discover() ([]*kakumodels.Stream, error) {
 		}
 
 		if hstream.cursorField() != "" {
-			stream.DefaultCursorField = append(stream.DefaultCursorField, hstream.cursorField())
+			stream.DefaultCursorFields = append(stream.DefaultCursorFields, hstream.cursorField())
 			stream.SourceDefinedCursor = true
 		}
 

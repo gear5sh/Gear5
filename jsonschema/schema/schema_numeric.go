@@ -55,6 +55,17 @@ func (s *defaultNumericSchema) SetIntEnum(enums []string) error {
 	return nil
 }
 
+func (s *defaultNumericSchema) SetDefault(def string) error {
+	reformat, err := strconv.Atoi(def)
+	if err != nil {
+		return fmt.Errorf("failed to reformate to int: %s", err)
+	}
+
+	s.DefaultValue = reformat
+
+	return nil
+}
+
 func (s *defaultNumericSchema) UnmarshalJSON(b []byte) error {
 	var err error
 	var stuff map[string]interface{}

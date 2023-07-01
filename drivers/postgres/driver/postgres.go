@@ -3,6 +3,7 @@ package driver
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -13,6 +14,7 @@ import (
 	kakumodels "github.com/piyushsingariya/kaku/models"
 	"github.com/piyushsingariya/kaku/protocol"
 	"github.com/piyushsingariya/kaku/types"
+	"github.com/piyushsingariya/kaku/typing"
 	"github.com/piyushsingariya/kaku/utils"
 )
 
@@ -44,6 +46,11 @@ func (p *Postgres) Setup(config any, catalog *kakumodels.Catalog, state kakumode
 		return err
 	}
 
+	err = cfg.Validate()
+	if err != nil {
+		return fmt.Errorf("failed to validate config: %s", err)
+	}
+
 	db, err := sqlx.Open("pgx", cfg.ToConnectionString())
 	if err != nil {
 		return fmt.Errorf("failed to connect database: %s", err)
@@ -62,7 +69,8 @@ func (p *Postgres) Setup(config any, catalog *kakumodels.Catalog, state kakumode
 	p.config = &cfg
 	p.catalog = catalog
 	p.batchSize = batchSize
-	return nil
+
+	return p.setupStreams()
 }
 
 func (p *Postgres) CloseConnection() {
@@ -119,7 +127,9 @@ func (p *Postgres) setupStreams() error {
 	}
 
 	if len(schemaNamesOutput) == 0 {
-		return fmt.Errorf("no schemas found in database")
+		return typing.SQLError(typing.GetSchemaError, err, "no schemas found in database", &typing.ErrorPayload{
+			Statement: getSchemaTablesTmpl,
+		})
 	}
 
 	for _, schema := range schemaNamesOutput {
@@ -169,13 +179,29 @@ func (p *Postgres) setupStreams() error {
 					datatypes = append(datatypes, types.UNKNOWN)
 				}
 
-				if column.IsNullable != nil && *column.IsNullable {
+				if strings.EqualFold("yes", *column.IsNullable) {
 					datatypes = append(datatypes, types.NULL)
 				}
 
 				stream.JSONSchema.Properties[column.Name] = &kakumodels.Property{
 					Type: datatypes,
 				}
+			}
+
+			stream.SupportedSyncModes = append(stream.SupportedSyncModes, types.FullRefresh)
+
+			// currently only datetime fields is supported for cursor field, automatic generated fields can also be used
+			// future TODO
+			for propertyName, property := range stream.JSONSchema.Properties {
+				if utils.ArrayContains(property.Type, types.TIMESTAMP) {
+					stream.DefaultCursorFields = append(stream.DefaultCursorFields, propertyName)
+				}
+			}
+
+			// source has cursor fields, hence incremental also supported
+			if len(stream.DefaultCursorFields) > 0 {
+				stream.SourceDefinedCursor = true
+				stream.SupportedSyncModes = append(stream.SupportedSyncModes, types.Incremental)
 			}
 
 			// add primary keys for stream
