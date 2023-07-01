@@ -161,7 +161,14 @@ func (p *Postgres) setupStreams() error {
 			}
 
 			for _, column := range columnSchemaOutput {
-				datatypes := []types.DataType{pgTypeToDataTypes[*column.DataType]}
+				datatypes := []types.DataType{}
+				if val, found := pgTypeToDataTypes[*column.DataType]; found {
+					datatypes = append(datatypes, val)
+				} else {
+					logger.Warnf("failed to get respective type in datatypes for column: %s[%s]", column.Name, column.DataType)
+					datatypes = append(datatypes, types.UNKNOWN)
+				}
+
 				if column.IsNullable != nil && *column.IsNullable {
 					datatypes = append(datatypes, types.NULL)
 				}

@@ -3,6 +3,9 @@ package models
 import (
 	"fmt"
 	"strings"
+
+	"github.com/lib/pq"
+	"github.com/piyushsingariya/kaku/utils"
 )
 
 type Config struct {
@@ -43,17 +46,15 @@ type Config struct {
 	// Additional properties to pass to the JDBC URL string when connecting to the database formatted as 'key=value' pairs separated by the symbol '&'. (Eg. key1=value1&key2=value2&key3=value3). For more information read about <a href=\"https://jdbc.postgresql.org/documentation/head/connect.html\">JDBC URL parameters</a>.
 	//
 	// @jsonschema(
-	// required=true,
-	// title=JDBC URL Parameters (Advanced),
-	// pattern=key1=value1&key2=value2
+	// title="JDBC URL Parameters (Advanced)"
 	// )
-	JDBCURLParams string `json:"jdbc_url_params"`
+	JDBCURLParams map[string]string `json:"jdbc_url_params"`
 	// Hostname of the database.
 	//
 	// @jsonschema(
 	// required=true
 	// )
-	// SSLMode string `json:"database"`
+	SSLConfiguration *utils.SSLConfig `json:"ssl"`
 }
 
 func (c *Config) Validate() error {
@@ -63,12 +64,45 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("host should not contain http or https")
 	}
 
-	return nil
+	if c.SSLConfiguration == nil {
+		return fmt.Errorf("ssl config not set")
+	}
+
+	return c.SSLConfiguration.Validate()
 }
 
 func (c *Config) ToConnectionString() string {
-	connStr := fmt.Sprintf("host=%s port=%d dbname=%s user=%s password=%s %s",
-		c.Host, c.Port, c.Database, c.Username, c.Password, c.JDBCURLParams)
+	// Construct the connection string
+	connStr := fmt.Sprintf("host=%s port=%d dbname=%s user=%s password=%s", c.Host, c.Port, c.Database, c.Username, c.Password)
+
+	// Set additional connection parameters if available
+	if len(c.JDBCURLParams) > 0 {
+		params := ""
+		for k, v := range c.JDBCURLParams {
+			params += fmt.Sprintf("%s=%s ", pq.QuoteIdentifier(k), pq.QuoteLiteral(v))
+		}
+		connStr += " options='" + params + "'"
+	}
+
+	// Enable SSL if SSLConfig is provided
+	if c.SSLConfiguration != nil {
+		sslmode := string(c.SSLConfiguration.Mode)
+		if sslmode != "" {
+			connStr += " sslmode=" + sslmode
+		}
+
+		if c.SSLConfiguration.ServerCA != "" {
+			connStr += " sslrootcert=" + c.SSLConfiguration.ServerCA
+		}
+
+		if c.SSLConfiguration.ClientCert != "" {
+			connStr += " sslcert=" + c.SSLConfiguration.ClientCert
+		}
+
+		if c.SSLConfiguration.ClientKey != "" {
+			connStr += " sslkey=" + c.SSLConfiguration.ClientKey
+		}
+	}
 
 	return connStr
 }
