@@ -2,7 +2,10 @@ module github.com/piyushsingariya/kaku/drivers/postgres
 
 go 1.19
 
-require github.com/piyushsingariya/kaku v0.0.0-20230630130252-054496f39abb
+require (
+	github.com/lib/pq v1.10.2
+	github.com/piyushsingariya/kaku v0.0.0-20230630130252-054496f39abb
+)
 
 require (
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
