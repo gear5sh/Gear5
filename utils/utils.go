@@ -198,3 +198,26 @@ func RetryOnFailure(attempts int, sleep *time.Duration, f func() error) (err err
 
 	return err
 }
+
+func IsSubset[T comparable](setArray, subsetArray []T) bool {
+	set := make(map[T]bool)
+	for _, item := range setArray {
+		set[item] = true
+	}
+
+	for _, item := range subsetArray {
+		if _, found := set[item]; !found {
+			return false
+		}
+	}
+
+	return true
+}
+
+func MaxDate(v1, v2 time.Time) time.Time {
+	if v1.After(v2) {
+		return v1
+	}
+
+	return v2
+}

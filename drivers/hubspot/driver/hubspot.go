@@ -26,7 +26,7 @@ type Hubspot struct {
 	state       kakumodels.State
 }
 
-func (h *Hubspot) Setup(config, catalog interface{}, state kakumodels.State, batchSize int64) error {
+func (h *Hubspot) Setup(config any, catalog *kakumodels.Catalog, state kakumodels.State, batchSize int64) error {
 	conf := &models.Config{}
 	if err := utils.Unmarshal(config, conf); err != nil {
 		return err
@@ -36,20 +36,12 @@ func (h *Hubspot) Setup(config, catalog interface{}, state kakumodels.State, bat
 		return fmt.Errorf("failed to validate config: %s", err)
 	}
 
-	if catalog != nil {
-		cat := &kakumodels.Catalog{}
-		if err := utils.Unmarshal(catalog, cat); err != nil {
-			return err
-		}
-
-		h.catalog = cat
-	}
-
 	client, accessToken, err := newClient(conf)
 	if err != nil {
 		return err
 	}
 
+	h.catalog = catalog
 	h.config = conf
 	h.state = state
 	h.batchSize = batchSize

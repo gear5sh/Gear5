@@ -32,8 +32,13 @@ var ReadCmd = &cobra.Command{
 			return fmt.Errorf("expected type to be: Driver, found %T", connector)
 		}
 
+		var cat *models.Catalog
+		if err := utils.Unmarshal(utils.ReadFile(catalog), cat); err != nil {
+			return fmt.Errorf("failed to unmarshal catalog:%s", err)
+		}
+
 		if state == "" {
-			if err := connector.Setup(utils.ReadFile(config), utils.ReadFile(catalog), nil, batchSize); err != nil {
+			if err := connector.Setup(utils.ReadFile(config), cat, nil, batchSize); err != nil {
 				return err
 			}
 		} else {
@@ -42,7 +47,7 @@ var ReadCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("failed to unmarshal state file")
 			}
-			if err := connector.Setup(utils.ReadFile(config), utils.ReadFile(catalog), st, batchSize); err != nil {
+			if err := connector.Setup(utils.ReadFile(config), cat, st, batchSize); err != nil {
 				return err
 			}
 		}
