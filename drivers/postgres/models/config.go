@@ -24,7 +24,7 @@ type Config struct {
 	//  default=5432
 	// )
 	Port int `json:"port"`
-	// Hostname of the database.
+	// Name of the database.
 	//
 	// @jsonschema(
 	// required=true
@@ -43,10 +43,10 @@ type Config struct {
 	// required=true
 	// )
 	Password string `json:"password"`
-	// Additional properties to pass to the JDBC URL string when connecting to the database formatted as 'key=value' pairs separated by the symbol '&'. (Eg. key1=value1&key2=value2&key3=value3). For more information read about <a href=\"https://jdbc.postgresql.org/documentation/head/connect.html\">JDBC URL parameters</a>.
+	// JDBC URL Parameters (Advanced)
 	//
 	// @jsonschema(
-	// title="JDBC URL Parameters (Advanced)"
+	// description="Additional properties to pass to the JDBC URL string when connecting to the database. For more information read about https://jdbc.postgresql.org/documentation/head/connect.html"
 	// )
 	JDBCURLParams map[string]string `json:"jdbc_url_params"`
 	// Hostname of the database.

@@ -90,7 +90,7 @@ type JSONSchema interface {
 	SetAnyOf(items []JSONSchema)
 	SetOneOf(items []JSONSchema)
 	SetNot(not JSONSchema)
-	SetDefault(def interface{})
+	SetDefault(def string) error
 	SetConstant(def interface{})
 	SetType(typeList string)
 }
@@ -376,8 +376,10 @@ func (s *basicSchema) SetNot(not JSONSchema) {
 	s.Not = not
 }
 
-func (s *basicSchema) SetDefault(def interface{}) {
+func (s *basicSchema) SetDefault(def string) error {
 	s.DefaultValue = def
+
+	return nil
 }
 
 func (s *basicSchema) SetConstant(constant interface{}) {

@@ -11,5 +11,5 @@ type Table struct {
 type ColumnDetails struct {
 	Name       string  `db:"column_name"`
 	DataType   *string `db:"data_type"`
-	IsNullable *bool   `db:"is_nullable"`
+	IsNullable *string `db:"is_nullable"`
 }
