@@ -5,13 +5,15 @@ import (
 )
 
 type ErrorPayload struct {
-	Dataset         string
-	Bucket          string
-	Project         string
-	Database        string
+	Dataset string
+	Bucket  string
+	Project string
+
+	Database string
+	Schema   string
+	Table    string
+
 	Cluster         string
-	Schema          string
-	Table           string
 	Partition       string
 	PrimaryKeys     []string
 	Statement       string
@@ -33,6 +35,7 @@ var (
 	CreateTableError          = sqlError.NewSubtype("create_table")
 	PatchTableError           = sqlError.NewSubtype("patch_table")
 	GetTableError             = sqlError.NewSubtype("get_table")
+	ReadTableError            = sqlError.NewSubtype("read_table")
 	DropError                 = sqlError.NewSubtype("drop_table")
 	RenameError               = sqlError.NewSubtype("rename_table")
 	CreatePrimaryKeysError    = sqlError.NewSubtype("create_primary_keys")

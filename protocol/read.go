@@ -32,7 +32,7 @@ var ReadCmd = &cobra.Command{
 			return fmt.Errorf("expected type to be: Driver, found %T", connector)
 		}
 
-		var cat *models.Catalog
+		cat := &models.Catalog{}
 		if err := utils.Unmarshal(utils.ReadFile(catalog), cat); err != nil {
 			return fmt.Errorf("failed to unmarshal catalog:%s", err)
 		}
@@ -68,7 +68,7 @@ var ReadCmd = &cobra.Command{
 					if err != nil {
 						logger.Fatalf("failed to get state from connector")
 					}
-					if state != nil {
+					if state != nil && state.Len() > 0 {
 						logger.LogState(state)
 					}
 					// reset batch
@@ -78,6 +78,7 @@ var ReadCmd = &cobra.Command{
 		}()
 
 		streamNames := []string{}
+
 		for _, stream := range connector.Catalog().Streams {
 			if stream.Namespace() != "" {
 				streamNames = append(streamNames, fmt.Sprintf("%s[%s]", stream.Name(), stream.Namespace()))
@@ -97,7 +98,7 @@ var ReadCmd = &cobra.Command{
 			streamStartTime := time.Now()
 			err := connector.Read(stream, recordStream)
 			if err != nil {
-				logger.Fatalf("Error occurred while reading recrods from [%s]: %s", connector.Type(), err)
+				logger.Fatalf("Error occurred while reading records from [%s]: %s", connector.Type(), err)
 			}
 
 			logger.Infof("Finished reading stream %s[%s] in %s", stream.Name(), stream.Namespace(), time.Since(streamStartTime).String())

@@ -68,6 +68,7 @@ func (p *Postgres) Setup(config any, catalog *kakumodels.Catalog, state kakumode
 
 	p.config = &cfg
 	p.catalog = catalog
+	p.state = state
 	p.batchSize = batchSize
 
 	return p.setupStreams()
@@ -100,7 +101,7 @@ func (p *Postgres) Discover() ([]*kakumodels.Stream, error) {
 }
 
 func (p *Postgres) Catalog() *kakumodels.Catalog {
-	return nil
+	return p.catalog
 }
 func (p *Postgres) Type() string {
 	return "Postgres"
@@ -133,7 +134,7 @@ func (p *Postgres) Read(stream protocol.Stream, channel chan<- kakumodels.Record
 		}
 
 		// set state
-		pgStream.setState(stream.GetCursorField(), p.state.Get(stream.Name(), stream.Namespace()))
+		pgStream.setState(stream.GetCursorField(), p.state.Get(stream.Name(), stream.Namespace())[stream.GetCursorField()])
 
 		// read incrementally
 		return pgStream.readIncremental(p.client, channel)
@@ -143,7 +144,26 @@ func (p *Postgres) Read(stream protocol.Stream, channel chan<- kakumodels.Record
 }
 
 func (p *Postgres) GetState() (*kakumodels.State, error) {
-	return nil, nil
+	state := &kakumodels.State{}
+	for _, stream := range p.Catalog().Streams {
+		if stream.SyncMode == types.Incremental || stream.SyncMode == types.CDC {
+			pgStream, found := p.allStreams[utils.StreamIdentifier(stream.Namespace(), stream.Name())]
+			if !found {
+				return nil, fmt.Errorf("postgres stream not found while getting state of stream %s[%s]", stream.Name(), stream.Namespace())
+			}
+
+			if !(utils.ArrayContains(pgStream.SupportedSyncModes, types.Incremental) || utils.ArrayContains(pgStream.SupportedSyncModes, types.CDC)) {
+				logger.Warnf("Skipping getting state from stream %s[%s], this stream doesn't support incremental/CDC", stream.Name(), stream.Namespace())
+				continue
+			}
+
+			state.Add(stream.Name(), stream.Namespace(), map[string]any{
+				pgStream.cursor: pgStream.state,
+			})
+		}
+	}
+
+	return state, nil
 }
 
 func (p *Postgres) setupStreams() error {

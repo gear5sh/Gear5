@@ -2,6 +2,7 @@ package safego
 
 import (
 	"runtime/debug"
+	"strings"
 	"time"
 
 	"github.com/piyushsingariya/kaku/logger"
@@ -79,7 +80,9 @@ func Recovery() {
 	if err != nil {
 		logger.Error(err)
 		// capture stacks trace
-		logger.Error(string(debug.Stack()))
+		for _, str := range strings.Split(string(debug.Stack()), "\n") {
+			logger.Error(strings.ReplaceAll(str, "\t", ""))
+		}
 	}
 	logger.Infof("Time of execution %v", time.Since(startTime).String())
 }
