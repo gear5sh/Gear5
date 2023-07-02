@@ -34,7 +34,6 @@ type Stream interface {
 	Namespace() string
 	JSONSchema() *models.Schema
 	GetStream() *models.Stream
-	SupportedSyncModes() []types.SyncMode
 	GetSyncMode() types.SyncMode
 	GetCursorField() string
 }

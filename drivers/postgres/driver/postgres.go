@@ -30,7 +30,7 @@ const (
 )
 
 type Postgres struct {
-	allStreams  map[string]*kakumodels.Stream
+	allStreams  map[string]*pgStream
 	batchSize   int64
 	client      *sqlx.DB
 	accessToken string
@@ -93,7 +93,7 @@ func (p *Postgres) Check() error {
 func (p *Postgres) Discover() ([]*kakumodels.Stream, error) {
 	streams := []*kakumodels.Stream{}
 	for _, stream := range p.allStreams {
-		streams = append(streams, stream)
+		streams = append(streams, stream.Stream)
 	}
 
 	return streams, nil
@@ -110,6 +110,35 @@ func (p *Postgres) Streams() ([]*kakumodels.Stream, error) {
 	return nil, nil
 }
 func (p *Postgres) Read(stream protocol.Stream, channel chan<- kakumodels.Record) error {
+	identifier := utils.StreamIdentifier(stream.Namespace(), stream.Name())
+	pgStream, found := p.allStreams[identifier]
+	if !found {
+		logger.Warnf("Stream %s.%s not found; skipping...", stream.Namespace(), stream.Name())
+		return nil
+	}
+
+	if !utils.ArrayContains(pgStream.SupportedSyncModes, stream.GetSyncMode()) {
+		logger.Warnf("Stream %s.%s does not support sync mode[%s]; skipping...", stream.Namespace(), stream.Name(), stream.GetSyncMode())
+		return nil
+	}
+
+	switch stream.GetSyncMode() {
+	case types.FullRefresh:
+		return pgStream.readFullRefresh(p.client, channel)
+	case types.Incremental:
+		// check if cursor field is supported
+		if !utils.ArrayContains(pgStream.DefaultCursorFields, stream.GetCursorField()) {
+			logger.Warnf("Stream %s.%s does not support cursor field[%s]; skipping...", stream.Namespace(), stream.Name(), stream.GetCursorField())
+			return nil
+		}
+
+		// set state
+		pgStream.setState(stream.GetCursorField(), p.state.Get(stream.Name(), stream.Namespace()))
+
+		// read incrementally
+		return pgStream.readIncremental(p.client, channel)
+	}
+
 	return nil
 }
 
@@ -118,7 +147,7 @@ func (p *Postgres) GetState() (*kakumodels.State, error) {
 }
 
 func (p *Postgres) setupStreams() error {
-	p.allStreams = make(map[string]*kakumodels.Stream)
+	p.allStreams = make(map[string]*pgStream)
 
 	var schemaNamesOutput []models.Schema
 	err := p.client.Select(&schemaNamesOutput, getSchemaNamesTmpl)
@@ -209,7 +238,10 @@ func (p *Postgres) setupStreams() error {
 				stream.SourceDefinedPrimaryKey = append(stream.SourceDefinedPrimaryKey, column.Name)
 			}
 
-			p.allStreams[utils.StreamIdentifier(schema.Name, table.Name)] = stream
+			p.allStreams[utils.StreamIdentifier(schema.Name, table.Name)] = &pgStream{
+				Stream:    stream,
+				batchSize: p.batchSize,
+			}
 		}
 
 	}
