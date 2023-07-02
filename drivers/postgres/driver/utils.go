@@ -34,6 +34,7 @@ var pgTypeToDataTypes = map[string]types.DataType{
 	"longvarchar":       types.STRING,
 
 	// date/time
+	"time":                        types.TIMESTAMP,
 	"date":                        types.TIMESTAMP,
 	"timestamp":                   types.TIMESTAMP,
 	"timestampz":                  types.TIMESTAMP,

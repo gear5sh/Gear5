@@ -9,6 +9,9 @@ import (
 
 	"github.com/piyushsingariya/kaku/jsonschema"
 	"github.com/piyushsingariya/kaku/logger"
+	"github.com/piyushsingariya/kaku/models"
+	"github.com/piyushsingariya/kaku/types"
+	"github.com/piyushsingariya/kaku/typing"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 )
@@ -220,4 +223,34 @@ func MaxDate(v1, v2 time.Time) time.Time {
 	}
 
 	return v2
+}
+
+func MaximumOnDataType[T any](typ []types.DataType, a, b T) (T, error) {
+	switch {
+	case ArrayContains(typ, types.TIMESTAMP):
+		adate, err := typing.ReformatDate(a)
+		if err != nil {
+			return a, fmt.Errorf("failed to reformat[%v] while comparing: %s", a, err)
+		}
+		bdate, err := typing.ReformatDate(b)
+		if err != nil {
+			return a, fmt.Errorf("failed to reformat[%v] while comparing: %s", b, err)
+		}
+
+		if MaxDate(adate, bdate) == adate {
+			return a, nil
+		}
+
+		return b, nil
+	default:
+		return a, fmt.Errorf("comparison not available for data types %v now", typ)
+	}
+}
+
+func ReformatRecord(name, namespace string, record map[string]any) models.Record {
+	return models.Record{
+		Stream:    name,
+		Namespace: namespace,
+		Data:      record,
+	}
 }

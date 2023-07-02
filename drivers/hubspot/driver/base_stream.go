@@ -478,10 +478,3 @@ func (s *Stream) readStreamRecords(nextPageToken map[string]any, f func() (path,
 
 	return records, response, nil
 }
-
-func (s *Stream) reformatRecord(record map[string]any) kakumodels.Record {
-	return kakumodels.Record{
-		Stream: s.Name(),
-		Data:   record,
-	}
-}

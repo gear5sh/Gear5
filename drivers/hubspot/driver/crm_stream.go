@@ -123,7 +123,7 @@ func (c *CRMSearchStream) readRecords(send chan<- kakumodels.Record) error {
 				latest_cursor = &cursor
 			}
 
-			if !safego.Insert(send, c.reformatRecord(record)) {
+			if !safego.Insert(send, utils.ReformatRecord(c.Name(), "", record)) {
 				// channel was closed
 				return nil
 			}
