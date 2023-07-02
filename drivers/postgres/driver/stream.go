@@ -6,6 +6,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	kakumodels "github.com/piyushsingariya/kaku/models"
 	"github.com/piyushsingariya/kaku/types"
+	"github.com/piyushsingariya/kaku/typing"
 	"github.com/piyushsingariya/kaku/utils"
 )
 
@@ -17,11 +18,14 @@ type pgStream struct {
 }
 
 const (
-	readRecordsFullRefresh = "SELECT * FROM $1.$2 OFFSET $3 LIMIT $4"
+	readRecordsFullRefresh             = `SELECT * FROM "%s"."%s" OFFSET %d LIMIT %d`
+	readRecordsIncrementalWithState    = `SELECT * FROM "%s"."%s" where "%s">= $1 ORDER BY "%s" ASC OFFSET %d LIMIT %d`
+	readRecordsIncrementalWithoutState = `SELECT * FROM "%s"."%s" ORDER BY "%s" ASC OFFSET %d LIMIT %d`
 )
 
-func (p *pgStream) setState(cursor string, stateMap map[string]any) {
-
+func (p *pgStream) setState(cursor string, state interface{}) {
+	p.cursor = cursor
+	p.state = state
 }
 
 func (p *pgStream) readFullRefresh(client *sqlx.DB, channel chan<- kakumodels.Record) error {
@@ -29,21 +33,51 @@ func (p *pgStream) readFullRefresh(client *sqlx.DB, channel chan<- kakumodels.Re
 	limit := p.batchSize
 
 	for {
-		var recordOutput []types.RecordData
-		err := client.Select(&recordOutput, readRecordsFullRefresh, p.Namespace, p.Name, offset*limit, limit)
+		statement := fmt.Sprintf(readRecordsFullRefresh, p.Namespace, p.Name, offset*limit, limit)
+
+		// Execute the query
+		rows, err := client.Queryx(statement)
 		if err != nil {
-			return fmt.Errorf("failed to read after offset[%d] limit[%d]: %s", offset*limit, limit, err)
+			return typing.SQLError(typing.ReadTableError, err, fmt.Sprintf("failed to read after offset[%d] limit[%d]", offset*limit, limit), &typing.ErrorPayload{
+				Table:     p.Name,
+				Schema:    p.Namespace,
+				Statement: statement,
+			})
 		}
 
-		// records finished
-		if len(recordOutput) == 0 {
-			break
-		}
+		paginationFinished := true
 
-		for _, record := range recordOutput {
+		// Fetch rows and populate the result
+		for rows.Next() {
+			paginationFinished = false
+
+			// Create a map to hold column names and values
+			record := make(types.RecordData)
+
+			// Scan the row into the map
+			err := rows.MapScan(record)
+			if err != nil {
+				return fmt.Errorf("failed to mapScan record data: %s", err)
+			}
+
 			// insert record
 			channel <- utils.ReformatRecord(p.Name, p.Namespace, record)
 		}
+
+		// Check for any errors during row iteration
+		err = rows.Err()
+		if err != nil {
+			return fmt.Errorf("failed to mapScan record data: %s", err)
+		}
+
+		// records finished
+		if paginationFinished {
+			break
+		}
+
+		// increase offset
+		offset += 1
+		rows.Close()
 	}
 	return nil
 }
@@ -51,49 +85,81 @@ func (p *pgStream) readFullRefresh(client *sqlx.DB, channel chan<- kakumodels.Re
 func (p *pgStream) readIncremental(client *sqlx.DB, channel chan<- kakumodels.Record) error {
 	offset := int64(0)
 	limit := p.batchSize
-	var localState any
-
+	var initialStateAtStart any
 	if p.state != nil {
-		// read incrementally
+		initialStateAtStart = p.state
+	}
 
-		return nil
+	var extract func() (*sqlx.Rows, error) = func() (*sqlx.Rows, error) {
+		if initialStateAtStart != nil {
+			statement := fmt.Sprintf(readRecordsIncrementalWithState, p.Namespace, p.Name, p.cursor, p.cursor, offset*limit, limit)
+			// Execute the query
+			return client.Queryx(statement, initialStateAtStart)
+		}
+		statement := fmt.Sprintf(readRecordsIncrementalWithoutState, p.Namespace, p.Name, p.cursor, offset*limit, limit)
+		// Execute the query
+		return client.Queryx(statement)
 	}
 
 	for {
-		var recordOutput []types.RecordData
-		err := client.Select(&recordOutput, readRecordsFullRefresh, p.Namespace, p.Name, offset*limit, limit)
+		// extract rows
+		rows, err := extract()
 		if err != nil {
-			return fmt.Errorf("failed to read after offset[%d] limit[%d]: %s", offset*limit, limit, err)
+			return typing.SQLError(typing.ReadTableError, err, fmt.Sprintf("failed to read after offset[%d] limit[%d]", offset*limit, limit), &typing.ErrorPayload{
+				Table:  p.Name,
+				Schema: p.Namespace,
+			})
 		}
 
-		// records finished
-		if len(recordOutput) == 0 {
-			break
-		}
+		paginationFinished := true
 
-		for _, record := range recordOutput {
+		// Fetch rows and populate the result
+		for rows.Next() {
+			paginationFinished = false
+
+			// Create a map to hold column names and values
+			record := make(types.RecordData)
+
+			// Scan the row into the map
+			err := rows.MapScan(record)
+			if err != nil {
+				return fmt.Errorf("failed to mapScan record data: %s", err)
+			}
+
 			if cursorVal, found := record[p.cursor]; found && cursorVal != nil {
 				// compare if not nil
-				if localState != nil {
-					state, err := utils.MaximumOnDataType(p.JSONSchema.Properties[p.cursor].Type, localState, cursorVal)
+				if p.state != nil {
+					state, err := utils.MaximumOnDataType(p.JSONSchema.Properties[p.cursor].Type, p.state, cursorVal)
 					if err != nil {
 						return err
 					}
 
-					localState = state
+					p.state = state
 				} else {
 					// directly update
-					localState = cursorVal
+					p.state = cursorVal
 				}
 			}
 
 			// insert record
 			channel <- utils.ReformatRecord(p.Name, p.Namespace, record)
 		}
-	}
 
-	// update state
-	p.state = localState
+		// Check for any errors during row iteration
+		err = rows.Err()
+		if err != nil {
+			return fmt.Errorf("failed to mapScan record data: %s", err)
+		}
+
+		// records finished
+		if paginationFinished {
+			break
+		}
+
+		// increase offset
+		offset += 1
+		rows.Close()
+	}
 
 	return nil
 }
