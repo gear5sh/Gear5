@@ -5,6 +5,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	kakumodels "github.com/piyushsingariya/kaku/models"
+	"github.com/piyushsingariya/kaku/safego"
 	"github.com/piyushsingariya/kaku/types"
 	"github.com/piyushsingariya/kaku/typing"
 	"github.com/piyushsingariya/kaku/utils"
@@ -61,7 +62,10 @@ func (p *pgStream) readFullRefresh(client *sqlx.DB, channel chan<- kakumodels.Re
 			}
 
 			// insert record
-			channel <- utils.ReformatRecord(p.Name, p.Namespace, record)
+			if !safego.Insert(channel, utils.ReformatRecord(p.Name, p.Namespace, record)) {
+				// channel was closed
+				return nil
+			}
 		}
 
 		// Check for any errors during row iteration
