@@ -88,30 +88,20 @@ func Recovery() {
 }
 
 func Insert[T any](ch chan<- T, value T) bool {
-	select {
-	case ch <- value:
-		return true
-	default:
-		return false
-	}
+	safeInsert := false
+
+	Run(func() {
+		ch <- value
+		safeInsert = true
+	})
+
+	return safeInsert
 }
 
 func Close[T any](ch chan T) {
-	if ChannelClosed(ch) {
-		return
-	}
-
-	close(ch)
-}
-
-func ChannelClosed[T any](ch chan T) bool {
-	// Check if the channel is not closed
-	select {
-	case <-ch:
-		return true
-	default:
-		return false
-	}
+	Run(func() {
+		close(ch)
+	})
 }
 
 func init() {
