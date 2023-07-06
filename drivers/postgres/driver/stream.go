@@ -20,8 +20,8 @@ type pgStream struct {
 
 const (
 	readRecordsFullRefresh             = `SELECT * FROM "%s"."%s" OFFSET %d LIMIT %d`
-	readRecordsIncrementalWithState    = `SELECT * FROM "%s"."%s" where "%s">= $1 ORDER BY "%s" ASC OFFSET %d LIMIT %d`
-	readRecordsIncrementalWithoutState = `SELECT * FROM "%s"."%s" ORDER BY "%s" ASC OFFSET %d LIMIT %d`
+	readRecordsIncrementalWithState    = `SELECT * FROM "%s"."%s" where "%s">= $1 ORDER BY "%s" ASC NULLS FIRST OFFSET %d LIMIT %d`
+	readRecordsIncrementalWithoutState = `SELECT * FROM "%s"."%s" ORDER BY "%s" ASC NULLS FIRST OFFSET %d LIMIT %d`
 )
 
 func (p *pgStream) setState(cursor string, state interface{}) {
