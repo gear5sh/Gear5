@@ -46,11 +46,6 @@ func (gs *GoogleSheets) Spec() (schema.JSONSchema, error) {
 	return jsonschema.Reflect(models.Config{})
 }
 
-func (gs *GoogleSheets) Streams() ([]*kakumodels.Stream, error) {
-	streams, _, err := gs.getAllSheetStreams()
-	return streams, err
-}
-
 func (gs *GoogleSheets) Catalog() *kakumodels.Catalog {
 	return gs.catalog
 }

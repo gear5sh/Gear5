@@ -6,6 +6,7 @@ import (
 	"github.com/go-playground/validator"
 )
 
+// Authenticate via Access and Secret Keys
 type BaseAWS struct {
 	// AccessKey for AWS
 	//
@@ -22,12 +23,13 @@ type BaseAWS struct {
 	// Region for AWS
 	//
 	// @jsonschema(
-	// required=true
+	// required=true,
 	// enum=["require","disable","verify-ca","verify-full"]
 	// )
 	Region string `json:"region" validate:"required"`
 }
 
+// Authenticate via AssumeRole in foreign Account
 type AssumeRoleAWS struct {
 	BaseAWS
 	// Remote AccountID for AWS
@@ -39,12 +41,18 @@ type AssumeRoleAWS struct {
 	// RoleName to assume in given AccountID for AWS
 	//
 	// @jsonschema(
-	// required=true,
+	// required=true
 	// )
 	RoleName string `json:"role_name"`
 }
 
 type Config struct {
+	// Target Stream Name
+	//
+	// @jsonschema(
+	// required=true
+	// )
+	TargetStreamName string `json:"stream_name" validate:"required"`
 	// FileType
 	//
 	// @jsonschema(
