@@ -10,7 +10,6 @@ type Connector interface {
 	Setup(config any, catalog *models.Catalog, state models.State, batchSize int64) error
 	Spec() (schema.JSONSchema, error)
 	Check() error
-	Discover() ([]*models.Stream, error)
 
 	Catalog() *models.Catalog
 	Type() string
@@ -18,7 +17,7 @@ type Connector interface {
 
 type Driver interface {
 	Connector
-	Streams() ([]*models.Stream, error)
+	Discover() ([]*models.Stream, error)
 	Read(stream Stream, channel chan<- models.Record) error
 	GetState() (*models.State, error)
 }

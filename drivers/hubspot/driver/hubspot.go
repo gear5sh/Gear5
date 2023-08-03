@@ -88,16 +88,6 @@ func (h *Hubspot) Type() string {
 	return "Hubspot"
 }
 
-func (h *Hubspot) Streams() ([]*kakumodels.Stream, error) {
-	scopes, err := h.getGrantedScopes()
-	if err != nil {
-		return nil, err
-	}
-
-	logger.Infof("The following scopes are granted: %v", scopes)
-	return nil, nil
-}
-
 func (h *Hubspot) GetState() (*kakumodels.State, error) {
 	state := &kakumodels.State{}
 	for _, stream := range h.Catalog().Streams {
