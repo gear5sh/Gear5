@@ -12,7 +12,7 @@ const defaultRestartTimeout = 2 * time.Second
 
 type RecoverHandler func(value interface{})
 
-var GlobalRecoverHandler RecoverHandler
+var GlobalRecoverHandler RecoverHandler = func(value interface{}) {}
 
 var (
 	startTime time.Time
