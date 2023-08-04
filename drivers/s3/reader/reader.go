@@ -11,7 +11,7 @@ import (
 var FileTypes = []string{"parquet"}
 
 type Reader interface {
-	GetSchema() map[string]*kakumodels.Property
+	GetSchema() (map[string]*kakumodels.Property, error)
 }
 
 func Init(s3 *s3.S3, _type, bucket, file string) (Reader, error) {
