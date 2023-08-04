@@ -5,7 +5,6 @@ go 1.19
 require (
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/piyushsingariya/kaku v0.0.0-20230727050722-6795340c7033
-	tideland.dev/go/matcher v0.1.0
 )
 
 require (
@@ -30,6 +29,7 @@ require (
 	github.com/brainicorn/ganno v0.0.0-20220304182003-e638228cd865 // indirect
 	github.com/brainicorn/goblex v0.0.0-20210908194630-cfe0cfdf87dd // indirect
 	github.com/fraugster/parquet-go v0.12.0
+	github.com/gobwas/glob v0.2.3
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/joomcode/errorx v1.1.0 // indirect
 	github.com/sirupsen/logrus v1.9.2 // indirect
