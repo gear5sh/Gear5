@@ -2,6 +2,7 @@ package driver
 
 import (
 	"fmt"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/gobwas/glob"
 	"github.com/piyushsingariya/drivers/s3/models"
 	"github.com/piyushsingariya/drivers/s3/reader"
 	"github.com/piyushsingariya/kaku/jsonschema"
@@ -17,8 +19,9 @@ import (
 	protocol "github.com/piyushsingariya/kaku/protocol"
 	"github.com/piyushsingariya/kaku/types"
 	"github.com/piyushsingariya/kaku/utils"
-	"tideland.dev/go/matcher"
 )
+
+const patternSymbols = "*[]!{}"
 
 type S3 struct {
 	config    *models.Config
@@ -60,50 +63,13 @@ func (s *S3) Spec() (schema.JSONSchema, error) {
 }
 
 func (s *S3) Check() error {
-	// List objects in the S3 bucket
-	resp, err := s.client.ListObjectsV2(&s3.ListObjectsV2Input{
-		Bucket: aws.String(s.config.Bucket),
-	})
-	if err != nil {
-		return fmt.Errorf("Error listing objects: %s", err)
-	}
-
-	var schemas []map[string]*kakumodels.Property
-	// iteration
-	for resp.NextContinuationToken != nil {
-		for _, obj := range resp.Contents {
-			if matcher.Matches(s.config.Pattern, *obj.Key, matcher.ValidateCase) {
-				reader, err := reader.Init(s.client, s.config.Type, s.config.Bucket, *obj.Key)
-				if err != nil {
-					return fmt.Errorf("failed to initialize reader on file[%s]: %s", *obj.Key, err)
-				}
-				schemas = append(schemas, reader.GetSchema())
-			}
-		}
-
-		resp, err = s.client.ListObjectsV2(&s3.ListObjectsV2Input{
-			Bucket:            aws.String(s.config.Bucket),
-			ContinuationToken: resp.NextContinuationToken,
-		})
+	for stream, pattern := range s.config.Streams {
+		err := s.iteration(pattern, func(reader reader.Reader) (bool, error) {
+			// break iteration after single item
+			return true, nil
+		}, func() error { return nil })
 		if err != nil {
-			return fmt.Errorf("Error listing objects: %s", err)
-		}
-	}
-
-	// final
-	for _, obj := range resp.Contents {
-		if matcher.Matches(s.config.Pattern, *obj.Key, matcher.ValidateCase) {
-			reader, err := reader.Init(s.client, s.config.Type, s.config.Bucket, *obj.Key)
-			if err != nil {
-				return fmt.Errorf("failed to initialize reader on file[%s]: %s", *obj.Key, err)
-			}
-			schemas = append(schemas, reader.GetSchema())
-		}
-	}
-
-	for i := 1; i < len(schemas); i++ {
-		if !reflect.DeepEqual(schemas[i], schemas[i-1]) {
-			return fmt.Errorf("different schemas across files")
+			return fmt.Errorf("failed to check stream[%s] pattern[%s]: %s", stream, pattern, err)
 		}
 	}
 
@@ -111,69 +77,48 @@ func (s *S3) Check() error {
 }
 
 func (s *S3) Discover() ([]*kakumodels.Stream, error) {
-	// List objects in the S3 bucket
-	resp, err := s.client.ListObjectsV2(&s3.ListObjectsV2Input{
-		Bucket: aws.String(s.config.Bucket),
-	})
-	if err != nil {
-		return nil, fmt.Errorf("Error listing objects: %s", err)
-	}
-	var schemas []map[string]*kakumodels.Property
+	streams := []*kakumodels.Stream{}
+	for stream, pattern := range s.config.Streams {
+		count := 0
+		schemas := []map[string]*kakumodels.Property{}
 
-	// iteration
-	for resp.IsTruncated != nil && *resp.IsTruncated {
-		for _, obj := range resp.Contents {
-			if matcher.Matches(s.config.Pattern, *obj.Key, matcher.ValidateCase) {
-				reader, err := reader.Init(s.client, s.config.Type, s.config.Bucket, *obj.Key)
-				if err != nil {
-					return nil, fmt.Errorf("failed to initialize reader on file[%s]: %s", *obj.Key, err)
-				}
-				schemas = append(schemas, reader.GetSchema())
+		err := s.iteration(pattern, func(reader reader.Reader) (bool, error) {
+			// iterate only 5 files to get schema
+			if count > 5 {
+				return true, nil
 			}
-		}
 
-		resp, err = s.client.ListObjectsV2(&s3.ListObjectsV2Input{
-			Bucket:            aws.String(s.config.Bucket),
-			ContinuationToken: resp.NextContinuationToken,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("Error listing objects: %s", err)
-		}
-	}
-
-	// final
-	for _, obj := range resp.Contents {
-		if matcher.Matches(s.config.Pattern, *obj.Key, matcher.ValidateCase) {
-			reader, err := reader.Init(s.client, s.config.Type, s.config.Bucket, *obj.Key)
-			if err != nil {
-				return nil, fmt.Errorf("failed to initialize reader on file[%s]: %s", *obj.Key, err)
-			}
 			schemas = append(schemas, reader.GetSchema())
+			count++
+			return false, nil
+		}, func() error { return nil })
+		if err != nil {
+			return nil, fmt.Errorf("failed to check stream[%s] pattern[%s]: %s", stream, pattern, err)
 		}
-	}
 
-	if len(schemas) < 1 {
-		return nil, fmt.Errorf("no schema found")
-	}
-
-	for i := 1; i < len(schemas); i++ {
-		if !reflect.DeepEqual(schemas[i], schemas[i-1]) {
-			return nil, fmt.Errorf("different schemas across files")
+		if len(schemas) < 1 {
+			return nil, fmt.Errorf("no schema found")
 		}
-	}
 
-	return []*kakumodels.Stream{
-		{
-			Name:                    s.config.TargetStreamName,
-			Namespace:               s.config.TargetStreamName,
-			SupportedSyncModes:      []types.SyncMode{types.Incremental, types.FullRefresh},
-			SourceDefinedCursor:     true,
-			SourceDefinedPrimaryKey: []string{"last_modified_date"},
+		for i := 1; i < len(schemas); i++ {
+			if !reflect.DeepEqual(schemas[i], schemas[i-1]) {
+				return nil, fmt.Errorf("different schemas across files")
+			}
+		}
+
+		streams = append(streams, &kakumodels.Stream{
+			Name:                stream,
+			Namespace:           pattern,
+			SupportedSyncModes:  []types.SyncMode{types.Incremental, types.FullRefresh},
+			SourceDefinedCursor: true,
+			DefaultCursorFields: []string{"last_modified_date"},
 			JSONSchema: &kakumodels.Schema{
 				Properties: schemas[0],
 			},
-		},
-	}, nil
+		})
+	}
+
+	return streams, nil
 }
 
 func (s *S3) Catalog() *kakumodels.Catalog {
@@ -211,6 +156,72 @@ func (s *S3) Read(stream protocol.Stream, channel chan<- kakumodels.Record) erro
 
 	return nil
 }
+
 func (s *S3) GetState() (*kakumodels.State, error) {
 	return &s.state, nil
+}
+
+func (s *S3) iteration(pattern string, foreach func(reader reader.Reader) (bool, error), afterIteration func() error) error {
+	re, err := glob.Compile(pattern)
+	if err != nil {
+		return fmt.Errorf("failed to complie file pattern please check: https://github.com/gobwas/glob#performance")
+	}
+
+	// List objects in the S3 bucket
+	var continuationToken *string
+
+	prefix := ""
+	split := strings.Split(pattern, "/")
+	for _, i := range split {
+		if strings.ContainsAny(i, patternSymbols) {
+			break
+		}
+		prefix = filepath.Join(prefix, i)
+	}
+
+s3Iteration:
+	for {
+		resp, err := s.client.ListObjectsV2(&s3.ListObjectsV2Input{
+			Bucket:            aws.String(s.config.Bucket),
+			Prefix:            aws.String(prefix),
+			MaxKeys:           aws.Int64(10000000),
+			ContinuationToken: continuationToken, // Initialize with nil
+		})
+		if err != nil {
+			return fmt.Errorf("Error listing objects: %s", err)
+		}
+
+		// Iterate through the objects and process them
+		for _, obj := range resp.Contents {
+			if re.Match(*obj.Key) {
+				reader, err := reader.Init(s.client, s.config.Type, s.config.Bucket, *obj.Key)
+				if err != nil {
+					return fmt.Errorf("failed to initialize reader on file[%s]: %s", *obj.Key, err)
+				}
+				// execute foreach
+				breakIteration, err := foreach(reader)
+				if err != nil {
+					return err
+				}
+
+				// break iteration
+				if breakIteration {
+					break s3Iteration
+				}
+			}
+		}
+
+		// Check if there are more objects to retrieve
+		if resp.IsTruncated == nil || !*resp.IsTruncated {
+			break // Break the loop if there are no more objects
+		}
+
+		// Update the continuation token for the next iteration
+		continuationToken := resp.NextContinuationToken
+		if continuationToken == nil {
+			break // Break the loop if the continuation token is nil (should not happen)
+		}
+	}
+
+	return afterIteration()
 }

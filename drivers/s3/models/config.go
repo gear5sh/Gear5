@@ -47,12 +47,12 @@ type AssumeRoleAWS struct {
 }
 
 type Config struct {
-	// Target Stream Name
+	// Stream Name with Patterns
 	//
 	// @jsonschema(
 	// required=true
 	// )
-	TargetStreamName string `json:"stream_name" validate:"required"`
+	Streams map[string]string `json:"streams" validate:"required"`
 	// FileType
 	//
 	// @jsonschema(
@@ -65,12 +65,6 @@ type Config struct {
 	// required=true
 	// )
 	Bucket string `json:"bucket" validate:"required"`
-	// Pattern for bucket
-	//
-	// @jsonschema(
-	// required=true
-	// )
-	Pattern string `json:"pattern" validate:"required"`
 	// Bucket Region for AWS
 	//
 	// @jsonschema(
