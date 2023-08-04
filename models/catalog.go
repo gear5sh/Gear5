@@ -68,8 +68,6 @@ type Schema struct {
 
 // Property is a dto for catalog properties representation
 type Property struct {
-	//might be string or []string or nil
 	Type       []types.DataType     `json:"type,omitempty"`
-	Format     string               `json:"format,omitempty"`
 	Properties map[string]*Property `json:"properties,omitempty"`
 }

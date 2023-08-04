@@ -3,8 +3,6 @@ package driver
 import (
 	"fmt"
 	"path/filepath"
-	"reflect"
-	"regexp"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -67,7 +65,7 @@ func (s *S3) Check() error {
 		err := s.iteration(pattern, func(reader reader.Reader) (bool, error) {
 			// break iteration after single item
 			return true, nil
-		}, func() error { return nil })
+		})
 		if err != nil {
 			return fmt.Errorf("failed to check stream[%s] pattern[%s]: %s", stream, pattern, err)
 		}
@@ -79,31 +77,18 @@ func (s *S3) Check() error {
 func (s *S3) Discover() ([]*kakumodels.Stream, error) {
 	streams := []*kakumodels.Stream{}
 	for stream, pattern := range s.config.Streams {
-		count := 0
-		schemas := []map[string]*kakumodels.Property{}
-
-		err := s.iteration(pattern, func(reader reader.Reader) (bool, error) {
-			// iterate only 5 files to get schema
-			if count > 5 {
-				return true, nil
-			}
-
-			schemas = append(schemas, reader.GetSchema())
-			count++
-			return false, nil
-		}, func() error { return nil })
+		var schema map[string]*kakumodels.Property
+		var err error
+		err = s.iteration(pattern, func(reader reader.Reader) (bool, error) {
+			schema, err = reader.GetSchema()
+			return true, err
+		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to check stream[%s] pattern[%s]: %s", stream, pattern, err)
 		}
 
-		if len(schemas) < 1 {
+		if schema == nil {
 			return nil, fmt.Errorf("no schema found")
-		}
-
-		for i := 1; i < len(schemas); i++ {
-			if !reflect.DeepEqual(schemas[i], schemas[i-1]) {
-				return nil, fmt.Errorf("different schemas across files")
-			}
 		}
 
 		streams = append(streams, &kakumodels.Stream{
@@ -113,7 +98,7 @@ func (s *S3) Discover() ([]*kakumodels.Stream, error) {
 			SourceDefinedCursor: true,
 			DefaultCursorFields: []string{"last_modified_date"},
 			JSONSchema: &kakumodels.Schema{
-				Properties: schemas[0],
+				Properties: schema,
 			},
 		})
 	}
@@ -130,30 +115,6 @@ func (s *S3) Type() string {
 }
 
 func (s *S3) Read(stream protocol.Stream, channel chan<- kakumodels.Record) error {
-	// Compile the regex pattern
-	regexPattern, err := regexp.Compile(s.config.Pattern)
-	if err != nil {
-		return fmt.Errorf("Error compiling regex pattern: %s", err)
-	}
-
-	// List objects in the S3 bucket
-	resp, err := s.client.ListObjectsV2(&s3.ListObjectsV2Input{
-		Bucket: aws.String(s.config.Bucket),
-	})
-	if err != nil {
-		return fmt.Errorf("Error listing objects: %s", err)
-	}
-
-	for _, obj := range resp.Contents {
-		if regexPattern.MatchString(*obj.Key) || strings.HasSuffix(*obj.Key, fmt.Sprintf(".%s", s.config.Type)) {
-			_, err := reader.Init(s.client, s.config.Type, s.config.Bucket, *obj.Key)
-			if err != nil {
-				return fmt.Errorf("failed to initialize reader on file[%s]: %s", *obj.Key, err)
-			}
-
-		}
-	}
-
 	return nil
 }
 
@@ -161,15 +122,13 @@ func (s *S3) GetState() (*kakumodels.State, error) {
 	return &s.state, nil
 }
 
-func (s *S3) iteration(pattern string, foreach func(reader reader.Reader) (bool, error), afterIteration func() error) error {
+func (s *S3) iteration(pattern string, foreach func(reader reader.Reader) (bool, error)) error {
 	re, err := glob.Compile(pattern)
 	if err != nil {
 		return fmt.Errorf("failed to complie file pattern please check: https://github.com/gobwas/glob#performance")
 	}
 
-	// List objects in the S3 bucket
 	var continuationToken *string
-
 	prefix := ""
 	split := strings.Split(pattern, "/")
 	for _, i := range split {
@@ -179,6 +138,7 @@ func (s *S3) iteration(pattern string, foreach func(reader reader.Reader) (bool,
 		prefix = filepath.Join(prefix, i)
 	}
 
+	// List objects in the S3 bucket
 s3Iteration:
 	for {
 		resp, err := s.client.ListObjectsV2(&s3.ListObjectsV2Input{
@@ -223,5 +183,5 @@ s3Iteration:
 		}
 	}
 
-	return afterIteration()
+	return nil
 }
