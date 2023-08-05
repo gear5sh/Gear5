@@ -3,6 +3,7 @@ package safego
 import (
 	"runtime/debug"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/piyushsingariya/kaku/logger"
@@ -89,12 +90,16 @@ func Recovery() {
 
 func Insert[T any](ch chan<- T, value T) bool {
 	safeInsert := false
+	wg := sync.WaitGroup{}
+	wg.Add(1)
 
 	Run(func() {
+		defer wg.Done()
 		ch <- value
 		safeInsert = true
 	})
 
+	wg.Wait()
 	return safeInsert
 }
 

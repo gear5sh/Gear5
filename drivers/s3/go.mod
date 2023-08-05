@@ -10,6 +10,7 @@ require (
 require (
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/apache/thrift v0.18.1 // indirect
+	github.com/cyberdelia/lzo v1.0.0 // indirect
 	github.com/go-playground/locales v0.13.0 // indirect
 	github.com/go-playground/universal-translator v0.17.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
@@ -24,6 +25,7 @@ require (
 require (
 	github.com/akrennmair/parquet-go-block-compressors/lz4raw v0.0.0-20220218141547-8f5cd3f4a5ca
 	github.com/akrennmair/parquet-go-brotli v0.1.0
+	github.com/akrennmair/parquet-go-lzo v0.1.0
 	github.com/akrennmair/parquet-go-zstd v0.1.0
 	github.com/aws/aws-sdk-go v1.44.314
 	github.com/brainicorn/ganno v0.0.0-20220304182003-e638228cd865 // indirect

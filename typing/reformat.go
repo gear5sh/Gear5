@@ -9,6 +9,10 @@ import (
 	"github.com/piyushsingariya/kaku/types"
 )
 
+type StringInterface interface {
+	String() string
+}
+
 var DateTimeFormats = []string{
 	"2006-01-02",
 	"2006-01-02 15:04:05",
@@ -69,7 +73,22 @@ func ReformatValue(dataType types.DataType, v any) (any, error) {
 	case types.TIMESTAMP:
 		return ReformatDate(v)
 	case types.STRING:
-		return fmt.Sprintf("%v", v), nil
+		switch v := v.(type) {
+		case int, int8, int16, int32, int64:
+			return fmt.Sprintf("%d", v), nil
+		case uint, uint8, uint16, uint32, uint64:
+			return fmt.Sprintf("%d", v), nil
+		case float32, float64:
+			return fmt.Sprintf("%d", v), nil
+		case string:
+			return v, nil
+		case bool:
+			return fmt.Sprintf("%t", v), nil
+		case []byte: // byte slice
+			return string(v), nil
+		default:
+			return fmt.Sprintf("%v", v), nil
+		}
 	case types.FLOAT64:
 		return ReformatFloat64(v)
 	case types.ARRAY:

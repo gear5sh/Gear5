@@ -3,14 +3,19 @@ package reader
 import (
 	"context"
 	"fmt"
+	"io"
+	"sync/atomic"
+	"time"
 
 	_ "github.com/akrennmair/parquet-go-block-compressors/lz4raw" // registers the LZ4 block compressor with the LZ4_RAW compression type with parquet-go
 	_ "github.com/akrennmair/parquet-go-brotli"                   // registers the Brotli block compressor with parquet-go
 
-	// _ "github.com/akrennmair/parquet-go-lzo"                      // registers the LZO block compressor with parquet-go
+	_ "github.com/akrennmair/parquet-go-lzo"  // registers the LZO block compressor with parquet-go
 	_ "github.com/akrennmair/parquet-go-zstd" // registers the Zstd block compressor with parquet-go
+	"github.com/piyushsingariya/kaku/logger"
 	kakumodels "github.com/piyushsingariya/kaku/models"
 	"github.com/piyushsingariya/kaku/types"
+	"github.com/piyushsingariya/kaku/typing"
 	"github.com/piyushsingariya/kaku/utils"
 
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -61,28 +66,39 @@ var ParquetTypes = map[string]ParquetType{
 }
 
 type Parquet struct {
-	reader *goparquet.FileReader
+	next         bool
+	batchSize    int64
+	reader       *goparquet.FileReader
+	isPreloading atomic.Bool
 }
 
-func InitParquet(s3Session *s3.S3, bucket, fileKey string) (*Parquet, error) {
+func InitParquet(s3Session *s3.S3, bucket, fileKey string, batchSize int64) (*Parquet, error) {
 	source, err := s3parquet.NewS3FileReaderWithClient(context.Background(), s3Session, bucket, fileKey)
 	if err != nil {
 		return nil, err
 	}
 
-	reader, err := goparquet.NewFileReader(source)
+	filereader, err := goparquet.NewFileReader(source)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Parquet{
-		reader: reader,
-	}, nil
+	reader := Parquet{
+		next:         true,
+		reader:       filereader,
+		batchSize:    batchSize,
+		isPreloading: atomic.Bool{},
+	}
+
+	reader.isPreloading.Store(false)
+	reader.preload()
+
+	return &reader, nil
 }
 
 func (p *Parquet) parseFieldType(neededLogicalType, neededPQType string) (types.DataType, error) {
 	if pqType, found := ParquetTypes[neededLogicalType]; found {
-		if neededPQType != "" && utils.ArrayContains(pqType.ParquetTypes, neededPQType) {
+		if neededPQType != "" && !utils.ArrayContains(pqType.ParquetTypes, neededPQType) {
 			return "", fmt.Errorf("incorrect parquet physical type[%s]; logical type[%s]", neededPQType, neededLogicalType)
 		}
 
@@ -101,8 +117,7 @@ func (p *Parquet) parseFieldType(neededLogicalType, neededPQType string) (types.
 func (p *Parquet) GetSchema() (map[string]*kakumodels.Property, error) {
 	output := make(map[string]*kakumodels.Property)
 	for _, column := range p.reader.Columns() {
-
-		columnType, err := p.parseFieldType(column.Element().GetLogicalType().String(), column.Type().String())
+		columnType, err := p.parseFieldType(p.getLogicalTypeFromSDK(column), column.Type().String())
 		if err != nil {
 			return nil, err
 		}
@@ -113,4 +128,125 @@ func (p *Parquet) GetSchema() (map[string]*kakumodels.Property, error) {
 	}
 
 	return output, nil
+}
+
+func (p *Parquet) getLogicalTypeFromSDK(column *goparquet.Column) string {
+	logicalType := column.Element().GetLogicalType()
+	if logicalType == nil {
+		return "unknown"
+	}
+
+	if logicalType.IsSetSTRING() {
+		return "string"
+	}
+	if logicalType.IsSetMAP() {
+		return "map"
+	}
+	if logicalType.IsSetLIST() {
+		return "list"
+	}
+	if logicalType.IsSetENUM() {
+		return "enum"
+	}
+	if logicalType.IsSetDECIMAL() {
+		return "decimal"
+	}
+	if logicalType.IsSetDATE() {
+		return "date"
+	}
+	if logicalType.IsSetTIME() {
+		return "time"
+	}
+	if logicalType.IsSetTIMESTAMP() {
+		return "timestamp"
+	}
+	if logicalType.IsSetINTEGER() {
+		return "integer"
+	}
+	if logicalType.IsSetUNKNOWN() {
+		return "unknown"
+	}
+	if logicalType.IsSetJSON() {
+		return "json"
+	}
+	if logicalType.IsSetBSON() {
+		return "bson"
+	}
+	if logicalType.IsSetUUID() {
+		return "uuid"
+	}
+
+	return "unknown"
+}
+
+func (p *Parquet) Read() ([]map[string]any, error) {
+	batch := []map[string]any{}
+
+	// preloading going on
+	for p.isPreloading.Load() {
+		time.Sleep(time.Second)
+	}
+
+	for idx := int64(0); idx < p.batchSize || (p.reader.CurrentRowGroup() != nil && idx < p.reader.CurrentRowGroup().NumRows); idx++ {
+		record, err := p.reader.NextRow()
+		if err != nil {
+			if err != io.EOF {
+				return nil, err
+			}
+			// found end of file
+			// set next to false and break
+			p.next = false
+			break
+		}
+
+		for key, value := range record {
+			column := p.reader.GetColumnByName(key)
+			if column == nil {
+				continue
+			}
+
+			converted, err := p.convertFieldData(p.getLogicalTypeFromSDK(column), column.Type().String(), value)
+			if err != nil {
+				return nil, err
+			}
+			record[key] = converted
+		}
+
+		batch = append(batch, utils.DecryptBase64DynamicMap(record))
+	}
+
+	p.preload()
+
+	return batch, nil
+}
+
+func (p *Parquet) HasNext() bool {
+	return p.next
+}
+
+func (p *Parquet) preload() {
+	go func() {
+		defer p.isPreloading.Store(false)
+		// if preloading is not going on preload
+		for !p.isPreloading.Load() {
+			p.isPreloading.Store(true)
+			err := p.reader.PreLoad()
+			if err != nil && err != io.EOF {
+				logger.Errorf("preloading failed: %s", err)
+			}
+		}
+	}()
+}
+
+func (p *Parquet) convertFieldData(logicalType, pqType string, fieldValue any) (any, error) {
+	if fieldValue == nil {
+		return nil, nil
+	}
+
+	datatype, err := p.parseFieldType(logicalType, pqType)
+	if err != nil {
+		return nil, err
+	}
+
+	return typing.ReformatValueOnDataTypes([]types.DataType{datatype}, fieldValue)
 }
