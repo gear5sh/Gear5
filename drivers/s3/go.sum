@@ -112,6 +112,8 @@ github.com/akrennmair/parquet-go-block-compressors/lz4raw v0.0.0-20220218141547-
 github.com/akrennmair/parquet-go-block-compressors/lz4raw v0.0.0-20220218141547-8f5cd3f4a5ca/go.mod h1:H2/FXjhmhQctG+jPElhTA+r6N0tkJ+XHnfJldSQoBtg=
 github.com/akrennmair/parquet-go-brotli v0.1.0 h1:1HYb9fgv+ZpndnMXLGDYGa+vcLUUi503+trC0lPFs10=
 github.com/akrennmair/parquet-go-brotli v0.1.0/go.mod h1:4W3pQX9QG6wZRrb4IODET8QqigLGJYGlamHb9QfQrO0=
+github.com/akrennmair/parquet-go-lzo v0.1.0 h1:opGyCkOP+U2hnXN+1ZArK4E5omqMP98FY5TrCgDolPs=
+github.com/akrennmair/parquet-go-lzo v0.1.0/go.mod h1:h+P76mOe5hR/c33tizKsgTg5vx4Zw4Yg1x/nK998kH8=
 github.com/akrennmair/parquet-go-zstd v0.1.0 h1:DZnLJUGIgDNByyidnJTynDCXkimr4RLGOleHHBzVUKk=
 github.com/akrennmair/parquet-go-zstd v0.1.0/go.mod h1:OXl9zSa+x24v1GeCnqt38COoMPKZpAoYDjDyM8ynQmI=
 github.com/andybalholm/brotli v1.0.4/go.mod h1:fO7iG3H7G2nSZ7m0zPUDn85XEX2GTukHGRSepvi9Eig=
@@ -187,6 +189,8 @@ github.com/coreos/go-systemd/v22 v22.3.2/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSV
 github.com/cpuguy83/go-md2man v1.0.10/go.mod h1:SmD6nW6nTyfqj6ABTjUi3V3JVMnlJmwcJI5acqYI6dE=
 github.com/cpuguy83/go-md2man/v2 v2.0.2/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
 github.com/creack/pty v1.1.7/go.mod h1:lj5s0c3V2DBrqTV7llrYr5NG6My20zk30Fl46Y7DoTY=
+github.com/cyberdelia/lzo v1.0.0 h1:smmvcahczwI/VWSzZ7iikt50lubari5py3qL4hAEHII=
+github.com/cyberdelia/lzo v1.0.0/go.mod h1:UVNk6eM6Sozt1wx17TECJKuqmIY58TJOVeJxjlGGAGs=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

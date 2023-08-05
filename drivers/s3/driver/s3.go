@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -13,21 +14,25 @@ import (
 	"github.com/piyushsingariya/drivers/s3/reader"
 	"github.com/piyushsingariya/kaku/jsonschema"
 	"github.com/piyushsingariya/kaku/jsonschema/schema"
+	"github.com/piyushsingariya/kaku/logger"
 	kakumodels "github.com/piyushsingariya/kaku/models"
 	protocol "github.com/piyushsingariya/kaku/protocol"
+	"github.com/piyushsingariya/kaku/safego"
 	"github.com/piyushsingariya/kaku/types"
+	"github.com/piyushsingariya/kaku/typing"
 	"github.com/piyushsingariya/kaku/utils"
 )
 
 const patternSymbols = "*[]!{}"
 
 type S3 struct {
-	config    *models.Config
-	session   *session.Session
-	catalog   *kakumodels.Catalog
-	state     kakumodels.State
-	client    *s3.S3
-	batchSize int64
+	cursorField string
+	config      *models.Config
+	session     *session.Session
+	catalog     *kakumodels.Catalog
+	state       kakumodels.State
+	client      *s3.S3
+	batchSize   int64
 }
 
 func (s *S3) Setup(config any, catalog *kakumodels.Catalog, state kakumodels.State, batchSize int64) error {
@@ -52,6 +57,7 @@ func (s *S3) Setup(config any, catalog *kakumodels.Catalog, state kakumodels.Sta
 	s.batchSize = batchSize
 	s.catalog = catalog
 	s.state = state
+	s.cursorField = "last_modified_date"
 
 	return nil
 }
@@ -62,9 +68,9 @@ func (s *S3) Spec() (schema.JSONSchema, error) {
 
 func (s *S3) Check() error {
 	for stream, pattern := range s.config.Streams {
-		err := s.iteration(pattern, func(reader reader.Reader) (bool, error) {
+		err := s.iteration(pattern, func(reader reader.Reader, file *s3.Object) (bool, error) {
 			// break iteration after single item
-			return true, nil
+			return false, nil
 		})
 		if err != nil {
 			return fmt.Errorf("failed to check stream[%s] pattern[%s]: %s", stream, pattern, err)
@@ -79,9 +85,9 @@ func (s *S3) Discover() ([]*kakumodels.Stream, error) {
 	for stream, pattern := range s.config.Streams {
 		var schema map[string]*kakumodels.Property
 		var err error
-		err = s.iteration(pattern, func(reader reader.Reader) (bool, error) {
+		err = s.iteration(pattern, func(reader reader.Reader, file *s3.Object) (bool, error) {
 			schema, err = reader.GetSchema()
-			return true, err
+			return false, err
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to check stream[%s] pattern[%s]: %s", stream, pattern, err)
@@ -96,7 +102,7 @@ func (s *S3) Discover() ([]*kakumodels.Stream, error) {
 			Namespace:           pattern,
 			SupportedSyncModes:  []types.SyncMode{types.Incremental, types.FullRefresh},
 			SourceDefinedCursor: true,
-			DefaultCursorFields: []string{"last_modified_date"},
+			DefaultCursorFields: []string{s.cursorField},
 			JSONSchema: &kakumodels.Schema{
 				Properties: schema,
 			},
@@ -114,7 +120,84 @@ func (s *S3) Type() string {
 	return "S3"
 }
 
+// NOTE: S3 read doesn't perform neccessary checks such as matching cursor field present in stream since
+// it works only on single cursor field
 func (s *S3) Read(stream protocol.Stream, channel chan<- kakumodels.Record) error {
+	name, namespace := stream.Name(), stream.Namespace()
+	// get pattern from stream name
+	pattern := s.config.Streams[name]
+	var localCursor *time.Time
+
+	// if incremental check for state
+	if stream.GetSyncMode() == types.Incremental {
+		state := s.state.Get(name, namespace)
+		if state != nil {
+			value, found := state[s.cursorField]
+			if found {
+				stateCursor, err := typing.ReformatDate(value)
+				if err != nil {
+					logger.Warnf("failed to parse state for stream %s[%s]", name, namespace)
+				} else {
+					localCursor = &stateCursor
+				}
+			} else {
+				logger.Warnf("Cursor field not found for stream %s[%s]", name, namespace)
+			}
+		} else {
+			logger.Warnf("State not found for stream %s[%s]", name, namespace)
+		}
+	}
+
+	err := s.iteration(pattern, func(reader reader.Reader, file *s3.Object) (bool, error) {
+		if localCursor != nil && file.LastModified.After(*localCursor) {
+			// continue iteration
+			return true, nil
+		}
+
+		totalRecords := 0
+
+		for reader.HasNext() {
+			records, err := reader.Read()
+			if err != nil {
+				// discontinue iteration
+				return false, fmt.Errorf("got error while reading records from %s[%s]: %s", name, namespace, err)
+			}
+
+			totalRecords += len(records)
+
+			if len(records) == 0 {
+				break
+			}
+
+			for _, record := range records {
+				if !safego.Insert(channel, utils.ReformatRecord(name, namespace, record)) {
+					// discontinue iteration since failed to insert records
+					return false, nil
+				}
+			}
+		}
+
+		if localCursor == nil {
+			localCursor = file.LastModified
+		} else {
+			localCursor = types.Time((utils.MaxDate(*localCursor, *file.LastModified)))
+		}
+
+		logger.Infof("%d Records found in file %s", *file.Key, totalRecords)
+		// go to next file
+		return true, nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed to read stream[%s] pattern[%s]: %s", name, pattern, err)
+	}
+
+	// update the state
+	if stream.GetSyncMode() == types.Incremental {
+		s.state.Update(name, namespace, map[string]any{
+			s.cursorField: localCursor,
+		})
+	}
+
 	return nil
 }
 
@@ -122,7 +205,7 @@ func (s *S3) GetState() (*kakumodels.State, error) {
 	return &s.state, nil
 }
 
-func (s *S3) iteration(pattern string, foreach func(reader reader.Reader) (bool, error)) error {
+func (s *S3) iteration(pattern string, foreach func(reader reader.Reader, file *s3.Object) (bool, error)) error {
 	re, err := glob.Compile(pattern)
 	if err != nil {
 		return fmt.Errorf("failed to complie file pattern please check: https://github.com/gobwas/glob#performance")
@@ -152,20 +235,21 @@ s3Iteration:
 		}
 
 		// Iterate through the objects and process them
-		for _, obj := range resp.Contents {
-			if re.Match(*obj.Key) {
-				reader, err := reader.Init(s.client, s.config.Type, s.config.Bucket, *obj.Key)
+		for _, file := range resp.Contents {
+			if re.Match(*file.Key) {
+				reader, err := reader.Init(s.client, s.config.Type, s.config.Bucket, *file.Key, s.batchSize)
 				if err != nil {
-					return fmt.Errorf("failed to initialize reader on file[%s]: %s", *obj.Key, err)
+					return fmt.Errorf("failed to initialize reader on file[%s]: %s", *file.Key, err)
 				}
+
 				// execute foreach
-				breakIteration, err := foreach(reader)
+				next, err := foreach(reader, file)
 				if err != nil {
 					return err
 				}
 
 				// break iteration
-				if breakIteration {
+				if !next {
 					break s3Iteration
 				}
 			}
