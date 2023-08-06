@@ -68,3 +68,59 @@ func DecryptBase64(value string) string {
 
 	return string(decodedData)
 }
+
+func OperateOnDynamicMap(data map[string]any, operation func(string) string) map[string]any {
+	for key, value := range data {
+		switch value := value.(type) {
+		case map[string]any:
+			data[key] = OperateOnDynamicMap(value, operation)
+		case map[string]string:
+			data[key] = OperateOnStringMap(value, operation)
+		case []map[string]any:
+			decryptedArray := []map[string]any{}
+			for _, element := range value {
+				decryptedArray = append(decryptedArray, OperateOnDynamicMap(element, operation))
+			}
+
+			data[key] = decryptedArray
+		case []byte:
+			data[key] = operation(string(value))
+		case []any:
+			decryptedArray := []any{}
+			for _, element := range value {
+				switch element := element.(type) {
+				case map[string]any:
+					decryptedArray = append(decryptedArray, OperateOnDynamicMap(element, operation))
+				case map[string]string:
+					decryptedArray = append(decryptedArray, OperateOnStringMap(element, operation))
+				case string:
+					decryptedArray = append(decryptedArray, operation(element))
+				case []byte:
+					decryptedArray = append(decryptedArray, operation(string(element)))
+				default:
+					decryptedArray = append(decryptedArray, element)
+				}
+			}
+
+			data[key] = decryptedArray
+		case []string:
+			decryptedArray := []string{}
+			for _, element := range value {
+				decryptedArray = append(decryptedArray, operation(element))
+			}
+
+			data[key] = decryptedArray
+		case string:
+			data[key] = operation(value)
+		}
+	}
+	return data
+}
+
+func OperateOnStringMap(data map[string]string, operation func(string) string) map[string]string {
+	for key, value := range data {
+		data[key] = operation(value)
+	}
+
+	return data
+}
