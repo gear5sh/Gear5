@@ -240,3 +240,36 @@ func ReformatFloat64(v interface{}) (interface{}, error) {
 
 	return float64(0), fmt.Errorf("failed to change %v (type:%T) to float64", v, v)
 }
+
+func ReformatByteArraysToString(data map[string]any) map[string]any {
+	for key, value := range data {
+		switch value := value.(type) {
+		case map[string]any:
+			data[key] = ReformatByteArraysToString(value)
+		case []byte:
+			data[key] = string(value)
+		case []map[string]any:
+			decryptedArray := []map[string]any{}
+			for _, element := range value {
+				decryptedArray = append(decryptedArray, ReformatByteArraysToString(element))
+			}
+
+			data[key] = decryptedArray
+		case []any:
+			decryptedArray := []any{}
+			for _, element := range value {
+				switch element := element.(type) {
+				case map[string]any:
+					decryptedArray = append(decryptedArray, ReformatByteArraysToString(element))
+				case []byte:
+					decryptedArray = append(decryptedArray, string(element))
+				default:
+					decryptedArray = append(decryptedArray, element)
+				}
+			}
+
+			data[key] = decryptedArray
+		}
+	}
+	return data
+}

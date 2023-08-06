@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/url"
 	"sync/atomic"
 	"time"
 
@@ -212,7 +213,13 @@ func (p *Parquet) Read() ([]map[string]any, error) {
 			record[key] = converted
 		}
 
-		batch = append(batch, utils.DecryptBase64DynamicMap(record))
+		batch = append(batch, utils.OperateOnDynamicMap(record, func(s string) string {
+			output, err := url.PathUnescape(s)
+			if err != nil {
+				return s
+			}
+			return output
+		}))
 	}
 
 	p.preload()
