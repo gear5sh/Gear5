@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -68,7 +69,7 @@ func (s *S3) Spec() (schema.JSONSchema, error) {
 
 func (s *S3) Check() error {
 	for stream, pattern := range s.config.Streams {
-		err := s.iteration(pattern, func(reader reader.Reader, file *s3.Object) (bool, error) {
+		err := s.iteration(pattern, 1, func(reader reader.Reader, file *s3.Object) (bool, error) {
 			// break iteration after single item
 			return false, nil
 		})
@@ -85,7 +86,7 @@ func (s *S3) Discover() ([]*kakumodels.Stream, error) {
 	for stream, pattern := range s.config.Streams {
 		var schema map[string]*kakumodels.Property
 		var err error
-		err = s.iteration(pattern, func(reader reader.Reader, file *s3.Object) (bool, error) {
+		err = s.iteration(pattern, 1, func(reader reader.Reader, file *s3.Object) (bool, error) {
 			schema, err = reader.GetSchema()
 			return false, err
 		})
@@ -148,8 +149,8 @@ func (s *S3) Read(stream protocol.Stream, channel chan<- kakumodels.Record) erro
 		}
 	}
 
-	err := s.iteration(pattern, func(reader reader.Reader, file *s3.Object) (bool, error) {
-		if localCursor != nil && file.LastModified.After(*localCursor) {
+	err := s.iteration(pattern, 5, func(reader reader.Reader, file *s3.Object) (bool, error) {
+		if localCursor != nil && file.LastModified.Before(*localCursor) {
 			// continue iteration
 			return true, nil
 		}
@@ -183,7 +184,7 @@ func (s *S3) Read(stream protocol.Stream, channel chan<- kakumodels.Record) erro
 			localCursor = types.Time((utils.MaxDate(*localCursor, *file.LastModified)))
 		}
 
-		logger.Infof("%d Records found in file %s", *file.Key, totalRecords)
+		logger.Infof("%d Records found in file %s", totalRecords, *file.Key)
 		// go to next file
 		return true, nil
 	})
@@ -205,7 +206,7 @@ func (s *S3) GetState() (*kakumodels.State, error) {
 	return &s.state, nil
 }
 
-func (s *S3) iteration(pattern string, foreach func(reader reader.Reader, file *s3.Object) (bool, error)) error {
+func (s *S3) iteration(pattern string, preloadFactor int64, foreach func(reader reader.Reader, file *s3.Object) (bool, error)) error {
 	re, err := glob.Compile(pattern)
 	if err != nil {
 		return fmt.Errorf("failed to complie file pattern please check: https://github.com/gobwas/glob#performance")
@@ -220,6 +221,33 @@ func (s *S3) iteration(pattern string, foreach func(reader reader.Reader, file *
 		}
 		prefix = filepath.Join(prefix, i)
 	}
+
+	consumer := make(chan struct {
+		reader.Reader
+		s3.Object
+	}, preloadFactor)
+
+	var breakIteration atomic.Bool
+	breakIteration.Store(false)
+	var consumerError error
+
+	go func() {
+		for file := range consumer {
+			// execute foreach
+			next, err := foreach(file.Reader, &file.Object)
+			if err != nil {
+				consumerError = err
+				safego.Close(consumer)
+				return
+			}
+
+			// break iteration
+			if !next {
+				safego.Close(consumer)
+				return
+			}
+		}
+	}()
 
 	// List objects in the S3 bucket
 s3Iteration:
@@ -237,19 +265,15 @@ s3Iteration:
 		// Iterate through the objects and process them
 		for _, file := range resp.Contents {
 			if re.Match(*file.Key) {
-				reader, err := reader.Init(s.client, s.config.Type, s.config.Bucket, *file.Key, s.batchSize)
+				re, err := reader.Init(s.client, s.config.Type, s.config.Bucket, *file.Key, s.batchSize)
 				if err != nil {
 					return fmt.Errorf("failed to initialize reader on file[%s]: %s", *file.Key, err)
 				}
 
-				// execute foreach
-				next, err := foreach(reader, file)
-				if err != nil {
-					return err
-				}
-
-				// break iteration
-				if !next {
+				if !safego.Insert(consumer, struct {
+					reader.Reader
+					s3.Object
+				}{re, *file}) {
 					break s3Iteration
 				}
 			}
@@ -267,5 +291,5 @@ s3Iteration:
 		}
 	}
 
-	return nil
+	return consumerError
 }
