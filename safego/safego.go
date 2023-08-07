@@ -68,14 +68,6 @@ func (exec *Execution) WithRestartTimeout(timeout time.Duration) *Execution {
 	return exec
 }
 
-func init() {
-	GlobalRecoverHandler = func(value interface{}) {
-		logger.Error("panic")
-		logger.Error(value)
-		logger.Error(string(debug.Stack()))
-	}
-}
-
 func Recovery() {
 	err := recover()
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -149,7 +150,7 @@ func (s *S3) Read(stream protocol.Stream, channel chan<- kakumodels.Record) erro
 		}
 	}
 
-	err := s.iteration(pattern, 5, func(reader reader.Reader, file *s3.Object) (bool, error) {
+	err := s.iteration(pattern, 500, func(reader reader.Reader, file *s3.Object) (bool, error) {
 		if localCursor != nil && file.LastModified.Before(*localCursor) {
 			// continue iteration
 			return true, nil
@@ -222,6 +223,7 @@ func (s *S3) iteration(pattern string, preloadFactor int64, foreach func(reader 
 		prefix = filepath.Join(prefix, i)
 	}
 
+	waitgroup := sync.WaitGroup{}
 	consumer := make(chan struct {
 		reader.Reader
 		s3.Object
@@ -233,19 +235,25 @@ func (s *S3) iteration(pattern string, preloadFactor int64, foreach func(reader 
 
 	go func() {
 		for file := range consumer {
+			waitgroup.Add(1)
+
 			// execute foreach
 			next, err := foreach(file.Reader, &file.Object)
 			if err != nil {
 				consumerError = err
 				safego.Close(consumer)
+				waitgroup.Done()
 				return
 			}
 
 			// break iteration
 			if !next {
 				safego.Close(consumer)
+				waitgroup.Done()
 				return
 			}
+
+			waitgroup.Done()
 		}
 	}()
 
@@ -290,6 +298,8 @@ s3Iteration:
 			break // Break the loop if the continuation token is nil (should not happen)
 		}
 	}
+
+	waitgroup.Wait()
 
 	return consumerError
 }
