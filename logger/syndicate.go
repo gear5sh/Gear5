@@ -18,7 +18,10 @@ func LogRecord(record models.Record) {
 	message.Record = &record
 	message.Record.EmittedAt = time.Now()
 
-	json.NewEncoder(writer).Encode(message)
+	err := json.NewEncoder(writer).Encode(message)
+	if err != nil {
+		Fatalf("failed to encode record %v: %s", record, err)
+	}
 }
 
 func LogSpec(spec map[string]interface{}) {
@@ -27,7 +30,10 @@ func LogSpec(spec map[string]interface{}) {
 	message.Type = types.SpecType
 
 	Info("logging spec")
-	json.NewEncoder(writer).Encode(message)
+	err := json.NewEncoder(writer).Encode(message)
+	if err != nil {
+		Fatalf("failed to encode spec %v: %s", spec, err)
+	}
 }
 
 func LogCatalog(streams []*models.Stream) {
@@ -35,7 +41,10 @@ func LogCatalog(streams []*models.Stream) {
 	message.Type = types.CatalogType
 	message.Catalog = models.GetWrappedCatalog(streams)
 	Info("logging catalog")
-	json.NewEncoder(writer).Encode(message)
+	err := json.NewEncoder(writer).Encode(message)
+	if err != nil {
+		Fatalf("failed to encode catalog %v: %s", streams, err)
+	}
 }
 
 func LogConnectionStatus(err error) {
@@ -49,7 +58,10 @@ func LogConnectionStatus(err error) {
 		message.ConnectionStatus.Status = types.ConnectionSucceed
 	}
 
-	json.NewEncoder(writer).Encode(message)
+	err = json.NewEncoder(writer).Encode(message)
+	if err != nil {
+		Fatalf("failed to encode connection status: %s", err)
+	}
 }
 
 func LogResponse(response *http.Response) {
@@ -75,5 +87,8 @@ func LogState(state *models.State) {
 	message.Type = types.StateType
 	message.State = state
 
-	json.NewEncoder(writer).Encode(message)
+	err := json.NewEncoder(writer).Encode(message)
+	if err != nil {
+		Fatalf("failed to encode connection status: %s", err)
+	}
 }

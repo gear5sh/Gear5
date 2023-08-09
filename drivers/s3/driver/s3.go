@@ -150,7 +150,7 @@ func (s *S3) Read(stream protocol.Stream, channel chan<- kakumodels.Record) erro
 		}
 	}
 
-	err := s.iteration(pattern, 500, func(reader reader.Reader, file *s3.Object) (bool, error) {
+	err := s.iteration(pattern, s.config.PreLoadFactor, func(reader reader.Reader, file *s3.Object) (bool, error) {
 		if localCursor != nil && file.LastModified.Before(*localCursor) {
 			// continue iteration
 			return true, nil
