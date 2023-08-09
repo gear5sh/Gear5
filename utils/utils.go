@@ -16,6 +16,14 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+func Absolute[T int | int8 | int16 | int32 | int64 | float32 | float64](value T) T {
+	if value < 0 {
+		return -value
+	}
+
+	return value
+}
+
 // IsValidSubcommand checks if the passed subcommand is supported by the parent command
 func IsValidSubcommand(available []*cobra.Command, sub string) bool {
 	for _, s := range available {
