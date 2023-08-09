@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/go-playground/validator"
+	"github.com/piyushsingariya/kaku/logger"
 )
 
 // Authenticate via Access and Secret Keys
@@ -78,6 +79,12 @@ type Config struct {
 	// oneOf=["BaseAWS","AssumeRoleAWS"]
 	// )
 	Credentials interface{} `json:"credentials" validate:"required"`
+	// Parallel factor for preload
+	//
+	// @jsonschema(
+	// required=true
+	// )
+	PreLoadFactor int64 `json:"parallel_factor"`
 }
 
 func (c *Config) Validate() error {
@@ -85,6 +92,11 @@ func (c *Config) Validate() error {
 	err := validate.Struct(c)
 	if err != nil {
 		return fmt.Errorf("config validation failed: %s", err)
+	}
+
+	if c.PreLoadFactor < 5 {
+		logger.Infof("Preload factor %d less than 5: using 5 instead", c.PreLoadFactor)
+		c.PreLoadFactor = 5
 	}
 
 	return nil
