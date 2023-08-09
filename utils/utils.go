@@ -262,3 +262,10 @@ func ReformatRecord(name, namespace string, record map[string]any) models.Record
 		Data:      record,
 	}
 }
+
+// CloseRecordIteration closes iteration over a record channel
+func CloseRecordIteration(channel chan models.Record) {
+	channel <- models.Record{
+		Close: true,
+	}
+}
