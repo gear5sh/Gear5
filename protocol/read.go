@@ -3,6 +3,7 @@ package protocol
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/piyushsingariya/kaku/logger"
@@ -55,9 +56,19 @@ var ReadCmd = &cobra.Command{
 		recordStream := make(chan models.Record, 2*batchSize)
 		numRecords := int64(0)
 		batch := int64(0)
+		recordIterationWait := sync.WaitGroup{}
 
+		recordIterationWait.Add(1)
 		go func() {
+			defer recordIterationWait.Done()
+			defer close(recordStream)
+
 			for message := range recordStream {
+				// close the iteration
+				if message.Close {
+					break
+				}
+
 				logger.LogRecord(message)
 				numRecords++
 				batch++
@@ -104,7 +115,8 @@ var ReadCmd = &cobra.Command{
 			logger.Infof("Finished reading stream %s[%s] in %s", stream.Name(), stream.Namespace(), time.Since(streamStartTime).String())
 		}
 
-		close(recordStream)
+		// stop record iteration
+		utils.CloseRecordIteration(recordStream)
 
 		logger.Infof("Total records read: %d", numRecords)
 		state, err := connector.GetState()

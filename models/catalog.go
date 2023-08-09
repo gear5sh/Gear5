@@ -50,6 +50,8 @@ type StatusRow struct {
 
 // Record is a dto for airbyte record serialization
 type Record struct {
+	// close is used to stop iterating records
+	Close     bool                   `json:"-"`
 	Namespace string                 `json:"namespace,omitempty"`
 	Stream    string                 `json:"stream,omitempty"`
 	Data      map[string]interface{} `json:"data,omitempty"`
