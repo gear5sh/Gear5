@@ -1,7 +1,7 @@
 package generator
 
 import (
-	//"encoding/json"
+	//"github.com/goccy/go-json"
 	//"fmt"
 	"testing"
 

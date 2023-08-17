@@ -1,10 +1,11 @@
 package driver
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/goccy/go-json"
 
 	"github.com/piyushsingariya/kaku/drivers/hubspot/models"
 	"github.com/piyushsingariya/kaku/jsonschema"

@@ -2,12 +2,13 @@ package driver
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/goccy/go-json"
 
 	unidecode "github.com/mozillazg/go-unidecode"
 	"github.com/piyushsingariya/kaku/drivers/google-sheets/models"
