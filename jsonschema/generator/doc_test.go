@@ -1,9 +1,10 @@
 package generator
 
 import (
-	"encoding/json"
 	"fmt"
 	"testing"
+
+	"github.com/goccy/go-json"
 
 	"github.com/brainicorn/ganno"
 	"github.com/piyushsingariya/kaku/jsonschema/schema"

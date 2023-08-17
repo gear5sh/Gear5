@@ -3,6 +3,7 @@ module github.com/piyushsingariya/kaku/drivers/google-sheets
 go 1.19
 
 require (
+	github.com/goccy/go-json v0.10.2
 	github.com/mozillazg/go-unidecode v0.2.0
 	github.com/piyushsingariya/kaku v0.0.0-00010101000000-000000000000
 	golang.org/x/oauth2 v0.10.0

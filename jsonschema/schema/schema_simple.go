@@ -1,7 +1,7 @@
 package schema
 
 import (
-	"encoding/json"
+	"github.com/goccy/go-json"
 )
 
 // SimpleSchema is the schema for simple JSON types such as a string, number or boolean.

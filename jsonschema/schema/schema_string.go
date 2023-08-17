@@ -1,7 +1,7 @@
 package schema
 
 import (
-	"encoding/json"
+	"github.com/goccy/go-json"
 )
 
 // StringSchema represents the schema for a JSON string.

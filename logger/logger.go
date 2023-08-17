@@ -1,11 +1,12 @@
 package logger
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"strings"
+
+	"github.com/goccy/go-json"
 
 	"github.com/piyushsingariya/kaku/models"
 	"github.com/piyushsingariya/kaku/types"

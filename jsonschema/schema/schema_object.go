@@ -1,6 +1,6 @@
 package schema
 
-import "encoding/json"
+import "github.com/goccy/go-json"
 
 // BoolOrSchema holds a bool or a JSONSchema for values that can take either.
 // This is used for things like additionalProperties
