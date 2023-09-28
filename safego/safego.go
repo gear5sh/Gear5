@@ -3,16 +3,17 @@ package safego
 import (
 	"runtime/debug"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/piyushsingariya/kaku/logger"
+	"github.com/piyushsingariya/shift/logger"
 )
 
 const defaultRestartTimeout = 2 * time.Second
 
 type RecoverHandler func(value interface{})
 
-var GlobalRecoverHandler RecoverHandler
+var GlobalRecoverHandler RecoverHandler = func(value interface{}) {}
 
 var (
 	startTime time.Time
@@ -67,14 +68,6 @@ func (exec *Execution) WithRestartTimeout(timeout time.Duration) *Execution {
 	return exec
 }
 
-func init() {
-	GlobalRecoverHandler = func(value interface{}) {
-		logger.Error("panic")
-		logger.Error(value)
-		logger.Error(string(debug.Stack()))
-	}
-}
-
 func Recovery() {
 	err := recover()
 	if err != nil {
@@ -89,12 +82,16 @@ func Recovery() {
 
 func Insert[T any](ch chan<- T, value T) bool {
 	safeInsert := false
+	wg := sync.WaitGroup{}
+	wg.Add(1)
 
 	Run(func() {
+		defer wg.Done()
 		ch <- value
 		safeInsert = true
 	})
 
+	wg.Wait()
 	return safeInsert
 }
 

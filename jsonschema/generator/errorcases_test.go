@@ -1,11 +1,11 @@
 package generator
 
 import (
-	//"encoding/json"
+	//"github.com/goccy/go-json"
 	//"fmt"
 	"testing"
 
-	"github.com/piyushsingariya/kaku/jsonschema/schema"
+	"github.com/piyushsingariya/shift/jsonschema/schema"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -33,7 +33,7 @@ func (suite *ErrorCaseTestSuite) SetupSuite() {
 
 	suite.options = opts
 
-	suite.basePackage = "github.com/piyushsingariya/kaku/jsonschema/generator"
+	suite.basePackage = "github.com/piyushsingariya/shift/jsonschema/generator"
 
 	p, _ := NewJSONSchemaGenerator("", "", opts).loadProgram(suite.basePackage, suite.options)
 

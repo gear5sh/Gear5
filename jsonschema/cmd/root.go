@@ -3,7 +3,6 @@ package protocol
 import (
 	"bufio"
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -14,8 +13,10 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/piyushsingariya/kaku/jsonschema/generator"
-	"github.com/piyushsingariya/kaku/jsonschema/schema"
+	"github.com/goccy/go-json"
+
+	"github.com/piyushsingariya/shift/jsonschema/generator"
+	"github.com/piyushsingariya/shift/jsonschema/schema"
 
 	"github.com/spf13/cobra"
 )

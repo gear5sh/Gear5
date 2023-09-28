@@ -3,15 +3,15 @@ package protocol
 import (
 	"fmt"
 
-	"github.com/piyushsingariya/kaku/logger"
-	"github.com/piyushsingariya/kaku/utils"
+	"github.com/piyushsingariya/shift/logger"
+	"github.com/piyushsingariya/shift/utils"
 	"github.com/spf13/cobra"
 )
 
 // SpecCmd represents the read command
 var CheckCmd = &cobra.Command{
 	Use:   "check",
-	Short: "Kaku spec command",
+	Short: "Shift spec command",
 	PreRun: func(cmd *cobra.Command, args []string) {
 		if config == "" {
 			logger.LogConnectionStatus(fmt.Errorf("--config not passed"))

@@ -1,7 +1,7 @@
 package generator
 
 import (
-	"github.com/piyushsingariya/kaku/logger"
+	"github.com/piyushsingariya/shift/logger"
 )
 
 // LogLevel is an enum specifying log verbosity

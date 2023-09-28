@@ -2,7 +2,6 @@ package driver
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -14,11 +13,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/piyushsingariya/kaku/logger"
-	kakumodels "github.com/piyushsingariya/kaku/models"
-	"github.com/piyushsingariya/kaku/types"
-	"github.com/piyushsingariya/kaku/typing"
-	"github.com/piyushsingariya/kaku/utils"
+	"github.com/goccy/go-json"
+
+	"github.com/piyushsingariya/shift/logger"
+	shiftmodels "github.com/piyushsingariya/shift/models"
+	"github.com/piyushsingariya/shift/types"
+	"github.com/piyushsingariya/shift/typing"
+	"github.com/piyushsingariya/shift/utils"
 )
 
 type Stream struct {
@@ -46,7 +47,7 @@ type Stream struct {
 	grantedScopes    []string
 	scopes           []string
 	propertiesScopes []string
-	_properties      map[string]*kakumodels.Property
+	_properties      map[string]*shiftmodels.Property
 
 	startDate time.Time
 }
@@ -83,7 +84,7 @@ func (s *Stream) PrimaryKey() []string {
 	return nil
 }
 
-func (s *Stream) properties() (map[string]*kakumodels.Property, error) {
+func (s *Stream) properties() (map[string]*shiftmodels.Property, error) {
 	if s.entity == "" {
 		return nil, fmt.Errorf("entity found to be empty")
 	}
@@ -117,7 +118,7 @@ func (s *Stream) properties() (map[string]*kakumodels.Property, error) {
 		return nil, err
 	}
 
-	s._properties = make(map[string]*kakumodels.Property)
+	s._properties = make(map[string]*shiftmodels.Property)
 
 	for _, row := range response {
 		s._properties[row["name"].(string)] = getFieldProps(row["type"].(string))
@@ -144,7 +145,7 @@ func (s *Stream) propertiesScopeIsGranted() bool {
 	return utils.IsSubset(s.grantedScopes, s.propertiesScopes)
 }
 
-func (s *Stream) Read(channel <-chan kakumodels.Record) error {
+func (s *Stream) Read(channel <-chan shiftmodels.Record) error {
 	return fmt.Errorf("no implementation on base stream")
 }
 

@@ -1,14 +1,15 @@
 package logger
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 
-	"github.com/piyushsingariya/kaku/models"
-	"github.com/piyushsingariya/kaku/types"
+	"github.com/goccy/go-json"
+
+	"github.com/piyushsingariya/shift/models"
+	"github.com/piyushsingariya/shift/types"
 )
 
 var (
@@ -84,7 +85,7 @@ func Log(format string, level Level, v ...interface{}) {
 	} else {
 		message = fmt.Sprintf(format, v...)
 	}
-	kakuMessage := models.Message{
+	shiftMessage := models.Message{
 		Type: types.LogType,
 		Log: &models.Log{
 			Level:   level.String(),
@@ -93,8 +94,8 @@ func Log(format string, level Level, v ...interface{}) {
 	}
 
 	if level == errorlevel {
-		json.NewEncoder(errorWriter).Encode(kakuMessage)
+		json.NewEncoder(errorWriter).Encode(shiftMessage)
 		return
 	}
-	json.NewEncoder(writer).Encode(kakuMessage)
+	json.NewEncoder(writer).Encode(shiftMessage)
 }

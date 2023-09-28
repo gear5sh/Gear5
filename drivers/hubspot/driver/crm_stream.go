@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/piyushsingariya/kaku/logger"
-	kakumodels "github.com/piyushsingariya/kaku/models"
-	"github.com/piyushsingariya/kaku/safego"
-	"github.com/piyushsingariya/kaku/types"
-	"github.com/piyushsingariya/kaku/typing"
-	"github.com/piyushsingariya/kaku/utils"
+	"github.com/piyushsingariya/shift/logger"
+	shiftmodels "github.com/piyushsingariya/shift/models"
+	"github.com/piyushsingariya/shift/safego"
+	"github.com/piyushsingariya/shift/types"
+	"github.com/piyushsingariya/shift/typing"
+	"github.com/piyushsingariya/shift/utils"
 )
 
 type CRMSearchStream struct {
@@ -90,7 +90,7 @@ func (c *CRMSearchStream) processSearch(nextPageToken map[string]any) ([]map[str
 	return streamRecords, rawResponse, nil
 }
 
-func (c *CRMSearchStream) readRecords(send chan<- kakumodels.Record) error {
+func (c *CRMSearchStream) readRecords(send chan<- shiftmodels.Record) error {
 	paginationComplete := false
 	var nextPageToken map[string]any
 	latest_cursor := &time.Time{}

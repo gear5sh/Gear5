@@ -6,8 +6,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/piyushsingariya/kaku/types"
+	"github.com/piyushsingariya/shift/types"
 )
+
+type StringInterface interface {
+	String() string
+}
 
 var DateTimeFormats = []string{
 	"2006-01-02",
@@ -69,7 +73,22 @@ func ReformatValue(dataType types.DataType, v any) (any, error) {
 	case types.TIMESTAMP:
 		return ReformatDate(v)
 	case types.STRING:
-		return fmt.Sprintf("%v", v), nil
+		switch v := v.(type) {
+		case int, int8, int16, int32, int64:
+			return fmt.Sprintf("%d", v), nil
+		case uint, uint8, uint16, uint32, uint64:
+			return fmt.Sprintf("%d", v), nil
+		case float32, float64:
+			return fmt.Sprintf("%d", v), nil
+		case string:
+			return v, nil
+		case bool:
+			return fmt.Sprintf("%t", v), nil
+		case []byte: // byte slice
+			return string(v), nil
+		default:
+			return fmt.Sprintf("%v", v), nil
+		}
 	case types.FLOAT64:
 		return ReformatFloat64(v)
 	case types.ARRAY:
@@ -136,6 +155,14 @@ func ReformatDate(v interface{}) (time.Time, error) {
 	}()
 	if err != nil {
 		return time.Time{}, err
+	}
+
+	// manage year limit
+	// even after data being parsed if year doesn't lie in range [0,9999] it failed to get marshalled
+	if parsed.Year() < 0 {
+		parsed = parsed.AddDate(0-parsed.Year(), 0, 0)
+	} else if parsed.Year() > 9999 {
+		parsed = parsed.AddDate(-(parsed.Year() - 9999), 0, 0)
 	}
 
 	return parsed, nil
@@ -220,4 +247,37 @@ func ReformatFloat64(v interface{}) (interface{}, error) {
 	}
 
 	return float64(0), fmt.Errorf("failed to change %v (type:%T) to float64", v, v)
+}
+
+func ReformatByteArraysToString(data map[string]any) map[string]any {
+	for key, value := range data {
+		switch value := value.(type) {
+		case map[string]any:
+			data[key] = ReformatByteArraysToString(value)
+		case []byte:
+			data[key] = string(value)
+		case []map[string]any:
+			decryptedArray := []map[string]any{}
+			for _, element := range value {
+				decryptedArray = append(decryptedArray, ReformatByteArraysToString(element))
+			}
+
+			data[key] = decryptedArray
+		case []any:
+			decryptedArray := []any{}
+			for _, element := range value {
+				switch element := element.(type) {
+				case map[string]any:
+					decryptedArray = append(decryptedArray, ReformatByteArraysToString(element))
+				case []byte:
+					decryptedArray = append(decryptedArray, string(element))
+				default:
+					decryptedArray = append(decryptedArray, element)
+				}
+			}
+
+			data[key] = decryptedArray
+		}
+	}
+	return data
 }

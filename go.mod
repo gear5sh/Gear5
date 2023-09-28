@@ -1,8 +1,9 @@
-module github.com/piyushsingariya/kaku
+module github.com/piyushsingariya/shift
 
 go 1.19
 
 require (
+	github.com/goccy/go-json v0.10.2
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.3
 	sigs.k8s.io/yaml v1.3.0

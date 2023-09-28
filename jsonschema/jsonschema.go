@@ -3,8 +3,8 @@ package jsonschema
 import (
 	"reflect"
 
-	"github.com/piyushsingariya/kaku/jsonschema/generator"
-	"github.com/piyushsingariya/kaku/jsonschema/schema"
+	"github.com/piyushsingariya/shift/jsonschema/generator"
+	"github.com/piyushsingariya/shift/jsonschema/schema"
 )
 
 // Reflector is the main jsonschemagen command.
