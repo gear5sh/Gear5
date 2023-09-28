@@ -95,8 +95,8 @@ github.com/mattn/go-isatty v0.0.7/go.mod h1:Iq45c/XA43vh69/j3iqttzPXn0bhXyGjM0Hd
 github.com/mattn/go-isatty v0.0.12/go.mod h1:cbi8OIDigv2wuxKPP5vlRcQ1OAZbq2CE4Kysco4FUpU=
 github.com/mattn/go-sqlite3 v1.14.6 h1:dNPt6NO46WmLVt2DLNpwczCmdV5boIZ6g/tlDrlRUbg=
 github.com/mattn/go-sqlite3 v1.14.6/go.mod h1:NyWgC/yNuGj7Q9rpYnZvas74GogHl5/Z4A/KQRfk6bU=
-github.com/piyushsingariya/kaku v0.0.0-20230630130252-054496f39abb h1:PQIfbI2wj0seDyIx/YQQjq+3sPWFsY2/47EORZP7KRg=
-github.com/piyushsingariya/kaku v0.0.0-20230630130252-054496f39abb/go.mod h1:yz0njNQHrKH+E5J/UeZlwcVWaBpy4L7S2XvmiEASLmg=
+github.com/piyushsingariya/shift v0.0.0-20230630130252-054496f39abb h1:PQIfbI2wj0seDyIx/YQQjq+3sPWFsY2/47EORZP7KRg=
+github.com/piyushsingariya/shift v0.0.0-20230630130252-054496f39abb/go.mod h1:yz0njNQHrKH+E5J/UeZlwcVWaBpy4L7S2XvmiEASLmg=
 github.com/pkg/errors v0.8.1 h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=

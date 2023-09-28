@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/piyushsingariya/kaku/logger"
+	"github.com/piyushsingariya/shift/logger"
 )
 
 type Config struct {

@@ -1,7 +1,7 @@
 package driver
 
 import (
-	"github.com/piyushsingariya/kaku/types"
+	"github.com/piyushsingariya/shift/types"
 )
 
 var pgTypeToDataTypes = map[string]types.DataType{

@@ -1,20 +1,29 @@
 package utils
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"reflect"
 	"time"
 
-	"github.com/piyushsingariya/kaku/jsonschema"
-	"github.com/piyushsingariya/kaku/logger"
-	"github.com/piyushsingariya/kaku/models"
-	"github.com/piyushsingariya/kaku/types"
-	"github.com/piyushsingariya/kaku/typing"
+	"github.com/goccy/go-json"
+
+	"github.com/piyushsingariya/shift/jsonschema"
+	"github.com/piyushsingariya/shift/logger"
+	"github.com/piyushsingariya/shift/models"
+	"github.com/piyushsingariya/shift/types"
+	"github.com/piyushsingariya/shift/typing"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 )
+
+func Absolute[T int | int8 | int16 | int32 | int64 | float32 | float64](value T) T {
+	if value < 0 {
+		return -value
+	}
+
+	return value
+}
 
 // IsValidSubcommand checks if the passed subcommand is supported by the parent command
 func IsValidSubcommand(available []*cobra.Command, sub string) bool {
@@ -175,7 +184,7 @@ func StreamIdentifier(namespace, name string) string {
 	return namespace + name
 }
 
-func ToKakuSchema(obj interface{}) (string, error) {
+func ToShiftSchema(obj interface{}) (string, error) {
 	schema, err := jsonschema.Reflect(obj)
 	if err != nil {
 		return "", err
@@ -252,5 +261,12 @@ func ReformatRecord(name, namespace string, record map[string]any) models.Record
 		Stream:    name,
 		Namespace: namespace,
 		Data:      record,
+	}
+}
+
+// CloseRecordIteration closes iteration over a record channel
+func CloseRecordIteration(channel chan models.Record) {
+	channel <- models.Record{
+		Close: true,
 	}
 }

@@ -1,9 +1,10 @@
 package schema
 
 import (
-	"encoding/json"
 	"fmt"
 	"strconv"
+
+	"github.com/goccy/go-json"
 )
 
 // NumericSchema represents the schema for a JSON number.

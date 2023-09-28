@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"github.com/piyushsingariya/kaku/types"
+	"github.com/piyushsingariya/shift/types"
 )
 
 const (
@@ -16,7 +16,7 @@ const (
 	ActionType           = "ACTION"
 )
 
-// Message is a dto for kaku output row representation
+// Message is a dto for shift output row representation
 type Message struct {
 	Type             types.MessageType      `json:"type"`
 	Log              *Log                   `json:"log,omitempty"`
@@ -50,6 +50,8 @@ type StatusRow struct {
 
 // Record is a dto for airbyte record serialization
 type Record struct {
+	// close is used to stop iterating records
+	Close     bool                   `json:"-"`
 	Namespace string                 `json:"namespace,omitempty"`
 	Stream    string                 `json:"stream,omitempty"`
 	Data      map[string]interface{} `json:"data,omitempty"`
@@ -68,8 +70,6 @@ type Schema struct {
 
 // Property is a dto for catalog properties representation
 type Property struct {
-	//might be string or []string or nil
 	Type       []types.DataType     `json:"type,omitempty"`
-	Format     string               `json:"format,omitempty"`
 	Properties map[string]*Property `json:"properties,omitempty"`
 }

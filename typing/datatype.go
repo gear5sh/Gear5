@@ -3,7 +3,7 @@ package typing
 import (
 	"reflect"
 
-	"github.com/piyushsingariya/kaku/types"
+	"github.com/piyushsingariya/shift/types"
 )
 
 // TypeFromValue return DataType from v type

@@ -1,8 +1,8 @@
 package models
 
 import (
-	"github.com/piyushsingariya/kaku/jsonschema/schema"
-	"github.com/piyushsingariya/kaku/types"
+	"github.com/piyushsingariya/shift/jsonschema/schema"
+	"github.com/piyushsingariya/shift/types"
 )
 
 // WrappedStream is a dto for formatted stream

@@ -3,18 +3,19 @@ package protocol
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/piyushsingariya/kaku/logger"
-	"github.com/piyushsingariya/kaku/models"
-	"github.com/piyushsingariya/kaku/utils"
+	"github.com/piyushsingariya/shift/logger"
+	"github.com/piyushsingariya/shift/models"
+	"github.com/piyushsingariya/shift/utils"
 	"github.com/spf13/cobra"
 )
 
 // ReadCmd represents the read command
 var ReadCmd = &cobra.Command{
 	Use:   "read",
-	Short: "Kaku read command",
+	Short: "Shift read command",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		if err := utils.CheckIfFilesExists(config, catalog); err != nil {
 			return err
@@ -55,9 +56,19 @@ var ReadCmd = &cobra.Command{
 		recordStream := make(chan models.Record, 2*batchSize)
 		numRecords := int64(0)
 		batch := int64(0)
+		recordIterationWait := sync.WaitGroup{}
 
+		recordIterationWait.Add(1)
 		go func() {
+			defer recordIterationWait.Done()
+			defer close(recordStream)
+
 			for message := range recordStream {
+				// close the iteration
+				if message.Close {
+					break
+				}
+
 				logger.LogRecord(message)
 				numRecords++
 				batch++
@@ -104,7 +115,9 @@ var ReadCmd = &cobra.Command{
 			logger.Infof("Finished reading stream %s[%s] in %s", stream.Name(), stream.Namespace(), time.Since(streamStartTime).String())
 		}
 
-		close(recordStream)
+		// stop record iteration
+		utils.CloseRecordIteration(recordStream)
+		recordIterationWait.Wait()
 
 		logger.Infof("Total records read: %d", numRecords)
 		state, err := connector.GetState()

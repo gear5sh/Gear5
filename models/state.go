@@ -21,6 +21,20 @@ func (s *State) Get(streamName, namespace string) map[string]any {
 	return nil
 }
 
+func (s *State) Update(streamName, namespace string, state map[string]interface{}) {
+	found := false
+	for _, stream := range *s {
+		if stream.Stream == streamName && stream.Namespace == namespace {
+			stream.State = state
+			found = true
+		}
+	}
+
+	if !found {
+		s.Add(streamName, namespace, state)
+	}
+}
+
 func (s *State) Len() int {
 	return len(*s)
 }
