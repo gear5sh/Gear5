@@ -2,10 +2,10 @@ package main
 
 import (
 	_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/piyushsingariya/kaku"
-	"github.com/piyushsingariya/kaku/drivers/postgres/driver"
-	"github.com/piyushsingariya/kaku/logger"
-	"github.com/piyushsingariya/kaku/safego"
+	"github.com/piyushsingariya/shift"
+	"github.com/piyushsingariya/shift/drivers/postgres/driver"
+	"github.com/piyushsingariya/shift/logger"
+	"github.com/piyushsingariya/shift/safego"
 )
 
 func main() {
@@ -14,7 +14,7 @@ func main() {
 	driver := &driver.Postgres{}
 	defer driver.CloseConnection()
 
-	cmd, err := kaku.RegisterDriver(driver)
+	cmd, err := shift.RegisterDriver(driver)
 	if err != nil {
 		logger.Fatal(err)
 	}

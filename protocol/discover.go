@@ -4,19 +4,19 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/piyushsingariya/kaku/logger"
-	"github.com/piyushsingariya/kaku/models"
-	"github.com/piyushsingariya/kaku/safego"
-	"github.com/piyushsingariya/kaku/types"
-	"github.com/piyushsingariya/kaku/typing"
-	"github.com/piyushsingariya/kaku/utils"
+	"github.com/piyushsingariya/shift/logger"
+	"github.com/piyushsingariya/shift/models"
+	"github.com/piyushsingariya/shift/safego"
+	"github.com/piyushsingariya/shift/types"
+	"github.com/piyushsingariya/shift/typing"
+	"github.com/piyushsingariya/shift/utils"
 	"github.com/spf13/cobra"
 )
 
 // DiscoverCmd represents the read command
 var DiscoverCmd = &cobra.Command{
 	Use:   "discover",
-	Short: "Kaku discover command",
+	Short: "Shift discover command",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		return utils.CheckIfFilesExists(config)
 	},

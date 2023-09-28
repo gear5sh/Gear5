@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"github.com/piyushsingariya/kaku/types"
+	"github.com/piyushsingariya/shift/types"
 )
 
 const (
@@ -16,7 +16,7 @@ const (
 	ActionType           = "ACTION"
 )
 
-// Message is a dto for kaku output row representation
+// Message is a dto for shift output row representation
 type Message struct {
 	Type             types.MessageType      `json:"type"`
 	Log              *Log                   `json:"log,omitempty"`

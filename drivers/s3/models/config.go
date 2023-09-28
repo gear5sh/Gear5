@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/go-playground/validator"
-	"github.com/piyushsingariya/kaku/logger"
+	"github.com/piyushsingariya/shift/logger"
 )
 
 // Authenticate via Access and Secret Keys

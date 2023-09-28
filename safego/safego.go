@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/piyushsingariya/kaku/logger"
+	"github.com/piyushsingariya/shift/logger"
 )
 
 const defaultRestartTimeout = 2 * time.Second

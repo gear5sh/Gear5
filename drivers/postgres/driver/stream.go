@@ -4,18 +4,18 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
-	kakumodels "github.com/piyushsingariya/kaku/models"
-	"github.com/piyushsingariya/kaku/safego"
-	"github.com/piyushsingariya/kaku/types"
-	"github.com/piyushsingariya/kaku/typing"
-	"github.com/piyushsingariya/kaku/utils"
+	shiftmodels "github.com/piyushsingariya/shift/models"
+	"github.com/piyushsingariya/shift/safego"
+	"github.com/piyushsingariya/shift/types"
+	"github.com/piyushsingariya/shift/typing"
+	"github.com/piyushsingariya/shift/utils"
 )
 
 type pgStream struct {
 	batchSize int64
 	cursor    string
 	state     interface{}
-	*kakumodels.Stream
+	*shiftmodels.Stream
 }
 
 const (
@@ -29,7 +29,7 @@ func (p *pgStream) setState(cursor string, state interface{}) {
 	p.state = state
 }
 
-func (p *pgStream) readFullRefresh(client *sqlx.DB, channel chan<- kakumodels.Record) error {
+func (p *pgStream) readFullRefresh(client *sqlx.DB, channel chan<- shiftmodels.Record) error {
 	offset := int64(0)
 	limit := p.batchSize
 
@@ -86,7 +86,7 @@ func (p *pgStream) readFullRefresh(client *sqlx.DB, channel chan<- kakumodels.Re
 	return nil
 }
 
-func (p *pgStream) readIncremental(client *sqlx.DB, channel chan<- kakumodels.Record) error {
+func (p *pgStream) readIncremental(client *sqlx.DB, channel chan<- shiftmodels.Record) error {
 	offset := int64(0)
 	limit := p.batchSize
 	var initialStateAtStart any

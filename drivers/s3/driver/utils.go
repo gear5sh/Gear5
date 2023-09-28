@@ -8,8 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/piyushsingariya/drivers/s3/models"
-	"github.com/piyushsingariya/kaku/logger"
-	"github.com/piyushsingariya/kaku/utils"
+	"github.com/piyushsingariya/shift/logger"
+	"github.com/piyushsingariya/shift/utils"
 )
 
 func newSession(credentials interface{}) (*session.Session, error) {

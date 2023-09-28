@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/go-playground/validator v9.31.0+incompatible
-	github.com/piyushsingariya/kaku v0.0.0-20230727050722-6795340c7033
+	github.com/piyushsingariya/shift v0.0.0-20230727050722-6795340c7033
 )
 
 require (

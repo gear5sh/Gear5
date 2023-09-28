@@ -1,8 +1,9 @@
-module github.com/piyushsingariya/kaku
+module github.com/piyushsingariya/shift
 
 go 1.19
 
 require (
+	github.com/goccy/go-json v0.10.2
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.3
 	sigs.k8s.io/yaml v1.3.0
@@ -11,7 +12,6 @@ require (
 require (
 	github.com/brainicorn/goblex v0.0.0-20210908194630-cfe0cfdf87dd // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/sys v0.8.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

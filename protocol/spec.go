@@ -3,15 +3,15 @@ package protocol
 import (
 	"fmt"
 
-	"github.com/piyushsingariya/kaku/logger"
-	"github.com/piyushsingariya/kaku/utils"
+	"github.com/piyushsingariya/shift/logger"
+	"github.com/piyushsingariya/shift/utils"
 	"github.com/spf13/cobra"
 )
 
 // SpecCmd represents the read command
 var SpecCmd = &cobra.Command{
 	Use:   "spec",
-	Short: "Kaku spec command",
+	Short: "Shift spec command",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		connector, not := rawConnector.(Connector)
 		if !not {

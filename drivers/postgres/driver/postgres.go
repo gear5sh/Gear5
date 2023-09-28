@@ -7,15 +7,15 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/piyushsingariya/kaku/drivers/postgres/models"
-	"github.com/piyushsingariya/kaku/jsonschema"
-	"github.com/piyushsingariya/kaku/jsonschema/schema"
-	"github.com/piyushsingariya/kaku/logger"
-	kakumodels "github.com/piyushsingariya/kaku/models"
-	"github.com/piyushsingariya/kaku/protocol"
-	"github.com/piyushsingariya/kaku/types"
-	"github.com/piyushsingariya/kaku/typing"
-	"github.com/piyushsingariya/kaku/utils"
+	"github.com/piyushsingariya/shift/drivers/postgres/models"
+	"github.com/piyushsingariya/shift/jsonschema"
+	"github.com/piyushsingariya/shift/jsonschema/schema"
+	"github.com/piyushsingariya/shift/logger"
+	shiftmodels "github.com/piyushsingariya/shift/models"
+	"github.com/piyushsingariya/shift/protocol"
+	"github.com/piyushsingariya/shift/types"
+	"github.com/piyushsingariya/shift/typing"
+	"github.com/piyushsingariya/shift/utils"
 )
 
 const (
@@ -35,11 +35,11 @@ type Postgres struct {
 	client      *sqlx.DB
 	accessToken string
 	config      *models.Config
-	catalog     *kakumodels.Catalog
-	state       kakumodels.State
+	catalog     *shiftmodels.Catalog
+	state       shiftmodels.State
 }
 
-func (p *Postgres) Setup(config any, catalog *kakumodels.Catalog, state kakumodels.State, batchSize int64) error {
+func (p *Postgres) Setup(config any, catalog *shiftmodels.Catalog, state shiftmodels.State, batchSize int64) error {
 	cfg := models.Config{}
 	err := utils.Unmarshal(config, &cfg)
 	if err != nil {
@@ -91,8 +91,8 @@ func (p *Postgres) Check() error {
 	return nil
 }
 
-func (p *Postgres) Discover() ([]*kakumodels.Stream, error) {
-	streams := []*kakumodels.Stream{}
+func (p *Postgres) Discover() ([]*shiftmodels.Stream, error) {
+	streams := []*shiftmodels.Stream{}
 	for _, stream := range p.allStreams {
 		streams = append(streams, stream.Stream)
 	}
@@ -100,17 +100,17 @@ func (p *Postgres) Discover() ([]*kakumodels.Stream, error) {
 	return streams, nil
 }
 
-func (p *Postgres) Catalog() *kakumodels.Catalog {
+func (p *Postgres) Catalog() *shiftmodels.Catalog {
 	return p.catalog
 }
 func (p *Postgres) Type() string {
 	return "Postgres"
 }
 
-func (p *Postgres) Streams() ([]*kakumodels.Stream, error) {
+func (p *Postgres) Streams() ([]*shiftmodels.Stream, error) {
 	return nil, nil
 }
-func (p *Postgres) Read(stream protocol.Stream, channel chan<- kakumodels.Record) error {
+func (p *Postgres) Read(stream protocol.Stream, channel chan<- shiftmodels.Record) error {
 	identifier := utils.StreamIdentifier(stream.Namespace(), stream.Name())
 	pgStream, found := p.allStreams[identifier]
 	if !found {
@@ -143,8 +143,8 @@ func (p *Postgres) Read(stream protocol.Stream, channel chan<- kakumodels.Record
 	return nil
 }
 
-func (p *Postgres) GetState() (*kakumodels.State, error) {
-	state := &kakumodels.State{}
+func (p *Postgres) GetState() (*shiftmodels.State, error) {
+	state := &shiftmodels.State{}
 	for _, stream := range p.Catalog().Streams {
 		if stream.SyncMode == types.Incremental || stream.SyncMode == types.CDC {
 			pgStream, found := p.allStreams[utils.StreamIdentifier(stream.Namespace(), stream.Name())]
@@ -210,13 +210,13 @@ func (p *Postgres) setupStreams() error {
 				return fmt.Errorf("failed to retrieve primary key columns for table %s[%s]: %s", table.Name, schema.Name, err)
 			}
 
-			stream := &kakumodels.Stream{
+			stream := &shiftmodels.Stream{
 				Name:      table.Name,
 				Namespace: schema.Name,
 			}
 
-			stream.JSONSchema = &kakumodels.Schema{
-				Properties: make(map[string]*kakumodels.Property),
+			stream.JSONSchema = &shiftmodels.Schema{
+				Properties: make(map[string]*shiftmodels.Property),
 			}
 
 			for _, column := range columnSchemaOutput {
@@ -232,7 +232,7 @@ func (p *Postgres) setupStreams() error {
 					datatypes = append(datatypes, types.NULL)
 				}
 
-				stream.JSONSchema.Properties[column.Name] = &kakumodels.Property{
+				stream.JSONSchema.Properties[column.Name] = &shiftmodels.Property{
 					Type: datatypes,
 				}
 			}

@@ -2,16 +2,16 @@ package main
 
 import (
 	"github.com/piyushsingariya/drivers/s3/driver"
-	"github.com/piyushsingariya/kaku"
-	"github.com/piyushsingariya/kaku/logger"
-	"github.com/piyushsingariya/kaku/safego"
+	"github.com/piyushsingariya/shift"
+	"github.com/piyushsingariya/shift/logger"
+	"github.com/piyushsingariya/shift/safego"
 )
 
 func main() {
 	defer safego.Recovery()
 
 	driver := &driver.S3{}
-	cmd, err := kaku.RegisterDriver(driver)
+	cmd, err := shift.RegisterDriver(driver)
 	if err != nil {
 		logger.Fatal(err)
 	}

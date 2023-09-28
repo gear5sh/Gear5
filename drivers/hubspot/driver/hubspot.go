@@ -7,14 +7,14 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/piyushsingariya/kaku/drivers/hubspot/models"
-	"github.com/piyushsingariya/kaku/jsonschema"
-	"github.com/piyushsingariya/kaku/jsonschema/schema"
-	"github.com/piyushsingariya/kaku/logger"
-	kakumodels "github.com/piyushsingariya/kaku/models"
-	"github.com/piyushsingariya/kaku/protocol"
-	"github.com/piyushsingariya/kaku/types"
-	"github.com/piyushsingariya/kaku/utils"
+	"github.com/piyushsingariya/shift/drivers/hubspot/models"
+	"github.com/piyushsingariya/shift/jsonschema"
+	"github.com/piyushsingariya/shift/jsonschema/schema"
+	"github.com/piyushsingariya/shift/logger"
+	shiftmodels "github.com/piyushsingariya/shift/models"
+	"github.com/piyushsingariya/shift/protocol"
+	"github.com/piyushsingariya/shift/types"
+	"github.com/piyushsingariya/shift/utils"
 )
 
 type Hubspot struct {
@@ -23,11 +23,11 @@ type Hubspot struct {
 	client      *http.Client
 	accessToken string
 	config      *models.Config
-	catalog     *kakumodels.Catalog
-	state       kakumodels.State
+	catalog     *shiftmodels.Catalog
+	state       shiftmodels.State
 }
 
-func (h *Hubspot) Setup(config any, catalog *kakumodels.Catalog, state kakumodels.State, batchSize int64) error {
+func (h *Hubspot) Setup(config any, catalog *shiftmodels.Catalog, state shiftmodels.State, batchSize int64) error {
 	conf := &models.Config{}
 	if err := utils.Unmarshal(config, conf); err != nil {
 		return err
@@ -61,11 +61,11 @@ func (h *Hubspot) Check() error {
 	return nil
 }
 
-func (h *Hubspot) Discover() ([]*kakumodels.Stream, error) {
-	streams := []*kakumodels.Stream{}
+func (h *Hubspot) Discover() ([]*shiftmodels.Stream, error) {
+	streams := []*shiftmodels.Stream{}
 
 	for streamName, hstream := range h.allStreams {
-		stream := &kakumodels.Stream{
+		stream := &shiftmodels.Stream{
 			Name:                    streamName,
 			SupportedSyncModes:      hstream.Modes(),
 			SourceDefinedPrimaryKey: hstream.PrimaryKey(),
@@ -82,15 +82,15 @@ func (h *Hubspot) Discover() ([]*kakumodels.Stream, error) {
 	return streams, nil
 }
 
-func (h *Hubspot) Catalog() *kakumodels.Catalog {
+func (h *Hubspot) Catalog() *shiftmodels.Catalog {
 	return h.catalog
 }
 func (h *Hubspot) Type() string {
 	return "Hubspot"
 }
 
-func (h *Hubspot) GetState() (*kakumodels.State, error) {
-	state := &kakumodels.State{}
+func (h *Hubspot) GetState() (*shiftmodels.State, error) {
+	state := &shiftmodels.State{}
 	for _, stream := range h.Catalog().Streams {
 		if stream.SyncMode == types.Incremental {
 			hubspotStream, found := h.allStreams[stream.Name()]
@@ -110,7 +110,7 @@ func (h *Hubspot) GetState() (*kakumodels.State, error) {
 	return state, nil
 }
 
-func (h *Hubspot) Read(stream protocol.Stream, channel chan<- kakumodels.Record) error {
+func (h *Hubspot) Read(stream protocol.Stream, channel chan<- shiftmodels.Record) error {
 	hstream, found := h.allStreams[stream.Name()]
 	if !found {
 		return fmt.Errorf("invalid stream passed: %s", stream.Name())
