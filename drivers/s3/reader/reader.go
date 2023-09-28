@@ -5,13 +5,13 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/s3"
-	kakumodels "github.com/piyushsingariya/kaku/models"
+	shiftmodels "github.com/piyushsingariya/shift/models"
 )
 
 var FileTypes = []string{"parquet"}
 
 type Reader interface {
-	GetSchema() (map[string]*kakumodels.Property, error)
+	GetSchema() (map[string]*shiftmodels.Property, error)
 	Read() ([]map[string]any, error)
 	HasNext() bool
 }

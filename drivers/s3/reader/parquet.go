@@ -13,11 +13,11 @@ import (
 
 	_ "github.com/akrennmair/parquet-go-lzo"  // registers the LZO block compressor with parquet-go
 	_ "github.com/akrennmair/parquet-go-zstd" // registers the Zstd block compressor with parquet-go
-	"github.com/piyushsingariya/kaku/logger"
-	kakumodels "github.com/piyushsingariya/kaku/models"
-	"github.com/piyushsingariya/kaku/types"
-	"github.com/piyushsingariya/kaku/typing"
-	"github.com/piyushsingariya/kaku/utils"
+	"github.com/piyushsingariya/shift/logger"
+	shiftmodels "github.com/piyushsingariya/shift/models"
+	"github.com/piyushsingariya/shift/types"
+	"github.com/piyushsingariya/shift/typing"
+	"github.com/piyushsingariya/shift/utils"
 
 	"github.com/aws/aws-sdk-go/service/s3"
 	goparquet "github.com/fraugster/parquet-go"
@@ -117,15 +117,15 @@ func (p *Parquet) parseFieldType(neededLogicalType, neededPQType string) (types.
 	return "", fmt.Errorf("incorrect parquet physical type[%s]; logical type[%s]", neededPQType, neededLogicalType)
 }
 
-func (p *Parquet) GetSchema() (map[string]*kakumodels.Property, error) {
-	output := make(map[string]*kakumodels.Property)
+func (p *Parquet) GetSchema() (map[string]*shiftmodels.Property, error) {
+	output := make(map[string]*shiftmodels.Property)
 	for _, column := range p.reader.Columns() {
 		columnType, err := p.parseFieldType(p.getLogicalTypeFromSDK(column), column.Type().String())
 		if err != nil {
 			return nil, err
 		}
 
-		output[column.Name()] = &kakumodels.Property{
+		output[column.Name()] = &shiftmodels.Property{
 			Type: []types.DataType{columnType},
 		}
 	}

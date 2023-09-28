@@ -1,10 +1,10 @@
-module github.com/piyushsingariya/kaku/drivers/hubspot
+module github.com/piyushsingariya/shift/drivers/hubspot
 
 go 1.19
 
 require (
 	github.com/goccy/go-json v0.10.2
-	github.com/piyushsingariya/kaku v0.0.0-20230727050722-6795340c7033
+	github.com/piyushsingariya/shift v0.0.0-20230727050722-6795340c7033
 	golang.org/x/oauth2 v0.11.0
 )
 
@@ -26,4 +26,4 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace github.com/piyushsingariya/kaku => ../../
+replace github.com/piyushsingariya/shift => ../../

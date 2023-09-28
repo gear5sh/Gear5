@@ -1,9 +1,9 @@
 package protocol
 
 import (
-	"github.com/piyushsingariya/kaku/jsonschema/schema"
-	"github.com/piyushsingariya/kaku/models"
-	"github.com/piyushsingariya/kaku/types"
+	"github.com/piyushsingariya/shift/jsonschema/schema"
+	"github.com/piyushsingariya/shift/models"
+	"github.com/piyushsingariya/shift/types"
 )
 
 type Connector interface {

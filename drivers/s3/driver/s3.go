@@ -14,15 +14,15 @@ import (
 	"github.com/gobwas/glob"
 	"github.com/piyushsingariya/drivers/s3/models"
 	"github.com/piyushsingariya/drivers/s3/reader"
-	"github.com/piyushsingariya/kaku/jsonschema"
-	"github.com/piyushsingariya/kaku/jsonschema/schema"
-	"github.com/piyushsingariya/kaku/logger"
-	kakumodels "github.com/piyushsingariya/kaku/models"
-	protocol "github.com/piyushsingariya/kaku/protocol"
-	"github.com/piyushsingariya/kaku/safego"
-	"github.com/piyushsingariya/kaku/types"
-	"github.com/piyushsingariya/kaku/typing"
-	"github.com/piyushsingariya/kaku/utils"
+	"github.com/piyushsingariya/shift/jsonschema"
+	"github.com/piyushsingariya/shift/jsonschema/schema"
+	"github.com/piyushsingariya/shift/logger"
+	shiftmodels "github.com/piyushsingariya/shift/models"
+	protocol "github.com/piyushsingariya/shift/protocol"
+	"github.com/piyushsingariya/shift/safego"
+	"github.com/piyushsingariya/shift/types"
+	"github.com/piyushsingariya/shift/typing"
+	"github.com/piyushsingariya/shift/utils"
 )
 
 const patternSymbols = "*[]!{}"
@@ -31,13 +31,13 @@ type S3 struct {
 	cursorField string
 	config      *models.Config
 	session     *session.Session
-	catalog     *kakumodels.Catalog
-	state       kakumodels.State
+	catalog     *shiftmodels.Catalog
+	state       shiftmodels.State
 	client      *s3.S3
 	batchSize   int64
 }
 
-func (s *S3) Setup(config any, catalog *kakumodels.Catalog, state kakumodels.State, batchSize int64) error {
+func (s *S3) Setup(config any, catalog *shiftmodels.Catalog, state shiftmodels.State, batchSize int64) error {
 	cfg := models.Config{}
 	err := utils.Unmarshal(config, &cfg)
 	if err != nil {
@@ -82,10 +82,10 @@ func (s *S3) Check() error {
 	return nil
 }
 
-func (s *S3) Discover() ([]*kakumodels.Stream, error) {
-	streams := []*kakumodels.Stream{}
+func (s *S3) Discover() ([]*shiftmodels.Stream, error) {
+	streams := []*shiftmodels.Stream{}
 	for stream, pattern := range s.config.Streams {
-		var schema map[string]*kakumodels.Property
+		var schema map[string]*shiftmodels.Property
 		var err error
 		err = s.iteration(pattern, 1, func(reader reader.Reader, file *s3.Object) (bool, error) {
 			schema, err = reader.GetSchema()
@@ -99,13 +99,13 @@ func (s *S3) Discover() ([]*kakumodels.Stream, error) {
 			return nil, fmt.Errorf("no schema found")
 		}
 
-		streams = append(streams, &kakumodels.Stream{
+		streams = append(streams, &shiftmodels.Stream{
 			Name:                stream,
 			Namespace:           pattern,
 			SupportedSyncModes:  []types.SyncMode{types.Incremental, types.FullRefresh},
 			SourceDefinedCursor: true,
 			DefaultCursorFields: []string{s.cursorField},
-			JSONSchema: &kakumodels.Schema{
+			JSONSchema: &shiftmodels.Schema{
 				Properties: schema,
 			},
 		})
@@ -114,7 +114,7 @@ func (s *S3) Discover() ([]*kakumodels.Stream, error) {
 	return streams, nil
 }
 
-func (s *S3) Catalog() *kakumodels.Catalog {
+func (s *S3) Catalog() *shiftmodels.Catalog {
 	return s.catalog
 }
 
@@ -124,7 +124,7 @@ func (s *S3) Type() string {
 
 // NOTE: S3 read doesn't perform neccessary checks such as matching cursor field present in stream since
 // it works only on single cursor field
-func (s *S3) Read(stream protocol.Stream, channel chan<- kakumodels.Record) error {
+func (s *S3) Read(stream protocol.Stream, channel chan<- shiftmodels.Record) error {
 	name, namespace := stream.Name(), stream.Namespace()
 	// get pattern from stream name
 	pattern := s.config.Streams[name]
@@ -203,7 +203,7 @@ func (s *S3) Read(stream protocol.Stream, channel chan<- kakumodels.Record) erro
 	return nil
 }
 
-func (s *S3) GetState() (*kakumodels.State, error) {
+func (s *S3) GetState() (*shiftmodels.State, error) {
 	return &s.state, nil
 }
 

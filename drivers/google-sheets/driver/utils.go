@@ -11,11 +11,11 @@ import (
 	"github.com/goccy/go-json"
 
 	unidecode "github.com/mozillazg/go-unidecode"
-	"github.com/piyushsingariya/kaku/drivers/google-sheets/models"
-	"github.com/piyushsingariya/kaku/logger"
-	kakumodels "github.com/piyushsingariya/kaku/models"
-	"github.com/piyushsingariya/kaku/types"
-	"github.com/piyushsingariya/kaku/utils"
+	"github.com/piyushsingariya/shift/drivers/google-sheets/models"
+	"github.com/piyushsingariya/shift/logger"
+	shiftmodels "github.com/piyushsingariya/shift/models"
+	"github.com/piyushsingariya/shift/types"
+	"github.com/piyushsingariya/shift/utils"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"gopkg.in/Iwark/spreadsheet.v2"
@@ -186,15 +186,15 @@ func SafeNameConversion(text string) (string, error) {
 	return strings.ToLower(text), nil
 }
 
-func headersToStream(sheetName string, headers []string) *kakumodels.Stream {
-	stream := kakumodels.Stream{}
+func headersToStream(sheetName string, headers []string) *shiftmodels.Stream {
+	stream := shiftmodels.Stream{}
 	stream.Name = sheetName
 	stream.SupportedSyncModes = []types.SyncMode{types.FullRefresh}
-	stream.JSONSchema = &kakumodels.Schema{}
-	stream.JSONSchema.Properties = make(map[string]*kakumodels.Property)
+	stream.JSONSchema = &shiftmodels.Schema{}
+	stream.JSONSchema.Properties = make(map[string]*shiftmodels.Property)
 
 	for _, header := range headers {
-		stream.JSONSchema.Properties[header] = &kakumodels.Property{
+		stream.JSONSchema.Properties[header] = &shiftmodels.Property{
 			// for simplicity, every field is a string
 			Type: []types.DataType{types.STRING},
 		}

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/brainicorn/ganno"
-	"github.com/piyushsingariya/kaku/jsonschema/schema"
+	"github.com/piyushsingariya/shift/jsonschema/schema"
 	"golang.org/x/tools/go/loader"
 )
 

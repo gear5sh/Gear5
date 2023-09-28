@@ -1,14 +1,14 @@
 package main
 
 import (
-	"github.com/piyushsingariya/kaku"
-	"github.com/piyushsingariya/kaku/drivers/google-sheets/driver"
-	"github.com/piyushsingariya/kaku/logger"
+	"github.com/piyushsingariya/shift"
+	"github.com/piyushsingariya/shift/drivers/google-sheets/driver"
+	"github.com/piyushsingariya/shift/logger"
 )
 
 func main() {
 	driver := &driver.GoogleSheets{}
-	cmd, err := kaku.RegisterDriver(driver)
+	cmd, err := shift.RegisterDriver(driver)
 	if err != nil {
 		logger.Fatal(err)
 	}

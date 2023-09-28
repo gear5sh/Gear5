@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/piyushsingariya/kaku/types"
+	"github.com/piyushsingariya/shift/types"
 )
 
 type StringInterface interface {

@@ -3,9 +3,9 @@ package typing
 import (
 	"sort"
 
-	"github.com/piyushsingariya/kaku/logger"
-	"github.com/piyushsingariya/kaku/models"
-	"github.com/piyushsingariya/kaku/types"
+	"github.com/piyushsingariya/shift/logger"
+	"github.com/piyushsingariya/shift/models"
+	"github.com/piyushsingariya/shift/types"
 )
 
 type Fields map[string]*Field

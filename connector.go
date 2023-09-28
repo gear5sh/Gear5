@@ -1,9 +1,9 @@
-package kaku
+package shift
 
 import (
 	"fmt"
 
-	protocol "github.com/piyushsingariya/kaku/protocol"
+	protocol "github.com/piyushsingariya/shift/protocol"
 	"github.com/spf13/cobra"
 )
 

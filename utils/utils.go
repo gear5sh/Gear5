@@ -8,11 +8,11 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/piyushsingariya/kaku/jsonschema"
-	"github.com/piyushsingariya/kaku/logger"
-	"github.com/piyushsingariya/kaku/models"
-	"github.com/piyushsingariya/kaku/types"
-	"github.com/piyushsingariya/kaku/typing"
+	"github.com/piyushsingariya/shift/jsonschema"
+	"github.com/piyushsingariya/shift/logger"
+	"github.com/piyushsingariya/shift/models"
+	"github.com/piyushsingariya/shift/types"
+	"github.com/piyushsingariya/shift/typing"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 )
@@ -184,7 +184,7 @@ func StreamIdentifier(namespace, name string) string {
 	return namespace + name
 }
 
-func ToKakuSchema(obj interface{}) (string, error) {
+func ToShiftSchema(obj interface{}) (string, error) {
 	schema, err := jsonschema.Reflect(obj)
 	if err != nil {
 		return "", err
