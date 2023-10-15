@@ -82,7 +82,6 @@ if [[ $RELEASE_CHANNEL == "stable" ]]; then
     echo "   ✅ Releasing stable channel; Latest tag is $latest_tag, Version is $VERSION Target platform: $platform"
 else
     echo "Releasing edge channel version: $VERSION Target platform: $platform"
-    argument="$1"
 fi
 
 # checking again if version is not empty
