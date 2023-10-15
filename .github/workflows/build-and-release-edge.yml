@@ -11,6 +11,11 @@ jobs:
     name: Publish connector ${{ github.event.inputs.connector }} [manual]
     environment: Publish Connector
     runs-on: ubuntu-latest
+    env:
+      RELEASE_CHANNEL: "edge"
+      DOCKER_LOGIN: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      DHID: ${{ secrets.DOCKER_USERNAME }}
     steps:
       - name: Checkout Airbyte
         uses: actions/checkout@v3
