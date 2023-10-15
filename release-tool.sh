@@ -25,7 +25,7 @@ function fail() {
 function release() {
     docker login -u="$DOCKER_LOGIN" -p="$DOCKER_PASSWORD" || fail "Docker ($DOCKER_LOGIN) login failed"
     echo "**** $type-$connector $2 release [$1] ****"
-
+    cd $path
     docker buildx build --platform $2 --push -t "$DHID"/$type-$connector:"$RELEASE_CHANNEL"-"$1" -t "$DHID"/$type-$connector:"$RELEASE_CHANNEL"-latest --build-arg GIT_COMMITSHA="$GIT_COMMITSHA" --build-arg GIT_VERSION="$GIT_VERSION" --build-arg RELEASE_CHANNEL="$RELEASE_CHANNEL" . || fail 'dockerx build failed'
 }
 

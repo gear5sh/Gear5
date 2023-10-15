@@ -1,4 +1,4 @@
-name: Datazip Cloud Build and Releaser (stable)
+name: Connector Build and Release (stable)
 on:
   push:
     tags:

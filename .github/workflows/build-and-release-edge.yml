@@ -1,4 +1,4 @@
-name: Connector Build and Release Edge
+name: Connector Build and Release (edge)
 
 on:
   workflow_dispatch:
