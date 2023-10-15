@@ -16,6 +16,7 @@ jobs:
       DOCKER_LOGIN: ${{ secrets.DOCKER_USERNAME }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       DHID: ${{ secrets.DOCKER_USERNAME }}
+      argument: ${{ github.event.inputs.connector }}
     steps:
       - name: Checkout Airbyte
         uses: actions/checkout@v3
@@ -36,5 +37,5 @@ jobs:
       - name: Run Release tool
         run: |
           chmod +x ./release-tool.sh
-          ./release-tool.sh ${{ github.event.inputs.connector }}
+          ./release-tool.sh
         shell: bash
