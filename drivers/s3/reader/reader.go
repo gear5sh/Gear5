@@ -5,13 +5,13 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/s3"
-	shiftmodels "github.com/piyushsingariya/shift/models"
+	"github.com/piyushsingariya/shift/types"
 )
 
 var FileTypes = []string{"parquet"}
 
 type Reader interface {
-	GetSchema() (map[string]*shiftmodels.Property, error)
+	GetSchema() (map[string]*types.Property, error)
 	Read() ([]map[string]any, error)
 	HasNext() bool
 }

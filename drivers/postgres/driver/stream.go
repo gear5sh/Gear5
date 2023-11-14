@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
-	shiftmodels "github.com/piyushsingariya/shift/models"
 	"github.com/piyushsingariya/shift/safego"
 	"github.com/piyushsingariya/shift/types"
 	"github.com/piyushsingariya/shift/typing"
@@ -15,7 +14,7 @@ type pgStream struct {
 	batchSize int64
 	cursor    string
 	state     interface{}
-	*shiftmodels.Stream
+	*types.Stream
 }
 
 const (
@@ -29,7 +28,7 @@ func (p *pgStream) setState(cursor string, state interface{}) {
 	p.state = state
 }
 
-func (p *pgStream) readFullRefresh(client *sqlx.DB, channel chan<- shiftmodels.Record) error {
+func (p *pgStream) readFullRefresh(client *sqlx.DB, channel chan<- types.Record) error {
 	offset := int64(0)
 	limit := p.batchSize
 
@@ -86,7 +85,7 @@ func (p *pgStream) readFullRefresh(client *sqlx.DB, channel chan<- shiftmodels.R
 	return nil
 }
 
-func (p *pgStream) readIncremental(client *sqlx.DB, channel chan<- shiftmodels.Record) error {
+func (p *pgStream) readIncremental(client *sqlx.DB, channel chan<- types.Record) error {
 	offset := int64(0)
 	limit := p.batchSize
 	var initialStateAtStart any

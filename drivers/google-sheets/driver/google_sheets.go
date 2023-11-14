@@ -8,8 +8,8 @@ import (
 	"github.com/piyushsingariya/shift/jsonschema"
 	"github.com/piyushsingariya/shift/jsonschema/schema"
 	"github.com/piyushsingariya/shift/logger"
-	shiftmodels "github.com/piyushsingariya/shift/models"
 	"github.com/piyushsingariya/shift/protocol"
+	"github.com/piyushsingariya/shift/types"
 	"github.com/piyushsingariya/shift/utils"
 	"gopkg.in/Iwark/spreadsheet.v2"
 )
@@ -17,10 +17,10 @@ import (
 type GoogleSheets struct {
 	*spreadsheet.Service
 	config  *models.Config
-	catalog *shiftmodels.Catalog
+	catalog *types.Catalog
 }
 
-func (gs *GoogleSheets) Setup(config any, catalog *shiftmodels.Catalog, _ shiftmodels.State, _ int64) error {
+func (gs *GoogleSheets) Setup(config any, catalog *types.Catalog, _ types.State, _ int64) error {
 	conf := &models.Config{}
 	if err := utils.Unmarshal(config, conf); err != nil {
 		return err
@@ -46,7 +46,7 @@ func (gs *GoogleSheets) Spec() (schema.JSONSchema, error) {
 	return jsonschema.Reflect(models.Config{})
 }
 
-func (gs *GoogleSheets) Catalog() *shiftmodels.Catalog {
+func (gs *GoogleSheets) Catalog() *types.Catalog {
 	return gs.catalog
 }
 
@@ -54,7 +54,7 @@ func (gs *GoogleSheets) Type() string {
 	return "Google-Sheets"
 }
 
-func (gs *GoogleSheets) GetState() (*shiftmodels.State, error) {
+func (gs *GoogleSheets) GetState() (*types.State, error) {
 	return nil, nil
 }
 
@@ -67,7 +67,7 @@ func (gs *GoogleSheets) Check() error {
 	return nil
 }
 
-func (gs *GoogleSheets) Discover() ([]*shiftmodels.Stream, error) {
+func (gs *GoogleSheets) Discover() ([]*types.Stream, error) {
 	streams, _, err := gs.getAllSheetStreams()
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (gs *GoogleSheets) Discover() ([]*shiftmodels.Stream, error) {
 	return streams, nil
 }
 
-func (gs *GoogleSheets) Read(stream protocol.Stream, channel chan<- shiftmodels.Record) error {
+func (gs *GoogleSheets) Read(stream protocol.Stream, channel chan<- types.Record) error {
 	spreadsheetID := gs.config.SpreadsheetID
 
 	logger.Infof("Starting sync for spreadsheet [%s]", spreadsheetID)
@@ -101,7 +101,7 @@ func (gs *GoogleSheets) Read(stream protocol.Stream, channel chan<- shiftmodels.
 
 	for rowCursor := int64(1); rowCursor < int64(len(sheet.Rows)); rowCursor++ {
 		// make a batch of records
-		record := shiftmodels.Record{Stream: stream.Name(), Namespace: stream.Namespace(), Data: make(map[string]interface{})}
+		record := types.Record{Stream: stream.Name(), Namespace: stream.Namespace(), Data: make(map[string]interface{})}
 		for i, pointer := range sheet.Rows[rowCursor] {
 			record.Data[indexToHeaders[i]] = pointer.Value
 		}
@@ -114,14 +114,14 @@ func (gs *GoogleSheets) Read(stream protocol.Stream, channel chan<- shiftmodels.
 	return err
 }
 
-func (gs *GoogleSheets) getAllSheetStreams() ([]*shiftmodels.Stream, map[string]spreadsheet.Sheet, error) {
+func (gs *GoogleSheets) getAllSheetStreams() ([]*types.Stream, map[string]spreadsheet.Sheet, error) {
 	logger.Infof("fetching spreadsheet[%s]", gs.config.SpreadsheetID)
 	googleSpreadsheet, err := gs.FetchSpreadsheet(gs.config.SpreadsheetID)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	streams := []*shiftmodels.Stream{}
+	streams := []*types.Stream{}
 	streamNameToSheet := make(map[string]spreadsheet.Sheet)
 	for _, sheet := range googleSpreadsheet.Sheets {
 		headers, err := LoadHeaders(sheet)

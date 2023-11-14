@@ -1,16 +1,15 @@
-package models
+package types
 
 import (
 	"github.com/piyushsingariya/shift/jsonschema/schema"
-	"github.com/piyushsingariya/shift/types"
 )
 
 // WrappedStream is a dto for formatted stream
 type WrappedStream struct {
-	SyncMode            types.SyncMode `json:"sync_mode,omitempty"`
-	DestinationSyncMode string         `json:"destination_sync_mode,omitempty"`
-	CursorField         string         `json:"cursor_field,omitempty"`
-	Stream              *Stream        `json:"stream,omitempty"`
+	SyncMode            SyncMode `json:"sync_mode,omitempty"`
+	DestinationSyncMode string   `json:"destination_sync_mode,omitempty"`
+	CursorField         string   `json:"cursor_field,omitempty"`
+	Stream              *Stream  `json:"stream,omitempty"`
 }
 
 // Stream is a dto for Airbyte catalog Stream object serialization
@@ -18,7 +17,7 @@ type Stream struct {
 	Name                       string            `json:"name,omitempty"`
 	Namespace                  string            `json:"namespace,omitempty"`
 	JSONSchema                 *Schema           `json:"json_schema,omitempty"`
-	SupportedSyncModes         []types.SyncMode  `json:"supported_sync_modes,omitempty"`
+	SupportedSyncModes         []SyncMode        `json:"supported_sync_modes,omitempty"`
 	SourceDefinedPrimaryKey    []string          `json:"source_defined_primary_key,omitempty"`
 	SourceDefinedCursor        bool              `json:"source_defined_cursor"`
 	DefaultCursorFields        []string          `json:"default_cursor_fields,omitempty"`
@@ -42,11 +41,11 @@ func (s *WrappedStream) JSONSchema() *Schema {
 	return s.Stream.JSONSchema
 }
 
-func (s *WrappedStream) SupportedSyncModes() []types.SyncMode {
+func (s *WrappedStream) SupportedSyncModes() []SyncMode {
 	return s.Stream.SupportedSyncModes
 }
 
-func (s *WrappedStream) GetSyncMode() types.SyncMode {
+func (s *WrappedStream) GetSyncMode() SyncMode {
 	return s.SyncMode
 }
 

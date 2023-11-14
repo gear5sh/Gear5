@@ -4,7 +4,6 @@ import (
 	"sort"
 
 	"github.com/piyushsingariya/shift/logger"
-	"github.com/piyushsingariya/shift/models"
 	"github.com/piyushsingariya/shift/types"
 )
 
@@ -90,10 +89,10 @@ func (f Fields) Header() (header []string) {
 	return
 }
 
-func (f Fields) ToProperties() map[string]*models.Property {
-	result := make(map[string]*models.Property)
+func (f Fields) ToProperties() map[string]*types.Property {
+	result := make(map[string]*types.Property)
 	for fieldName, field := range f {
-		result[fieldName] = &models.Property{
+		result[fieldName] = &types.Property{
 			Type: field.Types(),
 		}
 	}

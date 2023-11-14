@@ -9,12 +9,11 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/piyushsingariya/shift/models"
 	"github.com/piyushsingariya/shift/types"
 )
 
-func LogRecord(record models.Record) {
-	message := models.Message{}
+func LogRecord(record types.Record) {
+	message := types.Message{}
 	message.Type = types.RecordType
 	message.Record = &record
 	message.Record.EmittedAt = time.Now()
@@ -26,7 +25,7 @@ func LogRecord(record models.Record) {
 }
 
 func LogSpec(spec map[string]interface{}) {
-	message := models.Message{}
+	message := types.Message{}
 	message.Spec = spec
 	message.Type = types.SpecType
 
@@ -37,10 +36,10 @@ func LogSpec(spec map[string]interface{}) {
 	}
 }
 
-func LogCatalog(streams []*models.Stream) {
-	message := models.Message{}
+func LogCatalog(streams []*types.Stream) {
+	message := types.Message{}
 	message.Type = types.CatalogType
-	message.Catalog = models.GetWrappedCatalog(streams)
+	message.Catalog = types.GetWrappedCatalog(streams)
 	Info("logging catalog")
 	err := json.NewEncoder(writer).Encode(message)
 	if err != nil {
@@ -49,9 +48,9 @@ func LogCatalog(streams []*models.Stream) {
 }
 
 func LogConnectionStatus(err error) {
-	message := models.Message{}
+	message := types.Message{}
 	message.Type = types.ConnectionStatusType
-	message.ConnectionStatus = &models.StatusRow{}
+	message.ConnectionStatus = &types.StatusRow{}
 	if err != nil {
 		message.ConnectionStatus.Message = err.Error()
 		message.ConnectionStatus.Status = types.ConnectionFailed
@@ -83,8 +82,8 @@ func LogRequest(req *http.Request) {
 	fmt.Println(string(requestDump))
 }
 
-func LogState(state *models.State) {
-	message := models.Message{}
+func LogState(state *types.State) {
+	message := types.Message{}
 	message.Type = types.StateType
 	message.State = state
 

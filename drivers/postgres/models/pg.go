@@ -1,11 +1,8 @@
 package models
 
-type Schema struct {
-	Name string `db:"schema_name"`
-}
-
 type Table struct {
-	Name string `db:"table_name"`
+	Schema string `db:"table_schema"`
+	Name   string `db:"table_name"`
 }
 
 type ColumnDetails struct {

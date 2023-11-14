@@ -4,23 +4,23 @@ import (
 	"time"
 )
 
-func String(str string) *string {
+func StringPtr(str string) *string {
 	return &str
 }
 
-func Bool(b bool) *bool {
+func BoolPtr(b bool) *bool {
 	return &b
 }
 
-func Int(i int) *int {
+func IntPtr(i int) *int {
 	return &i
 }
 
-func Duration(d time.Duration) *time.Duration {
+func DurationPtr(d time.Duration) *time.Duration {
 	return &d
 }
 
-func Time(t time.Time) *time.Time {
+func TimePtr(t time.Time) *time.Time {
 	return &t
 }
 

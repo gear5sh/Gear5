@@ -8,7 +8,6 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/piyushsingariya/shift/models"
 	"github.com/piyushsingariya/shift/types"
 )
 
@@ -85,9 +84,9 @@ func Log(format string, level Level, v ...interface{}) {
 	} else {
 		message = fmt.Sprintf(format, v...)
 	}
-	shiftMessage := models.Message{
+	shiftMessage := types.Message{
 		Type: types.LogType,
-		Log: &models.Log{
+		Log: &types.Log{
 			Level:   level.String(),
 			Message: message,
 		},

@@ -1,4 +1,4 @@
-package models
+package types
 
 // State is a dto for airbyte state serialization
 type State []*StreamState

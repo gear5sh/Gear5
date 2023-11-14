@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/piyushsingariya/shift/logger"
-	"github.com/piyushsingariya/shift/models"
 	"github.com/piyushsingariya/shift/safego"
 	"github.com/piyushsingariya/shift/types"
 	"github.com/piyushsingariya/shift/typing"
@@ -53,7 +52,7 @@ var DiscoverCmd = &cobra.Command{
 
 			go func() {
 				objects := []types.RecordData{}
-				channel := make(chan models.Record, recordsPerStream)
+				channel := make(chan types.Record, recordsPerStream)
 				count := 0
 				go func() {
 					err := connector.Read(stream, channel)
@@ -78,7 +77,7 @@ var DiscoverCmd = &cobra.Command{
 					logger.Fatal(err)
 				}
 
-				stream.Stream.JSONSchema = &models.Schema{
+				stream.Stream.JSONSchema = &types.Schema{
 					Properties: properties,
 				}
 
@@ -92,13 +91,13 @@ var DiscoverCmd = &cobra.Command{
 	},
 }
 
-func wrapForSchemaDiscovery(streams []*models.Stream) []*models.WrappedStream {
-	wrappedStreams := []*models.WrappedStream{}
+func wrapForSchemaDiscovery(streams []*types.Stream) []*types.WrappedStream {
+	wrappedStreams := []*types.WrappedStream{}
 
 	for _, stream := range streams {
 		// only adding streams for which json schema needs to be discovered
 		if stream.JSONSchema == nil {
-			wrappedStreams = append(wrappedStreams, &models.WrappedStream{
+			wrappedStreams = append(wrappedStreams, &types.WrappedStream{
 				SyncMode: types.FullRefresh,
 				Stream:   stream,
 			})

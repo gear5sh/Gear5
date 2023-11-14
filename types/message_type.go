@@ -9,6 +9,7 @@ const (
 	RecordType           MessageType = "RECORD"
 	CatalogType          MessageType = "CATALOG"
 	SpecType             MessageType = "SPEC"
+	ActionType           MessageType = "ACTION"
 )
 
 type ConnectionStatus string
