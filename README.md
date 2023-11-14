@@ -2,13 +2,12 @@
 
 Shift is a new data integration protocol and specification, written in Golang, that aims to provide an alternative to existing solutions such as Airbyte, Meltano, and Singer-io. It focuses on simplicity, performance, and extensibility to enable seamless data integration between various systems and applications.
 
-## Features
+## Roadmap
+- [ ] Postgres
+  - [ ] Incremental Support
+  - [ ] CDC Support
 
-- **Simplicity**: Shift is designed to have a simple and intuitive structure, making it easy to understand and implement. It follows a straightforward approach to data integration, reducing complexity and facilitating adoption.
 
-- **Performance**: The protocol is optimized for efficient data transmission, allowing for high-speed data processing and integration. It utilizes Golang's inherent performance capabilities to ensure smooth and fast data transfers.
-
-- **Extensibility**: Protocol Shift provides a flexible framework that allows for easy extension and customization. Easier development for new drivers and adapters
 
 ## Getting Started
 

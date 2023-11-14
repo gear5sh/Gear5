@@ -17,7 +17,6 @@ import (
 	"github.com/piyushsingariya/shift/jsonschema"
 	"github.com/piyushsingariya/shift/jsonschema/schema"
 	"github.com/piyushsingariya/shift/logger"
-	shiftmodels "github.com/piyushsingariya/shift/models"
 	protocol "github.com/piyushsingariya/shift/protocol"
 	"github.com/piyushsingariya/shift/safego"
 	"github.com/piyushsingariya/shift/types"
@@ -31,13 +30,13 @@ type S3 struct {
 	cursorField string
 	config      *models.Config
 	session     *session.Session
-	catalog     *shiftmodels.Catalog
-	state       shiftmodels.State
+	catalog     *types.Catalog
+	state       types.State
 	client      *s3.S3
 	batchSize   int64
 }
 
-func (s *S3) Setup(config any, catalog *shiftmodels.Catalog, state shiftmodels.State, batchSize int64) error {
+func (s *S3) Setup(config any, catalog *types.Catalog, state types.State, batchSize int64) error {
 	cfg := models.Config{}
 	err := utils.Unmarshal(config, &cfg)
 	if err != nil {
@@ -82,10 +81,10 @@ func (s *S3) Check() error {
 	return nil
 }
 
-func (s *S3) Discover() ([]*shiftmodels.Stream, error) {
-	streams := []*shiftmodels.Stream{}
+func (s *S3) Discover() ([]*types.Stream, error) {
+	streams := []*types.Stream{}
 	for stream, pattern := range s.config.Streams {
-		var schema map[string]*shiftmodels.Property
+		var schema map[string]*types.Property
 		var err error
 		err = s.iteration(pattern, 1, func(reader reader.Reader, file *s3.Object) (bool, error) {
 			schema, err = reader.GetSchema()
@@ -99,13 +98,13 @@ func (s *S3) Discover() ([]*shiftmodels.Stream, error) {
 			return nil, fmt.Errorf("no schema found")
 		}
 
-		streams = append(streams, &shiftmodels.Stream{
+		streams = append(streams, &types.Stream{
 			Name:                stream,
 			Namespace:           pattern,
 			SupportedSyncModes:  []types.SyncMode{types.Incremental, types.FullRefresh},
 			SourceDefinedCursor: true,
 			DefaultCursorFields: []string{s.cursorField},
-			JSONSchema: &shiftmodels.Schema{
+			JSONSchema: &types.Schema{
 				Properties: schema,
 			},
 		})
@@ -114,7 +113,7 @@ func (s *S3) Discover() ([]*shiftmodels.Stream, error) {
 	return streams, nil
 }
 
-func (s *S3) Catalog() *shiftmodels.Catalog {
+func (s *S3) Catalog() *types.Catalog {
 	return s.catalog
 }
 
@@ -124,7 +123,7 @@ func (s *S3) Type() string {
 
 // NOTE: S3 read doesn't perform neccessary checks such as matching cursor field present in stream since
 // it works only on single cursor field
-func (s *S3) Read(stream protocol.Stream, channel chan<- shiftmodels.Record) error {
+func (s *S3) Read(stream protocol.Stream, channel chan<- types.Record) error {
 	name, namespace := stream.Name(), stream.Namespace()
 	// get pattern from stream name
 	pattern := s.config.Streams[name]
@@ -182,7 +181,7 @@ func (s *S3) Read(stream protocol.Stream, channel chan<- shiftmodels.Record) err
 		if localCursor == nil {
 			localCursor = file.LastModified
 		} else {
-			localCursor = types.Time((utils.MaxDate(*localCursor, *file.LastModified)))
+			localCursor = types.TimePtr((utils.MaxDate(*localCursor, *file.LastModified)))
 		}
 
 		logger.Infof("%d Records found in file %s", totalRecords, *file.Key)
@@ -203,7 +202,7 @@ func (s *S3) Read(stream protocol.Stream, channel chan<- shiftmodels.Record) err
 	return nil
 }
 
-func (s *S3) GetState() (*shiftmodels.State, error) {
+func (s *S3) GetState() (*types.State, error) {
 	return &s.state, nil
 }
 

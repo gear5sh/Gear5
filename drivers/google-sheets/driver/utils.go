@@ -13,7 +13,6 @@ import (
 	unidecode "github.com/mozillazg/go-unidecode"
 	"github.com/piyushsingariya/shift/drivers/google-sheets/models"
 	"github.com/piyushsingariya/shift/logger"
-	shiftmodels "github.com/piyushsingariya/shift/models"
 	"github.com/piyushsingariya/shift/types"
 	"github.com/piyushsingariya/shift/utils"
 	"golang.org/x/oauth2"
@@ -186,15 +185,15 @@ func SafeNameConversion(text string) (string, error) {
 	return strings.ToLower(text), nil
 }
 
-func headersToStream(sheetName string, headers []string) *shiftmodels.Stream {
-	stream := shiftmodels.Stream{}
+func headersToStream(sheetName string, headers []string) *types.Stream {
+	stream := types.Stream{}
 	stream.Name = sheetName
 	stream.SupportedSyncModes = []types.SyncMode{types.FullRefresh}
-	stream.JSONSchema = &shiftmodels.Schema{}
-	stream.JSONSchema.Properties = make(map[string]*shiftmodels.Property)
+	stream.JSONSchema = &types.Schema{}
+	stream.JSONSchema.Properties = make(map[string]*types.Property)
 
 	for _, header := range headers {
-		stream.JSONSchema.Properties[header] = &shiftmodels.Property{
+		stream.JSONSchema.Properties[header] = &types.Property{
 			// for simplicity, every field is a string
 			Type: []types.DataType{types.STRING},
 		}

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/piyushsingariya/shift/logger"
-	"github.com/piyushsingariya/shift/models"
+	"github.com/piyushsingariya/shift/types"
 	"github.com/piyushsingariya/shift/utils"
 	"github.com/spf13/cobra"
 )
@@ -33,7 +33,7 @@ var ReadCmd = &cobra.Command{
 			return fmt.Errorf("expected type to be: Driver, found %T", connector)
 		}
 
-		cat := &models.Catalog{}
+		cat := &types.Catalog{}
 		if err := utils.Unmarshal(utils.ReadFile(catalog), cat); err != nil {
 			return fmt.Errorf("failed to unmarshal catalog:%s", err)
 		}
@@ -43,7 +43,7 @@ var ReadCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			st := models.State{}
+			st := types.State{}
 			err := utils.Unmarshal(utils.ReadFile(state), &st)
 			if err != nil {
 				return fmt.Errorf("failed to unmarshal state file")
@@ -53,7 +53,7 @@ var ReadCmd = &cobra.Command{
 			}
 		}
 
-		recordStream := make(chan models.Record, 2*batchSize)
+		recordStream := make(chan types.Record, 2*batchSize)
 		numRecords := int64(0)
 		batch := int64(0)
 		recordIterationWait := sync.WaitGroup{}

@@ -1,10 +1,8 @@
 package typing
 
-import (
-	"github.com/piyushsingariya/shift/models"
-)
+import "github.com/piyushsingariya/shift/types"
 
-func Resolve(objects ...map[string]interface{}) (map[string]*models.Property, error) {
+func Resolve(objects ...map[string]interface{}) (map[string]*types.Property, error) {
 	allfields := Fields{}
 
 	for _, object := range objects {

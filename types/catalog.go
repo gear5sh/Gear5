@@ -1,24 +1,12 @@
-package models
+package types
 
 import (
 	"time"
-
-	"github.com/piyushsingariya/shift/types"
-)
-
-const (
-	LogType              = "LOG"
-	ConnectionStatusType = "CONNECTION_STATUS"
-	StateType            = "STATE"
-	RecordType           = "RECORD"
-	CatalogType          = "CATALOG"
-	SpecType             = "SPEC"
-	ActionType           = "ACTION"
 )
 
 // Message is a dto for shift output row representation
 type Message struct {
-	Type             types.MessageType      `json:"type"`
+	Type             MessageType            `json:"type"`
 	Log              *Log                   `json:"log,omitempty"`
 	ConnectionStatus *StatusRow             `json:"connectionStatus,omitempty"`
 	State            *State                 `json:"state,omitempty"`
@@ -29,7 +17,7 @@ type Message struct {
 }
 
 type ActionRow struct {
-	Type types.Action `json:"type"`
+	Type Action `json:"type"`
 	// Add alter
 	// add create
 	// add drop
@@ -44,8 +32,8 @@ type Log struct {
 
 // StatusRow is a dto for airbyte result status serialization
 type StatusRow struct {
-	Status  types.ConnectionStatus `json:"status,omitempty"`
-	Message string                 `json:"message,omitempty"`
+	Status  ConnectionStatus `json:"status,omitempty"`
+	Message string           `json:"message,omitempty"`
 }
 
 // Record is a dto for airbyte record serialization
@@ -70,6 +58,6 @@ type Schema struct {
 
 // Property is a dto for catalog properties representation
 type Property struct {
-	Type       []types.DataType     `json:"type,omitempty"`
+	Type       []DataType           `json:"type,omitempty"`
 	Properties map[string]*Property `json:"properties,omitempty"`
 }

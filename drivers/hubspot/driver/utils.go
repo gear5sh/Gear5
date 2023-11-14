@@ -9,7 +9,6 @@ import (
 
 	"github.com/piyushsingariya/shift/drivers/hubspot/models"
 	"github.com/piyushsingariya/shift/logger"
-	shiftmodels "github.com/piyushsingariya/shift/models"
 	"github.com/piyushsingariya/shift/types"
 	"github.com/piyushsingariya/shift/utils"
 	"golang.org/x/oauth2"
@@ -24,7 +23,7 @@ var ValidJsonSchemaTypes = []types.DataType{
 	types.ARRAY,
 }
 
-var KnownConvertibleSchemaTypes = map[string]shiftmodels.Property{
+var KnownConvertibleSchemaTypes = map[string]types.Property{
 	"bool":         {Type: []types.DataType{types.BOOL}},
 	"enumeration":  {Type: []types.DataType{types.STRING}},
 	"date":         {Type: []types.DataType{types.TIMESTAMP}},
@@ -117,9 +116,9 @@ func newClient(config *models.Config) (*http.Client, string, error) {
 	return client, accessToken, nil
 }
 
-func getFieldProps(fieldType string) *shiftmodels.Property {
+func getFieldProps(fieldType string) *types.Property {
 	if utils.ArrayContains(ValidJsonSchemaTypes, types.DataType(fieldType)) {
-		return &shiftmodels.Property{
+		return &types.Property{
 			Type: []types.DataType{types.DataType(fieldType)},
 		}
 	}
@@ -127,7 +126,7 @@ func getFieldProps(fieldType string) *shiftmodels.Property {
 	if property, found := KnownConvertibleSchemaTypes[fieldType]; !found {
 		return &property
 	} else {
-		return &shiftmodels.Property{
+		return &types.Property{
 			Type: []types.DataType{types.DataType(fieldType)},
 		}
 	}

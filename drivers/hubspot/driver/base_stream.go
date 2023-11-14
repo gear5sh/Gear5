@@ -16,7 +16,6 @@ import (
 	"github.com/goccy/go-json"
 
 	"github.com/piyushsingariya/shift/logger"
-	shiftmodels "github.com/piyushsingariya/shift/models"
 	"github.com/piyushsingariya/shift/types"
 	"github.com/piyushsingariya/shift/typing"
 	"github.com/piyushsingariya/shift/utils"
@@ -47,7 +46,7 @@ type Stream struct {
 	grantedScopes    []string
 	scopes           []string
 	propertiesScopes []string
-	_properties      map[string]*shiftmodels.Property
+	_properties      map[string]*types.Property
 
 	startDate time.Time
 }
@@ -84,7 +83,7 @@ func (s *Stream) PrimaryKey() []string {
 	return nil
 }
 
-func (s *Stream) properties() (map[string]*shiftmodels.Property, error) {
+func (s *Stream) properties() (map[string]*types.Property, error) {
 	if s.entity == "" {
 		return nil, fmt.Errorf("entity found to be empty")
 	}
@@ -118,7 +117,7 @@ func (s *Stream) properties() (map[string]*shiftmodels.Property, error) {
 		return nil, err
 	}
 
-	s._properties = make(map[string]*shiftmodels.Property)
+	s._properties = make(map[string]*types.Property)
 
 	for _, row := range response {
 		s._properties[row["name"].(string)] = getFieldProps(row["type"].(string))
@@ -145,7 +144,7 @@ func (s *Stream) propertiesScopeIsGranted() bool {
 	return utils.IsSubset(s.grantedScopes, s.propertiesScopes)
 }
 
-func (s *Stream) Read(channel <-chan shiftmodels.Record) error {
+func (s *Stream) Read(channel <-chan types.Record) error {
 	return fmt.Errorf("no implementation on base stream")
 }
 

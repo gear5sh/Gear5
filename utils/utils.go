@@ -10,7 +10,6 @@ import (
 
 	"github.com/piyushsingariya/shift/jsonschema"
 	"github.com/piyushsingariya/shift/logger"
-	"github.com/piyushsingariya/shift/models"
 	"github.com/piyushsingariya/shift/types"
 	"github.com/piyushsingariya/shift/typing"
 	"github.com/spf13/cobra"
@@ -256,8 +255,8 @@ func MaximumOnDataType[T any](typ []types.DataType, a, b T) (T, error) {
 	}
 }
 
-func ReformatRecord(name, namespace string, record map[string]any) models.Record {
-	return models.Record{
+func ReformatRecord(name, namespace string, record map[string]any) types.Record {
+	return types.Record{
 		Stream:    name,
 		Namespace: namespace,
 		Data:      record,
@@ -265,8 +264,8 @@ func ReformatRecord(name, namespace string, record map[string]any) models.Record
 }
 
 // CloseRecordIteration closes iteration over a record channel
-func CloseRecordIteration(channel chan models.Record) {
-	channel <- models.Record{
+func CloseRecordIteration(channel chan types.Record) {
+	channel <- types.Record{
 		Close: true,
 	}
 }

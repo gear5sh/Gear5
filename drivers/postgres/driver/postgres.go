@@ -11,22 +11,9 @@ import (
 	"github.com/piyushsingariya/shift/jsonschema"
 	"github.com/piyushsingariya/shift/jsonschema/schema"
 	"github.com/piyushsingariya/shift/logger"
-	shiftmodels "github.com/piyushsingariya/shift/models"
 	"github.com/piyushsingariya/shift/protocol"
 	"github.com/piyushsingariya/shift/types"
-	"github.com/piyushsingariya/shift/typing"
 	"github.com/piyushsingariya/shift/utils"
-)
-
-const (
-	// get all schemas
-	getSchemaNamesTmpl = `SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT LIKE 'pg_%' AND schema_name != 'information_schema'`
-	// get all tables from a schema
-	getSchemaTablesTmpl = `SELECT table_name FROM information_schema.tables WHERE table_schema = $1 AND table_type = 'BASE TABLE'`
-	// get table schema
-	getTableSchemaTmpl = `SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_schema = $1 AND table_name = $2 ORDER BY ordinal_position`
-	// get primary key columns
-	getTablePrimaryKey = `SELECT column_name FROM information_schema.key_column_usage WHERE table_schema = $1 AND table_name = $2 ORDER BY ordinal_position`
 )
 
 type Postgres struct {
@@ -35,11 +22,11 @@ type Postgres struct {
 	client      *sqlx.DB
 	accessToken string
 	config      *models.Config
-	catalog     *shiftmodels.Catalog
-	state       shiftmodels.State
+	catalog     *types.Catalog
+	state       types.State
 }
 
-func (p *Postgres) Setup(config any, catalog *shiftmodels.Catalog, state shiftmodels.State, batchSize int64) error {
+func (p *Postgres) Setup(config any, catalog *types.Catalog, state types.State, batchSize int64) error {
 	cfg := models.Config{}
 	err := utils.Unmarshal(config, &cfg)
 	if err != nil {
@@ -91,8 +78,8 @@ func (p *Postgres) Check() error {
 	return nil
 }
 
-func (p *Postgres) Discover() ([]*shiftmodels.Stream, error) {
-	streams := []*shiftmodels.Stream{}
+func (p *Postgres) Discover() ([]*types.Stream, error) {
+	streams := []*types.Stream{}
 	for _, stream := range p.allStreams {
 		streams = append(streams, stream.Stream)
 	}
@@ -100,17 +87,18 @@ func (p *Postgres) Discover() ([]*shiftmodels.Stream, error) {
 	return streams, nil
 }
 
-func (p *Postgres) Catalog() *shiftmodels.Catalog {
+func (p *Postgres) Catalog() *types.Catalog {
 	return p.catalog
 }
 func (p *Postgres) Type() string {
 	return "Postgres"
 }
 
-func (p *Postgres) Streams() ([]*shiftmodels.Stream, error) {
+func (p *Postgres) Streams() ([]*types.Stream, error) {
 	return nil, nil
 }
-func (p *Postgres) Read(stream protocol.Stream, channel chan<- shiftmodels.Record) error {
+
+func (p *Postgres) Read(stream protocol.Stream, channel chan<- types.Record) error {
 	identifier := utils.StreamIdentifier(stream.Namespace(), stream.Name())
 	pgStream, found := p.allStreams[identifier]
 	if !found {
@@ -143,8 +131,8 @@ func (p *Postgres) Read(stream protocol.Stream, channel chan<- shiftmodels.Recor
 	return nil
 }
 
-func (p *Postgres) GetState() (*shiftmodels.State, error) {
-	state := &shiftmodels.State{}
+func (p *Postgres) GetState() (*types.State, error) {
+	state := &types.State{}
 	for _, stream := range p.Catalog().Streams {
 		if stream.SyncMode == types.Incremental || stream.SyncMode == types.CDC {
 			pgStream, found := p.allStreams[utils.StreamIdentifier(stream.Namespace(), stream.Name())]
@@ -169,101 +157,86 @@ func (p *Postgres) GetState() (*shiftmodels.State, error) {
 func (p *Postgres) setupStreams() error {
 	p.allStreams = make(map[string]*pgStream)
 
-	var schemaNamesOutput []models.Schema
-	err := p.client.Select(&schemaNamesOutput, getSchemaNamesTmpl)
+	var tableNamesOutput []models.Table
+	err := p.client.Select(&tableNamesOutput, getPrivilegedTablesTmpl)
 	if err != nil {
-		return fmt.Errorf("failed to get schema names: %s", err)
+		return fmt.Errorf("failed to retrieve table names: %s", err)
 	}
 
-	if len(schemaNamesOutput) == 0 {
-		return typing.SQLError(typing.GetSchemaError, err, "no schemas found in database", &typing.ErrorPayload{
-			Statement: getSchemaTablesTmpl,
-		})
+	if len(tableNamesOutput) == 0 {
+		logger.Warnf("no tables found")
 	}
 
-	for _, schema := range schemaNamesOutput {
-		var tableNamesOutput []models.Table
-		err := p.client.Select(&tableNamesOutput, getSchemaTablesTmpl, schema.Name)
+	for _, table := range tableNamesOutput {
+		var columnSchemaOutput []models.ColumnDetails
+		err := p.client.Select(&columnSchemaOutput, getTableSchemaTmpl, table.Schema, table.Name)
 		if err != nil {
-			return fmt.Errorf("failed to retrieve table names from schema[%s]: %s", schema.Name, err)
+			return fmt.Errorf("failed to retrieve column details for table %s[%s]: %s", table.Name, table.Schema, err)
 		}
 
-		if len(tableNamesOutput) == 0 {
-			logger.Warnf("no tables found in schema[%s]", schema.Name)
+		if len(columnSchemaOutput) == 0 {
+			logger.Warnf("no columns found in table %s[%s]", table.Name, table.Schema)
+			continue
 		}
 
-		for _, table := range tableNamesOutput {
-			var columnSchemaOutput []models.ColumnDetails
-			err := p.client.Select(&columnSchemaOutput, getTableSchemaTmpl, schema.Name, table.Name)
-			if err != nil {
-				return fmt.Errorf("failed to retrieve column details for table %s[%s]: %s", table.Name, schema.Name, err)
+		var primaryKeyOutput []models.ColumnDetails
+		err = p.client.Select(&primaryKeyOutput, getTablePrimaryKey, table.Schema, table.Name)
+		if err != nil {
+			return fmt.Errorf("failed to retrieve primary key columns for table %s[%s]: %s", table.Name, table.Schema, err)
+		}
+
+		stream := &types.Stream{
+			Name:      table.Name,
+			Namespace: table.Schema,
+		}
+
+		stream.JSONSchema = &types.Schema{
+			Properties: make(map[string]*types.Property),
+		}
+
+		for _, column := range columnSchemaOutput {
+			datatypes := []types.DataType{}
+			if val, found := pgTypeToDataTypes[*column.DataType]; found {
+				datatypes = append(datatypes, val)
+			} else {
+				logger.Warnf("failed to get respective type in datatypes for column: %s[%s]", column.Name, column.DataType)
+				datatypes = append(datatypes, types.UNKNOWN)
 			}
 
-			if len(columnSchemaOutput) == 0 {
-				logger.Warnf("no columns found in table %s[%s]", table.Name, schema.Name)
-				continue
+			if strings.EqualFold("yes", *column.IsNullable) {
+				datatypes = append(datatypes, types.NULL)
 			}
 
-			var primaryKeyOutput []models.ColumnDetails
-			err = p.client.Select(&primaryKeyOutput, getTablePrimaryKey, schema.Name, table.Name)
-			if err != nil {
-				return fmt.Errorf("failed to retrieve primary key columns for table %s[%s]: %s", table.Name, schema.Name, err)
-			}
-
-			stream := &shiftmodels.Stream{
-				Name:      table.Name,
-				Namespace: schema.Name,
-			}
-
-			stream.JSONSchema = &shiftmodels.Schema{
-				Properties: make(map[string]*shiftmodels.Property),
-			}
-
-			for _, column := range columnSchemaOutput {
-				datatypes := []types.DataType{}
-				if val, found := pgTypeToDataTypes[*column.DataType]; found {
-					datatypes = append(datatypes, val)
-				} else {
-					logger.Warnf("failed to get respective type in datatypes for column: %s[%s]", column.Name, column.DataType)
-					datatypes = append(datatypes, types.UNKNOWN)
-				}
-
-				if strings.EqualFold("yes", *column.IsNullable) {
-					datatypes = append(datatypes, types.NULL)
-				}
-
-				stream.JSONSchema.Properties[column.Name] = &shiftmodels.Property{
-					Type: datatypes,
-				}
-			}
-
-			stream.SupportedSyncModes = append(stream.SupportedSyncModes, types.FullRefresh)
-
-			// currently only datetime fields is supported for cursor field, automatic generated fields can also be used
-			// future TODO
-			for propertyName, property := range stream.JSONSchema.Properties {
-				if utils.ArrayContains(property.Type, types.TIMESTAMP) {
-					stream.DefaultCursorFields = append(stream.DefaultCursorFields, propertyName)
-				}
-			}
-
-			// source has cursor fields, hence incremental also supported
-			if len(stream.DefaultCursorFields) > 0 {
-				stream.SourceDefinedCursor = true
-				stream.SupportedSyncModes = append(stream.SupportedSyncModes, types.Incremental)
-			}
-
-			// add primary keys for stream
-			for _, column := range primaryKeyOutput {
-				stream.SourceDefinedPrimaryKey = append(stream.SourceDefinedPrimaryKey, column.Name)
-			}
-
-			p.allStreams[utils.StreamIdentifier(schema.Name, table.Name)] = &pgStream{
-				Stream:    stream,
-				batchSize: p.batchSize,
+			stream.JSONSchema.Properties[column.Name] = &types.Property{
+				Type: datatypes,
 			}
 		}
 
+		stream.SupportedSyncModes = append(stream.SupportedSyncModes, types.FullRefresh)
+
+		// currently only datetime fields is supported for cursor field, automatic generated fields can also be used
+		// future TODO
+		for propertyName, property := range stream.JSONSchema.Properties {
+			if utils.ArrayContains(property.Type, types.TIMESTAMP) {
+				stream.DefaultCursorFields = append(stream.DefaultCursorFields, propertyName)
+			}
+		}
+
+		// source has cursor fields, hence incremental also supported
+		if len(stream.DefaultCursorFields) > 0 {
+			stream.SourceDefinedCursor = true
+			stream.SupportedSyncModes = append(stream.SupportedSyncModes, types.Incremental)
+		}
+
+		// add primary keys for stream
+		for _, column := range primaryKeyOutput {
+			stream.SourceDefinedPrimaryKey = append(stream.SourceDefinedPrimaryKey, column.Name)
+		}
+
+		p.allStreams[utils.StreamIdentifier(table.Schema, table.Name)] = &pgStream{
+			Stream:    stream,
+			batchSize: p.batchSize,
+		}
 	}
 
 	return nil

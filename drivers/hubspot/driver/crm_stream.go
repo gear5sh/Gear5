@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/piyushsingariya/shift/logger"
-	shiftmodels "github.com/piyushsingariya/shift/models"
 	"github.com/piyushsingariya/shift/safego"
 	"github.com/piyushsingariya/shift/types"
 	"github.com/piyushsingariya/shift/typing"
@@ -90,7 +89,7 @@ func (c *CRMSearchStream) processSearch(nextPageToken map[string]any) ([]map[str
 	return streamRecords, rawResponse, nil
 }
 
-func (c *CRMSearchStream) readRecords(send chan<- shiftmodels.Record) error {
+func (c *CRMSearchStream) readRecords(send chan<- types.Record) error {
 	paginationComplete := false
 	var nextPageToken map[string]any
 	latest_cursor := &time.Time{}
@@ -118,7 +117,7 @@ func (c *CRMSearchStream) readRecords(send chan<- shiftmodels.Record) error {
 				return err
 			}
 			if latest_cursor != nil {
-				latest_cursor = types.Time(utils.MaxDate(cursor, *latest_cursor))
+				latest_cursor = types.TimePtr(utils.MaxDate(cursor, *latest_cursor))
 			} else {
 				latest_cursor = &cursor
 			}
