@@ -1,4 +1,4 @@
-package models
+package driver
 
 import (
 	"fmt"
@@ -37,7 +37,7 @@ type Service struct {
 
 func (c *Config) ValidateAndPopulateDefaults() error {
 	if c.NameConversion == nil {
-		c.NameConversion = types.BoolPtr(true)
+		c.NameConversion = types.ToPtr(true)
 	}
 
 	if c.Credentials == nil {

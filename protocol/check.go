@@ -3,6 +3,7 @@ package protocol
 import (
 	"fmt"
 
+	"github.com/piyushsingariya/shift/drivers/base"
 	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/utils"
 	"github.com/spf13/cobra"
@@ -27,7 +28,7 @@ var CheckCmd = &cobra.Command{
 			logger.LogConnectionStatus(fmt.Errorf("expected type to be: Connector, found %T", connector))
 		}
 
-		err := connector.Setup(utils.ReadFile(config), nil, nil, batchSize)
+		err := connector.Setup(utils.ReadFile(config), base.NewDriver(nil, nil, batchSize))
 		if err != nil {
 			logger.LogConnectionStatus(err)
 		}

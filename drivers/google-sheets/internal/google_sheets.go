@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/piyushsingariya/shift/drivers/base"
 	"github.com/piyushsingariya/shift/jsonschema"
 	"github.com/piyushsingariya/shift/jsonschema/schema"
 	"github.com/piyushsingariya/shift/logger"
@@ -14,15 +15,14 @@ import (
 )
 
 type GoogleSheets struct {
-	protocol.BaseDriver
+	*base.Driver
 	*spreadsheet.Service
 
-	config  *Config
-	catalog *types.Catalog
+	config *Config
 }
 
-func (gs *GoogleSheets) Setup(config any, catalog *types.Catalog, _ types.State, batchSize int64) error {
-	gs.BaseDriver = *protocol.NewBaseDriver(uint64(batchSize), nil, nil)
+func (gs *GoogleSheets) Setup(config any, base *base.Driver) error {
+	gs.Driver = base
 
 	conf := &Config{}
 	if err := utils.Unmarshal(config, conf); err != nil {
@@ -32,8 +32,6 @@ func (gs *GoogleSheets) Setup(config any, catalog *types.Catalog, _ types.State,
 	if err := conf.ValidateAndPopulateDefaults(); err != nil {
 		return fmt.Errorf("failed to validate config: %s", err)
 	}
-
-	gs.catalog = catalog
 
 	client, err := NewClient(conf)
 	if err != nil {
@@ -49,16 +47,8 @@ func (gs *GoogleSheets) Spec() (schema.JSONSchema, error) {
 	return jsonschema.Reflect(Config{})
 }
 
-func (gs *GoogleSheets) Catalog() *types.Catalog {
-	return gs.catalog
-}
-
 func (gs *GoogleSheets) Type() string {
 	return "Google-Sheets"
-}
-
-func (gs *GoogleSheets) GetState() (*types.State, error) {
-	return nil, nil
 }
 
 func (gs *GoogleSheets) Check() error {

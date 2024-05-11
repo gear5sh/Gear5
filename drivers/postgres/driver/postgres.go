@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/piyushsingariya/shift/drivers/base"
 	"github.com/piyushsingariya/shift/drivers/postgres/models"
 	"github.com/piyushsingariya/shift/jsonschema"
 	"github.com/piyushsingariya/shift/jsonschema/schema"
@@ -17,6 +18,8 @@ import (
 )
 
 type Postgres struct {
+	*base.Driver
+
 	allStreams  map[string]*pgStream
 	batchSize   int64
 	client      *sqlx.DB
@@ -26,7 +29,9 @@ type Postgres struct {
 	state       types.State
 }
 
-func (p *Postgres) Setup(config any, catalog *types.Catalog, state types.State, batchSize int64) error {
+func (p *Postgres) Setup(config any, base *base.Driver) error {
+	p.Driver = base
+
 	cfg := models.Config{}
 	err := utils.Unmarshal(config, &cfg)
 	if err != nil {
@@ -54,9 +59,6 @@ func (p *Postgres) Setup(config any, catalog *types.Catalog, state types.State, 
 	p.client = db.Unsafe()
 
 	p.config = &cfg
-	p.catalog = catalog
-	p.state = state
-	p.batchSize = batchSize
 
 	return p.setupStreams()
 }
@@ -122,7 +124,7 @@ func (p *Postgres) Read(stream protocol.Stream, channel chan<- types.Record) err
 		}
 
 		// set state
-		pgStream.setState(stream.GetCursorField(), p.state.Get(stream.Name(), stream.Namespace())[stream.GetCursorField()])
+		pgStream.setInitialState(stream.GetCursorField(), p.state.Get(stream.Name(), stream.Namespace())[stream.GetCursorField()])
 
 		// read incrementally
 		return pgStream.readIncremental(p.client, channel)
@@ -131,28 +133,28 @@ func (p *Postgres) Read(stream protocol.Stream, channel chan<- types.Record) err
 	return nil
 }
 
-func (p *Postgres) GetState() (*types.State, error) {
-	state := &types.State{}
-	for _, stream := range p.Catalog().Streams {
-		if stream.SyncMode == types.Incremental || stream.SyncMode == types.CDC {
-			pgStream, found := p.allStreams[utils.StreamIdentifier(stream.Namespace(), stream.Name())]
-			if !found {
-				return nil, fmt.Errorf("postgres stream not found while getting state of stream %s[%s]", stream.Name(), stream.Namespace())
-			}
+// func (p *Postgres) GetState() (*types.State, error) {
+// 	state := &types.State{}
+// 	for _, stream := range p.Catalog().Streams {
+// 		if stream.SyncMode == types.Incremental || stream.SyncMode == types.CDC {
+// 			pgStream, found := p.allStreams[utils.StreamIdentifier(stream.Namespace(), stream.Name())]
+// 			if !found {
+// 				return nil, fmt.Errorf("postgres stream not found while getting state of stream %s[%s]", stream.Name(), stream.Namespace())
+// 			}
 
-			if !(utils.ArrayContains(pgStream.SupportedSyncModes, types.Incremental) || utils.ArrayContains(pgStream.SupportedSyncModes, types.CDC)) {
-				logger.Warnf("Skipping getting state from stream %s[%s], this stream doesn't support incremental/CDC", stream.Name(), stream.Namespace())
-				continue
-			}
+// 			if !(utils.ArrayContains(pgStream.SupportedSyncModes, types.Incremental) || utils.ArrayContains(pgStream.SupportedSyncModes, types.CDC)) {
+// 				logger.Warnf("Skipping getting state from stream %s[%s], this stream doesn't support incremental/CDC", stream.Name(), stream.Namespace())
+// 				continue
+// 			}
 
-			state.Add(stream.Name(), stream.Namespace(), map[string]any{
-				pgStream.cursor: pgStream.state,
-			})
-		}
-	}
+// 			state.Add(stream.Name(), stream.Namespace(), map[string]any{
+// 				pgStream.cursor: pgStream.state,
+// 			})
+// 		}
+// 	}
 
-	return state, nil
-}
+// 	return state, nil
+// }
 
 func (p *Postgres) setupStreams() error {
 	p.allStreams = make(map[string]*pgStream)

@@ -13,7 +13,7 @@ var (
 	config    string
 	state     string
 	catalog   string
-	batchSize int64
+	batchSize uint64
 
 	isDriver        = false
 	driverCommands  = []*cobra.Command{}
@@ -66,7 +66,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&config, "config", "", "", "(Required) Config for Shift connector")
 	RootCmd.PersistentFlags().StringVarP(&catalog, "catalog", "", "", "(Required) Catalog for Shift connector")
 	RootCmd.PersistentFlags().StringVarP(&state, "state", "", "", "(Required) State for Shift connector")
-	RootCmd.PersistentFlags().Int64VarP(&batchSize, "batch", "", 1000, "(Optional) Batch size for Shift connector")
+	RootCmd.PersistentFlags().Uint64VarP(&batchSize, "batch", "", 10000, "(Optional) Batch size for Shift connector")
 
 	// Disable Cobra CLI's built-in usage and error handling
 	RootCmd.SilenceUsage = true

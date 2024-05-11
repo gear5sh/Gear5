@@ -14,6 +14,7 @@ import (
 	"github.com/gobwas/glob"
 	"github.com/piyushsingariya/drivers/s3/models"
 	"github.com/piyushsingariya/drivers/s3/reader"
+	"github.com/piyushsingariya/shift/drivers/base"
 	"github.com/piyushsingariya/shift/jsonschema"
 	"github.com/piyushsingariya/shift/jsonschema/schema"
 	"github.com/piyushsingariya/shift/logger"
@@ -27,16 +28,17 @@ import (
 const patternSymbols = "*[]!{}"
 
 type S3 struct {
+	*base.Driver
+
 	cursorField string
-	config      *models.Config
 	session     *session.Session
-	catalog     *types.Catalog
-	state       types.State
 	client      *s3.S3
-	batchSize   int64
+	config      *models.Config
 }
 
-func (s *S3) Setup(config any, catalog *types.Catalog, state types.State, batchSize int64) error {
+func (s *S3) Setup(config any, base *base.Driver) error {
+	s.Driver = base
+
 	cfg := models.Config{}
 	err := utils.Unmarshal(config, &cfg)
 	if err != nil {
@@ -55,9 +57,6 @@ func (s *S3) Setup(config any, catalog *types.Catalog, state types.State, batchS
 	}
 
 	s.client = s3.New(s.session)
-	s.batchSize = batchSize
-	s.catalog = catalog
-	s.state = state
 	s.cursorField = "last_modified_date"
 
 	return nil
@@ -113,10 +112,6 @@ func (s *S3) Discover() ([]*types.Stream, error) {
 	return streams, nil
 }
 
-func (s *S3) Catalog() *types.Catalog {
-	return s.catalog
-}
-
 func (s *S3) Type() string {
 	return "S3"
 }
@@ -131,7 +126,7 @@ func (s *S3) Read(stream protocol.Stream, channel chan<- types.Record) error {
 
 	// if incremental check for state
 	if stream.GetSyncMode() == types.Incremental {
-		state := s.state.Get(name, namespace)
+		state := s.Get(name, namespace)
 		if state != nil {
 			value, found := state[s.cursorField]
 			if found {
@@ -181,7 +176,7 @@ func (s *S3) Read(stream protocol.Stream, channel chan<- types.Record) error {
 		if localCursor == nil {
 			localCursor = file.LastModified
 		} else {
-			localCursor = types.TimePtr((utils.MaxDate(*localCursor, *file.LastModified)))
+			localCursor = types.ToPtr((utils.MaxDate(*localCursor, *file.LastModified)))
 		}
 
 		logger.Infof("%d Records found in file %s", totalRecords, *file.Key)
@@ -194,16 +189,10 @@ func (s *S3) Read(stream protocol.Stream, channel chan<- types.Record) error {
 
 	// update the state
 	if stream.GetSyncMode() == types.Incremental {
-		s.state.Update(name, namespace, map[string]any{
-			s.cursorField: localCursor,
-		})
+		s.Update(name, namespace, s.cursorField, localCursor)
 	}
 
 	return nil
-}
-
-func (s *S3) GetState() (*types.State, error) {
-	return &s.state, nil
 }
 
 func (s *S3) iteration(pattern string, preloadFactor int64, foreach func(reader reader.Reader, file *s3.Object) (bool, error)) error {
@@ -272,7 +261,7 @@ s3Iteration:
 		// Iterate through the objects and process them
 		for _, file := range resp.Contents {
 			if re.Match(*file.Key) {
-				re, err := reader.Init(s.client, s.config.Type, s.config.Bucket, *file.Key, s.batchSize)
+				re, err := reader.Init(s.client, s.config.Type, s.config.Bucket, *file.Key, s.BatchSize())
 				if err != nil {
 					return fmt.Errorf("failed to initialize reader on file[%s]: %s", *file.Key, err)
 				}
