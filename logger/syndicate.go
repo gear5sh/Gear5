@@ -14,7 +14,7 @@ import (
 
 func LogRecord(record types.Record) {
 	message := types.Message{}
-	message.Type = types.RecordType
+	message.Type = RecordType
 	message.Record = &record
 	message.Record.EmittedAt = time.Now()
 

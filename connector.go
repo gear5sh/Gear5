@@ -3,7 +3,9 @@ package shift
 import (
 	"fmt"
 
+	"github.com/piyushsingariya/shift/logger"
 	protocol "github.com/piyushsingariya/shift/protocol"
+	"github.com/piyushsingariya/shift/safego"
 	"github.com/spf13/cobra"
 )
 
@@ -12,14 +14,20 @@ var (
 	globalAdapter protocol.Adapter
 )
 
-func RegisterDriver(driver protocol.Driver) (*cobra.Command, error) {
+func RegisterDriver(driver protocol.Driver) {
+	defer safego.Recovery()
+
 	if globalAdapter != nil {
-		return nil, fmt.Errorf("adapter already registered: %s", globalAdapter.Type())
+		logger.Fatal(fmt.Errorf("adapter already registered: %s", globalAdapter.Type()))
 	}
 
 	globalDriver = driver
 
-	return protocol.CreateRootCommand(true, driver), nil
+	// Execute the root command
+	err := protocol.CreateRootCommand(true, driver).Execute()
+	if err != nil {
+		logger.Fatal(err)
+	}
 }
 
 func RegisterAdapter(adapter protocol.Adapter) (*cobra.Command, error) {

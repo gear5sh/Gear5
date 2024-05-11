@@ -31,12 +31,12 @@ func Infof(format string, v ...interface{}) {
 	Log(format, info, v...)
 }
 
-// Info writes record into os.stdout with log level INFO
+// Debug writes record into os.stdout with log level DEBUG
 func Debug(v ...interface{}) {
 	Log("", debug, v...)
 }
 
-// Info writes record into os.stdout with log level INFO
+// Debugf writes record into os.stdout with log level DEBUG
 func Debugf(format string, v ...interface{}) {
 	Log(format, debug, v...)
 }
@@ -85,7 +85,7 @@ func Log(format string, level Level, v ...interface{}) {
 		message = fmt.Sprintf(format, v...)
 	}
 	shiftMessage := types.Message{
-		Type: types.LogType,
+		Type: LogType,
 		Log: &types.Log{
 			Level:   level.String(),
 			Message: message,

@@ -107,7 +107,7 @@ func (p *Postgres) Read(stream protocol.Stream, channel chan<- types.Record) err
 		return nil
 	}
 
-	if !utils.ArrayContains(pgStream.SupportedSyncModes, stream.GetSyncMode()) {
+	if !utils.ExistInArray(pgStream.SupportedSyncModes, stream.GetSyncMode()) {
 		logger.Warnf("Stream %s.%s does not support sync mode[%s]; skipping...", stream.Namespace(), stream.Name(), stream.GetSyncMode())
 		return nil
 	}

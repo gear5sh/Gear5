@@ -10,8 +10,6 @@ import (
 
 	"github.com/piyushsingariya/shift/jsonschema"
 	"github.com/piyushsingariya/shift/logger"
-	"github.com/piyushsingariya/shift/types"
-	"github.com/piyushsingariya/shift/typing"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 )
@@ -34,14 +32,22 @@ func IsValidSubcommand(available []*cobra.Command, sub string) bool {
 	return false
 }
 
-func ArrayContains[T comparable](array []T, value T) bool {
-	for _, elem := range array {
-		if elem == value {
-			return true
+func ExistInArray[T ~string | int | int8 | int16 | int32 | int64 | float32 | float64](set []T, value T) bool {
+	_, found := ArrayContains(set, func(elem T) bool {
+		return elem == value
+	})
+
+	return found
+}
+
+func ArrayContains[T any](set []T, match func(elem T) bool) (int, bool) {
+	for idx, elem := range set {
+		if match(elem) {
+			return idx, true
 		}
 	}
 
-	return false
+	return -1, false
 }
 
 func ToJSONSchema(obj interface{}) (string, error) {
@@ -231,41 +237,4 @@ func MaxDate(v1, v2 time.Time) time.Time {
 	}
 
 	return v2
-}
-
-func MaximumOnDataType[T any](typ []types.DataType, a, b T) (T, error) {
-	switch {
-	case ArrayContains(typ, types.TIMESTAMP):
-		adate, err := typing.ReformatDate(a)
-		if err != nil {
-			return a, fmt.Errorf("failed to reformat[%v] while comparing: %s", a, err)
-		}
-		bdate, err := typing.ReformatDate(b)
-		if err != nil {
-			return a, fmt.Errorf("failed to reformat[%v] while comparing: %s", b, err)
-		}
-
-		if MaxDate(adate, bdate) == adate {
-			return a, nil
-		}
-
-		return b, nil
-	default:
-		return a, fmt.Errorf("comparison not available for data types %v now", typ)
-	}
-}
-
-func ReformatRecord(name, namespace string, record map[string]any) types.Record {
-	return types.Record{
-		Stream:    name,
-		Namespace: namespace,
-		Data:      record,
-	}
-}
-
-// CloseRecordIteration closes iteration over a record channel
-func CloseRecordIteration(channel chan types.Record) {
-	channel <- types.Record{
-		Close: true,
-	}
 }
