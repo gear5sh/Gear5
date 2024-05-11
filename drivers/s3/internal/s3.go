@@ -12,8 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gobwas/glob"
-	"github.com/piyushsingariya/drivers/s3/models"
-	"github.com/piyushsingariya/drivers/s3/reader"
+	"github.com/piyushsingariya/drivers/s3/internal/reader"
 	"github.com/piyushsingariya/shift/drivers/base"
 	"github.com/piyushsingariya/shift/jsonschema"
 	"github.com/piyushsingariya/shift/jsonschema/schema"
@@ -33,13 +32,13 @@ type S3 struct {
 	cursorField string
 	session     *session.Session
 	client      *s3.S3
-	config      *models.Config
+	config      *Config
 }
 
 func (s *S3) Setup(config any, base *base.Driver) error {
 	s.Driver = base
 
-	cfg := models.Config{}
+	cfg := Config{}
 	err := utils.Unmarshal(config, &cfg)
 	if err != nil {
 		return err
@@ -63,7 +62,7 @@ func (s *S3) Setup(config any, base *base.Driver) error {
 }
 
 func (s *S3) Spec() (schema.JSONSchema, error) {
-	return jsonschema.Reflect(models.Config{})
+	return jsonschema.Reflect(Config{})
 }
 
 func (s *S3) Check() error {

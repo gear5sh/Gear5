@@ -8,7 +8,6 @@ import (
 	"github.com/goccy/go-json"
 	"github.com/piyushsingariya/shift/drivers/base"
 
-	"github.com/piyushsingariya/shift/drivers/hubspot/models"
 	"github.com/piyushsingariya/shift/jsonschema"
 	"github.com/piyushsingariya/shift/jsonschema/schema"
 	"github.com/piyushsingariya/shift/protocol"
@@ -22,13 +21,13 @@ type Hubspot struct {
 	allStreams  map[string]HubspotStream
 	client      *http.Client
 	accessToken string
-	config      *models.Config
+	config      *Config
 }
 
 func (h *Hubspot) Setup(config any, base *base.Driver) error {
 	h.Driver = base
 
-	conf := &models.Config{}
+	conf := &Config{}
 	if err := utils.Unmarshal(config, conf); err != nil {
 		return err
 	}
@@ -51,7 +50,7 @@ func (h *Hubspot) Setup(config any, base *base.Driver) error {
 }
 
 func (h *Hubspot) Spec() (schema.JSONSchema, error) {
-	return jsonschema.Reflect(models.Config{})
+	return jsonschema.Reflect(Config{})
 }
 
 func (h *Hubspot) Check() error {

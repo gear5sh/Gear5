@@ -17,7 +17,7 @@ type CRMSearchStream struct {
 	associations []string
 }
 
-func newCRMSearchStream(incrementalStream IncrementalStream, primaryKey, lastModifiedField string, associations, scopes []string) *CRMSearchStream {
+func newCRMSearchStream(incrementalStream IncrementalStream, primaryKey, lastModifiedField string, associations, _ []string) *CRMSearchStream {
 	crm := &CRMSearchStream{
 		IncrementalStream: incrementalStream,
 		associations:      associations,

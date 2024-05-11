@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/piyushsingariya/shift"
-	"github.com/piyushsingariya/shift/drivers/hubspot/driver"
+	driver "github.com/piyushsingariya/shift/drivers/hubspot/internal"
 	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/safego"
 )

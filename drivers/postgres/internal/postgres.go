@@ -8,7 +8,6 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/piyushsingariya/shift/drivers/base"
-	"github.com/piyushsingariya/shift/drivers/postgres/models"
 	"github.com/piyushsingariya/shift/jsonschema"
 	"github.com/piyushsingariya/shift/jsonschema/schema"
 	"github.com/piyushsingariya/shift/logger"
@@ -24,7 +23,7 @@ type Postgres struct {
 	batchSize   int64
 	client      *sqlx.DB
 	accessToken string
-	config      *models.Config
+	config      *Config
 	catalog     *types.Catalog
 	state       types.State
 }
@@ -32,7 +31,7 @@ type Postgres struct {
 func (p *Postgres) Setup(config any, base *base.Driver) error {
 	p.Driver = base
 
-	cfg := models.Config{}
+	cfg := Config{}
 	err := utils.Unmarshal(config, &cfg)
 	if err != nil {
 		return err
@@ -73,7 +72,7 @@ func (p *Postgres) CloseConnection() {
 }
 
 func (p *Postgres) Spec() (schema.JSONSchema, error) {
-	return jsonschema.Reflect(models.Config{})
+	return jsonschema.Reflect(Config{})
 }
 
 func (p *Postgres) Check() error {
@@ -159,7 +158,7 @@ func (p *Postgres) Read(stream protocol.Stream, channel chan<- types.Record) err
 func (p *Postgres) setupStreams() error {
 	p.allStreams = make(map[string]*pgStream)
 
-	var tableNamesOutput []models.Table
+	var tableNamesOutput []Table
 	err := p.client.Select(&tableNamesOutput, getPrivilegedTablesTmpl)
 	if err != nil {
 		return fmt.Errorf("failed to retrieve table names: %s", err)
@@ -170,7 +169,7 @@ func (p *Postgres) setupStreams() error {
 	}
 
 	for _, table := range tableNamesOutput {
-		var columnSchemaOutput []models.ColumnDetails
+		var columnSchemaOutput []ColumnDetails
 		err := p.client.Select(&columnSchemaOutput, getTableSchemaTmpl, table.Schema, table.Name)
 		if err != nil {
 			return fmt.Errorf("failed to retrieve column details for table %s[%s]: %s", table.Name, table.Schema, err)
@@ -181,7 +180,7 @@ func (p *Postgres) setupStreams() error {
 			continue
 		}
 
-		var primaryKeyOutput []models.ColumnDetails
+		var primaryKeyOutput []ColumnDetails
 		err = p.client.Select(&primaryKeyOutput, getTablePrimaryKey, table.Schema, table.Name)
 		if err != nil {
 			return fmt.Errorf("failed to retrieve primary key columns for table %s[%s]: %s", table.Name, table.Schema, err)
