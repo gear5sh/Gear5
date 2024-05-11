@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/piyushsingariya/drivers/s3/driver"
+	driver "github.com/piyushsingariya/drivers/s3/internal"
 	"github.com/piyushsingariya/shift"
 	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/safego"

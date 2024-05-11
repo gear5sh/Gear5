@@ -7,7 +7,6 @@ import (
 	awscredentials "github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
-	"github.com/piyushsingariya/drivers/s3/models"
 	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/utils"
 )
@@ -19,7 +18,7 @@ func newSession(credentials interface{}) (*session.Session, error) {
 	// assume role session
 	if ok, _ := utils.IsOfType(credentials, "account_id"); ok {
 		logger.Info("Assume Role credetials found")
-		creds := &models.AssumeRoleAWS{}
+		creds := &AssumeRoleAWS{}
 		if err := utils.Unmarshal(credentials, creds); err != nil {
 			return nil, err
 		}
@@ -62,7 +61,7 @@ func newSession(credentials interface{}) (*session.Session, error) {
 	}
 
 	logger.Info("Creating AWS Session")
-	creds := &models.BaseAWS{}
+	creds := &BaseAWS{}
 	if err := utils.Unmarshal(credentials, creds); err != nil {
 		return nil, err
 	}

@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/piyushsingariya/shift/drivers/hubspot/models"
 	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/types"
 	"github.com/piyushsingariya/shift/utils"
@@ -48,12 +47,12 @@ func formatEndpoint(urn string) string {
 	return fmt.Sprintf("%s/%s", strings.TrimSuffix(BaseURL, "/"), strings.TrimPrefix(urn, "/"))
 }
 
-func newClient(config *models.Config) (*http.Client, string, error) {
+func newClient(config *Config) (*http.Client, string, error) {
 	var client *http.Client
 	var accessToken string
 	if ok, _ := utils.IsOfType(config.Credentials, "client_id"); ok {
 		logger.Info("Credentials found to be OAuth")
-		oauth := &models.Client{}
+		oauth := &Client{}
 		if err := utils.Unmarshal(config.Credentials, oauth); err != nil {
 			return nil, "", err
 		}
@@ -83,7 +82,7 @@ func newClient(config *models.Config) (*http.Client, string, error) {
 		client = oauth2.NewClient(context.TODO(), tokenSource)
 	} else if ok, _ := utils.IsOfType(config.Credentials, "access_token"); ok {
 		logger.Info("Credentials found to be Private App")
-		privateApp := &models.PrivateApp{}
+		privateApp := &PrivateApp{}
 		err := utils.Unmarshal(config.Credentials, privateApp)
 		if err != nil {
 			return nil, "", err
@@ -106,7 +105,7 @@ func newClient(config *models.Config) (*http.Client, string, error) {
 		// Create a new OAuth2 client
 		client = oauth2.NewClient(context.TODO(), tokenSource)
 	} else {
-		return nil, "", fmt.Errorf("invalid credentials format, expected formats are: %T and %T", models.Client{}, models.PrivateApp{})
+		return nil, "", fmt.Errorf("invalid credentials format, expected formats are: %T and %T", Client{}, PrivateApp{})
 	}
 
 	if client == nil {

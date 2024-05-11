@@ -3,7 +3,7 @@ package main
 import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/piyushsingariya/shift"
-	"github.com/piyushsingariya/shift/drivers/postgres/driver"
+	driver "github.com/piyushsingariya/shift/drivers/postgres/internal"
 	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/safego"
 )
