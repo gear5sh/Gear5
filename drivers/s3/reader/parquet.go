@@ -68,12 +68,12 @@ var ParquetTypes = map[string]ParquetType{
 type Parquet struct {
 	fileKey      string
 	next         bool
-	batchSize    int64
+	batchSize    uint64
 	reader       *goparquet.FileReader
 	isPreloading atomic.Bool
 }
 
-func InitParquet(s3Session *s3.S3, bucket, fileKey string, batchSize int64) (*Parquet, error) {
+func InitParquet(s3Session *s3.S3, bucket, fileKey string, batchSize uint64) (*Parquet, error) {
 	source, err := s3parquet.NewS3FileReaderWithClient(context.Background(), s3Session, bucket, fileKey)
 	if err != nil {
 		return nil, err
@@ -189,7 +189,7 @@ func (p *Parquet) Read() ([]map[string]any, error) {
 		time.Sleep(time.Second)
 	}
 
-	for idx := int64(0); idx < p.batchSize && (p.reader.CurrentRowGroup() != nil && idx < p.reader.CurrentRowGroup().NumRows); idx++ {
+	for idx := uint64(0); idx < p.batchSize && (p.reader.CurrentRowGroup() != nil && int64(idx) < p.reader.CurrentRowGroup().NumRows); idx++ {
 		record, err := p.reader.NextRow()
 		if err != nil {
 			if err != io.EOF {

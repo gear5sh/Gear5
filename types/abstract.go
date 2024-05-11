@@ -1,31 +1,7 @@
 package types
 
-import (
-	"time"
-)
-
-func StringPtr(str string) *string {
-	return &str
-}
-
-func BoolPtr(b bool) *bool {
-	return &b
-}
-
-func IntPtr(i int) *int {
-	return &i
-}
-
-func DurationPtr(d time.Duration) *time.Duration {
-	return &d
-}
-
-func TimePtr(t time.Time) *time.Time {
-	return &t
-}
-
-func DataTypePtr(dt DataType) *DataType {
-	return &dt
+func ToPtr[T any](val T) *T {
+	return &val
 }
 
 func Set[T any](array []T) []T {

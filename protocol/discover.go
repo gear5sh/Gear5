@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/piyushsingariya/shift/drivers/base"
 	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/safego"
 	"github.com/piyushsingariya/shift/types"
@@ -25,7 +26,7 @@ var DiscoverCmd = &cobra.Command{
 			logger.Fatal(fmt.Errorf("expected type to be: Connector, found %T", connector))
 		}
 
-		err := connector.Setup(utils.ReadFile(config), nil, nil, batchSize)
+		err := connector.Setup(utils.ReadFile(config), base.NewDriver(nil, nil, batchSize))
 		if err != nil {
 			logger.Fatal(err)
 		}

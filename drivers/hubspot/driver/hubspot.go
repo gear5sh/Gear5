@@ -6,27 +6,28 @@ import (
 	"net/http"
 
 	"github.com/goccy/go-json"
+	"github.com/piyushsingariya/shift/drivers/base"
 
 	"github.com/piyushsingariya/shift/drivers/hubspot/models"
 	"github.com/piyushsingariya/shift/jsonschema"
 	"github.com/piyushsingariya/shift/jsonschema/schema"
-	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/protocol"
 	"github.com/piyushsingariya/shift/types"
 	"github.com/piyushsingariya/shift/utils"
 )
 
 type Hubspot struct {
-	batchSize   int64
+	*base.Driver
+
 	allStreams  map[string]HubspotStream
 	client      *http.Client
 	accessToken string
 	config      *models.Config
-	catalog     *types.Catalog
-	state       types.State
 }
 
-func (h *Hubspot) Setup(config any, catalog *types.Catalog, state types.State, batchSize int64) error {
+func (h *Hubspot) Setup(config any, base *base.Driver) error {
+	h.Driver = base
+
 	conf := &models.Config{}
 	if err := utils.Unmarshal(config, conf); err != nil {
 		return err
@@ -41,10 +42,7 @@ func (h *Hubspot) Setup(config any, catalog *types.Catalog, state types.State, b
 		return err
 	}
 
-	h.catalog = catalog
 	h.config = conf
-	h.state = state
-	h.batchSize = batchSize
 	h.client = client
 	h.accessToken = accessToken
 	h.setupAllStreams()
@@ -81,33 +79,30 @@ func (h *Hubspot) Discover() ([]*types.Stream, error) {
 	return streams, nil
 }
 
-func (h *Hubspot) Catalog() *types.Catalog {
-	return h.catalog
-}
 func (h *Hubspot) Type() string {
 	return "Hubspot"
 }
 
-func (h *Hubspot) GetState() (*types.State, error) {
-	state := &types.State{}
-	for _, stream := range h.Catalog().Streams {
-		if stream.SyncMode == types.Incremental {
-			hubspotStream, found := h.allStreams[stream.Name()]
-			if !found {
-				return nil, fmt.Errorf("hubspot stream not found while getting state of incremental stream[%s]", stream.Name())
-			}
+// func (h *Hubspot) GetState() (*types.State, error) {
+// 	state := &types.State{}
+// 	for _, stream := range h.Catalog().Streams {
+// 		if stream.SyncMode == types.Incremental {
+// 			hubspotStream, found := h.allStreams[stream.Name()]
+// 			if !found {
+// 				return nil, fmt.Errorf("hubspot stream not found while getting state of incremental stream[%s]", stream.Name())
+// 			}
 
-			if !utils.ArrayContains(hubspotStream.Modes(), types.Incremental) {
-				logger.Warnf("Skipping getting state from stream[%s], this stream doesn't support incremental", stream.Name())
-				continue
-			}
+// 			if !utils.ArrayContains(hubspotStream.Modes(), types.Incremental) {
+// 				logger.Warnf("Skipping getting state from stream[%s], this stream doesn't support incremental", stream.Name())
+// 				continue
+// 			}
 
-			state.Add(stream.Name(), stream.Name(), hubspotStream.state())
-		}
-	}
+// 			state.Add(stream.Name(), stream.Name(), hubspotStream.state())
+// 		}
+// 	}
 
-	return state, nil
-}
+// 	return state, nil
+// }
 
 func (h *Hubspot) Read(stream protocol.Stream, channel chan<- types.Record) error {
 	hstream, found := h.allStreams[stream.Name()]
@@ -115,7 +110,7 @@ func (h *Hubspot) Read(stream protocol.Stream, channel chan<- types.Record) erro
 		return fmt.Errorf("invalid stream passed: %s", stream.Name())
 	}
 
-	hstream.setup(stream.GetSyncMode(), h.state.Get(stream.Name(), stream.Namespace()))
+	hstream.setup(stream.GetSyncMode(), h.Get(stream.Name(), stream.Namespace()))
 
 	err := hstream.readRecords(channel)
 	if err != nil {

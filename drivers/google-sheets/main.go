@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/piyushsingariya/shift"
-	"github.com/piyushsingariya/shift/drivers/google-sheets/driver"
+	driver "github.com/piyushsingariya/shift/drivers/google-sheets/internal"
 	"github.com/piyushsingariya/shift/logger"
 )
 

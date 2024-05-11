@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/piyushsingariya/shift/drivers/base"
 	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/types"
 	"github.com/piyushsingariya/shift/utils"
@@ -39,7 +40,7 @@ var ReadCmd = &cobra.Command{
 		}
 
 		if state == "" {
-			if err := connector.Setup(utils.ReadFile(config), cat, nil, batchSize); err != nil {
+			if err := connector.Setup(utils.ReadFile(config), base.NewDriver(cat, nil, batchSize)); err != nil {
 				return err
 			}
 		} else {
@@ -48,14 +49,14 @@ var ReadCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("failed to unmarshal state file")
 			}
-			if err := connector.Setup(utils.ReadFile(config), cat, st, batchSize); err != nil {
+			if err := connector.Setup(utils.ReadFile(config), base.NewDriver(cat, st, batchSize)); err != nil {
 				return err
 			}
 		}
 
 		recordStream := make(chan types.Record, 2*batchSize)
 		numRecords := int64(0)
-		batch := int64(0)
+		batch := uint64(0)
 		recordIterationWait := sync.WaitGroup{}
 
 		recordIterationWait.Add(1)
@@ -75,11 +76,8 @@ var ReadCmd = &cobra.Command{
 
 				// log state after a batch
 				if batch >= batchSize {
-					state, err := connector.GetState()
-					if err != nil {
-						logger.Fatalf("failed to get state from connector")
-					}
-					if state != nil && state.Len() > 0 {
+					state := connector.GetState()
+					if !state.IsZero() {
 						logger.LogState(state)
 					}
 					// reset batch
@@ -120,12 +118,8 @@ var ReadCmd = &cobra.Command{
 		recordIterationWait.Wait()
 
 		logger.Infof("Total records read: %d", numRecords)
-		state, err := connector.GetState()
-		if err != nil {
-			logger.Fatalf("failed to get state from connector")
-		}
-
-		if state != nil {
+		state := connector.GetState()
+		if !state.IsZero() {
 			logger.LogState(state)
 		}
 

@@ -82,10 +82,10 @@ func LogRequest(req *http.Request) {
 	fmt.Println(string(requestDump))
 }
 
-func LogState(state *types.State) {
+func LogState(state types.State) {
 	message := types.Message{}
 	message.Type = types.StateType
-	message.State = state
+	message.State = &state
 
 	err := json.NewEncoder(writer).Encode(message)
 	if err != nil {

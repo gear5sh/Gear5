@@ -3,8 +3,8 @@ package models
 import (
 	"fmt"
 
-	"github.com/go-playground/validator"
 	"github.com/piyushsingariya/shift/logger"
+	"github.com/piyushsingariya/shift/utils"
 )
 
 // Authenticate via Access and Secret Keys
@@ -88,8 +88,7 @@ type Config struct {
 }
 
 func (c *Config) Validate() error {
-	validate := validator.New()
-	err := validate.Struct(c)
+	err := utils.Validate(c)
 	if err != nil {
 		return fmt.Errorf("config validation failed: %s", err)
 	}

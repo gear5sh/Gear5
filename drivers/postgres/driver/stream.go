@@ -23,7 +23,7 @@ const (
 	readRecordsIncrementalWithoutState = `SELECT * FROM "%s"."%s" ORDER BY "%s" ASC NULLS FIRST OFFSET %d LIMIT %d`
 )
 
-func (p *pgStream) setState(cursor string, state interface{}) {
+func (p *pgStream) setInitialState(cursor string, state interface{}) {
 	p.cursor = cursor
 	p.state = state
 }
