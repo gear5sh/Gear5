@@ -2,17 +2,20 @@ package types
 
 import (
 	"github.com/piyushsingariya/shift/jsonschema/schema"
+	"github.com/piyushsingariya/shift/logger"
+	"github.com/piyushsingariya/shift/utils"
 )
 
-// WrappedStream is a dto for formatted stream
+// Input/Processed object for Stream
 type WrappedStream struct {
-	SyncMode            SyncMode `json:"sync_mode,omitempty"`
-	DestinationSyncMode string   `json:"destination_sync_mode,omitempty"`
-	CursorField         string   `json:"cursor_field,omitempty"`
-	Stream              *Stream  `json:"stream,omitempty"`
+	Stream      *Stream  `json:"stream,omitempty"`
+	SyncMode    SyncMode `json:"sync_mode,omitempty"`
+	CursorField string   `json:"cursor_field,omitempty"`
+	CursorValue any      `json:"-"`
+	// DestinationSyncMode string   `json:"destination_sync_mode,omitempty"`
 }
 
-// Stream is a dto for Airbyte catalog Stream object serialization
+// Output Stream Object for dsynk
 type Stream struct {
 	Name                       string            `json:"name,omitempty"`
 	Namespace                  string            `json:"namespace,omitempty"`
@@ -51,6 +54,28 @@ func (s *WrappedStream) GetSyncMode() SyncMode {
 
 func (s *WrappedStream) GetCursorField() string {
 	return s.CursorField
+}
+
+func (s *WrappedStream) GetCursorValue() any {
+	return s.CursorValue
+}
+
+func (s *WrappedStream) SetCursorValue(state State) {
+	if !state.IsZero() {
+		i, contains := utils.ArrayContains(state, func(elem *StreamState) bool {
+			return elem.Namespace == s.Namespace() && elem.Stream == s.Name()
+		})
+		if contains {
+			value, found := state[i].State[s.CursorField]
+			if !found {
+				logger.Warnf("Cursor field [%s] in state for stream[%s] found empty", s.CursorField, s.Name())
+			}
+
+			s.CursorValue = value
+		} else {
+			logger.Warnf("State for stream[%s] was missing", s.Name())
+		}
+	}
 }
 
 func GetWrappedCatalog(streams []*Stream) *Catalog {

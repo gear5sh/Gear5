@@ -35,4 +35,5 @@ type Stream interface {
 	GetStream() *types.Stream
 	GetSyncMode() types.SyncMode
 	GetCursorField() string
+	GetCursorValue() any
 }
