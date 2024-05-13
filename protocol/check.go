@@ -23,22 +23,21 @@ var CheckCmd = &cobra.Command{
 		}
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		connector, not := rawConnector.(Connector)
-		if !not {
-			logger.LogConnectionStatus(fmt.Errorf("expected type to be: Connector, found %T", connector))
-		}
+		err := func() error {
+			connector, not := rawConnector.(Connector)
+			if !not {
+				return fmt.Errorf("expected type to be: Connector, found %T", connector)
+			}
 
-		err := connector.Setup(utils.ReadFile(config), base.NewDriver(nil, nil, batchSize))
-		if err != nil {
-			logger.LogConnectionStatus(err)
-		}
+			err := connector.Setup(utils.ReadFile(config), base.NewDriver(nil, nil, batchSize))
+			if err != nil {
+				return err
+			}
 
-		err = connector.Check()
-		if err != nil {
-			logger.LogConnectionStatus(err)
-		}
+			return connector.Check()
+		}()
 
 		// success
-		logger.LogConnectionStatus(nil)
+		logger.LogConnectionStatus(err)
 	},
 }

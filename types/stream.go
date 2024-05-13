@@ -2,7 +2,6 @@ package types
 
 import (
 	"github.com/piyushsingariya/shift/jsonschema/schema"
-	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/utils"
 )
 
@@ -60,7 +59,8 @@ func (s *WrappedStream) GetCursorValue() any {
 	return s.CursorValue
 }
 
-func (s *WrappedStream) SetCursorValue(state State) {
+// Returns empty and missing
+func (s *WrappedStream) SetCursorValue(state State) (bool, bool) {
 	if !state.IsZero() {
 		i, contains := utils.ArrayContains(state, func(elem *StreamState) bool {
 			return elem.Namespace == s.Namespace() && elem.Stream == s.Name()
@@ -68,14 +68,18 @@ func (s *WrappedStream) SetCursorValue(state State) {
 		if contains {
 			value, found := state[i].State[s.CursorField]
 			if !found {
-				logger.Warnf("Cursor field [%s] in state for stream[%s] found empty", s.CursorField, s.Name())
+				return true, false
 			}
 
 			s.CursorValue = value
-		} else {
-			logger.Warnf("State for stream[%s] was missing", s.Name())
+
+			return false, false
 		}
+
+		return false, true
 	}
+
+	return false, false
 }
 
 func GetWrappedCatalog(streams []*Stream) *Catalog {

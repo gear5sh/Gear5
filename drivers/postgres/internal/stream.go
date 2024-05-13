@@ -7,7 +7,6 @@ import (
 	"github.com/piyushsingariya/shift/safego"
 	"github.com/piyushsingariya/shift/types"
 	"github.com/piyushsingariya/shift/typing"
-	"github.com/piyushsingariya/shift/utils"
 )
 
 type pgStream struct {
@@ -61,7 +60,7 @@ func (p *pgStream) readFullRefresh(client *sqlx.DB, channel chan<- types.Record)
 			}
 
 			// insert record
-			if !safego.Insert(channel, utils.ReformatRecord(p.Name, p.Namespace, record)) {
+			if !safego.Insert(channel, typing.ReformatRecord(p.Name, p.Namespace, record)) {
 				// channel was closed
 				return nil
 			}
@@ -132,7 +131,7 @@ func (p *pgStream) readIncremental(client *sqlx.DB, channel chan<- types.Record)
 			if cursorVal, found := record[p.cursor]; found && cursorVal != nil {
 				// compare if not nil
 				if p.state != nil {
-					state, err := utils.MaximumOnDataType(p.JSONSchema.Properties[p.cursor].Type, p.state, cursorVal)
+					state, err := typing.MaximumOnDataType(p.JSONSchema.Properties[p.cursor].Type, p.state, cursorVal)
 					if err != nil {
 						return err
 					}
@@ -145,7 +144,7 @@ func (p *pgStream) readIncremental(client *sqlx.DB, channel chan<- types.Record)
 			}
 
 			// insert record
-			channel <- utils.ReformatRecord(p.Name, p.Namespace, record)
+			channel <- typing.ReformatRecord(p.Name, p.Namespace, record)
 		}
 
 		// Check for any errors during row iteration

@@ -1,10 +1,12 @@
 package jsonschema
 
 import (
+	"encoding/json"
 	"reflect"
 
 	"github.com/piyushsingariya/shift/jsonschema/generator"
 	"github.com/piyushsingariya/shift/jsonschema/schema"
+	"sigs.k8s.io/yaml"
 )
 
 // Reflector is the main jsonschemagen command.
@@ -46,4 +48,32 @@ func (r *Reflector) GetPackageName(s interface{}) string {
 	pkgPath := t.PkgPath()
 
 	return pkgPath
+}
+
+func ToJSONSchema(obj interface{}) (string, error) {
+	schema, err := Reflect(obj)
+	if err != nil {
+		return "", err
+	}
+
+	j, err := json.MarshalIndent(schema, "", " ")
+	if err != nil {
+		return "", err
+	}
+
+	return string(j), nil
+}
+
+func ToYamlSchema(obj interface{}) (string, error) {
+	jsonSchema, err := ToJSONSchema(obj)
+	if err != nil {
+		return "", err
+	}
+
+	yamlData, err := yaml.JSONToYAML([]byte(jsonSchema))
+	if err != nil {
+		return "", err
+	}
+
+	return string(yamlData), nil
 }

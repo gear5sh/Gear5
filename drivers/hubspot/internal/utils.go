@@ -116,7 +116,7 @@ func newClient(config *Config) (*http.Client, string, error) {
 }
 
 func getFieldProps(fieldType string) *types.Property {
-	if utils.ArrayContains(ValidJsonSchemaTypes, types.DataType(fieldType)) {
+	if utils.ExistInArray(ValidJsonSchemaTypes, types.DataType(fieldType)) {
 		return &types.Property{
 			Type: []types.DataType{types.DataType(fieldType)},
 		}
