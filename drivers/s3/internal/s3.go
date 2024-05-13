@@ -84,7 +84,7 @@ func (s *S3) Discover() ([]protocol.Stream, error) {
 	for stream, pattern := range s.config.Streams {
 		var schema map[string]*types.Property
 		var err error
-		err = s.iteration(types.ToPtr(int64(1000)), pattern, 1, func(reader reader.Reader, file *s3.Object) (bool, error) {
+		err = s.iteration(types.ToPtr(int64(100)), pattern, 1, func(reader reader.Reader, file *s3.Object) (bool, error) {
 			schema, err = reader.GetSchema()
 			return false, err
 		})
