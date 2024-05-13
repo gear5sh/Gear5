@@ -35,12 +35,7 @@ var CheckCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		err := func() error {
-			connector, not := rawConnector.(Connector)
-			if !not {
-				return fmt.Errorf("expected type to be: Connector, found %T", connector)
-			}
-
-			err := connector.Setup(utils.ReadFile(config_), base.NewDriver(nil, nil))
+			err := _rawConnector.Setup(utils.ReadFile(config_), base.NewDriver(nil, nil))
 			if err != nil {
 				return err
 			}
@@ -48,7 +43,7 @@ var CheckCmd = &cobra.Command{
 			// TODO: Validate Streams
 			// Check if the streams are valid
 
-			return connector.Check()
+			return _rawConnector.Check()
 		}()
 
 		// success

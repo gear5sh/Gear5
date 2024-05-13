@@ -2,10 +2,12 @@ package jsonschema
 
 import (
 	"encoding/json"
+	"log"
 	"reflect"
 
 	"github.com/piyushsingariya/shift/jsonschema/generator"
 	"github.com/piyushsingariya/shift/jsonschema/schema"
+	gojo "github.com/swaggest/jsonschema-go"
 	"sigs.k8s.io/yaml"
 )
 
@@ -51,14 +53,16 @@ func (r *Reflector) GetPackageName(s interface{}) string {
 }
 
 func ToJSONSchema(obj interface{}) (string, error) {
-	schema, err := Reflect(obj)
+	reflector := gojo.Reflector{}
+
+	schema, err := reflector.Reflect(obj)
 	if err != nil {
-		return "", err
+		log.Fatal(err)
 	}
 
 	j, err := json.MarshalIndent(schema, "", " ")
 	if err != nil {
-		return "", err
+		log.Fatal(err)
 	}
 
 	return string(j), nil

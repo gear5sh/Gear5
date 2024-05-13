@@ -1,7 +1,6 @@
 package protocol
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/piyushsingariya/shift/drivers/base"
@@ -21,22 +20,17 @@ var DiscoverCmd = &cobra.Command{
 		return utils.CheckIfFilesExists(config_)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		connector, not := rawConnector.(Driver)
-		if !not {
-			logger.Fatal(fmt.Errorf("expected type to be: Connector, found %T", connector))
-		}
-
-		err := connector.Setup(utils.ReadFile(config_), base.NewDriver(nil, nil))
+		err := _driver.Setup(utils.ReadFile(config_), base.NewDriver(nil, nil))
 		if err != nil {
 			logger.Fatal(err)
 		}
 
-		err = connector.Check()
+		err = _driver.Check()
 		if err != nil {
 			logger.Fatal(err)
 		}
 
-		streams, err := connector.Discover()
+		streams, err := _driver.Discover()
 		if err != nil {
 			logger.Fatal(err)
 		}
@@ -56,7 +50,7 @@ var DiscoverCmd = &cobra.Command{
 				channel := make(chan types.Record, recordsPerStream)
 				count := 0
 				go func() {
-					err := connector.Read(stream, channel)
+					err := _driver.Read(stream, channel)
 					if err != nil {
 						logger.Fatalf("Error occurred while reading records from [%s]: %s", stream.Name(), err)
 					}

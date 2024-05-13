@@ -3,7 +3,6 @@ package protocol
 import (
 	"fmt"
 
-	"github.com/piyushsingariya/shift/drivers/base"
 	"github.com/piyushsingariya/shift/logger/console"
 	"github.com/piyushsingariya/shift/types"
 	"github.com/piyushsingariya/shift/utils"
@@ -25,9 +24,9 @@ var (
 	driverCommands  = []*cobra.Command{}
 	adapterCommands = []*cobra.Command{}
 
-	_driver      Driver
-	_adapter     Adapter
-	rawConnector any
+	_driver       Driver
+	_adapter      Adapter
+	_rawConnector Connector
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -51,15 +50,16 @@ var RootCmd = &cobra.Command{
 			}
 		}
 
-		if isDriver {
-			if err := _driver.Setup(utils.ReadFile(config_), base.NewDriver(catalog, state)); err != nil {
-				return err
-			}
+		// if isDriver {
+		// 	if err := _driver.Setup(utils.ReadFile(config_), base.NewDriver(catalog, state)); err != nil {
+		// 		return err
+		// 	}
 
-			return nil
-		}
+		// 	return nil
+		// }
 
-		return _adapter.Setup(utils.ReadFile(config_), base.NewDriver(catalog, state))
+		// return _adapter.Setup(utils.ReadFile(config_), base.NewDriver(catalog, state))
+		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
@@ -84,7 +84,7 @@ func CreateRootCommand(forDriver bool, connector any) *cobra.Command {
 		_adapter = connector.(Adapter)
 	}
 
-	rawConnector = connector
+	_rawConnector = connector.(Connector)
 
 	return RootCmd
 }
