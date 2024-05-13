@@ -48,12 +48,15 @@ type AssumeRoleAWS struct {
 }
 
 type Config struct {
+	_ struct{} `additionalProperties:"false"`                     // Tags of unnamed field are applied to parent schema.
+	_ struct{} `title:"S3" description:"Config to connect to S3"` // Multiple unnamed fields can be used.
+
 	// Stream Name with Patterns
 	//
 	// @jsonschema(
 	// required=true
 	// )
-	Streams map[string]string `json:"streams" validate:"required"`
+	Streams map[string]string `json:"streams" validate:"required" description:"Stream Names with Patterns" required:"true"`
 	// FileType
 	//
 	// @jsonschema(
