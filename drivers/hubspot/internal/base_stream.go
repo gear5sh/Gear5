@@ -73,6 +73,10 @@ func (s *Stream) Name() string {
 	return s.name
 }
 
+func (s *Stream) Namespace() string {
+	return ""
+}
+
 func (s *Stream) Modes() []types.SyncMode {
 	return s.availableSyncMode
 }
@@ -451,7 +455,7 @@ func (s *Stream) readStreamRecords(nextPageToken map[string]any, f func() (path,
 	// properties = self._property_wrapper
 	//     for chunk in properties.split():
 	//         response = self.handle_request(
-	//             stream_slice=stream_slice, stream_state=stream_state, next_page_token=next_page_token, properties=chunk, url=url
+	//             stream_slice=stream_slice, streamstate_=streamstate_, next_page_token=next_page_token, properties=chunk, url=url
 	//         )
 	//         for record in self._transform(self.parse_response(response)):
 	//             post_processor.add_record(record)

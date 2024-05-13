@@ -18,7 +18,7 @@ var DiscoverCmd = &cobra.Command{
 	Use:   "discover",
 	Short: "Shift discover command",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		return utils.CheckIfFilesExists(config)
+		return utils.CheckIfFilesExists(config_)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		connector, not := rawConnector.(Driver)
@@ -26,7 +26,7 @@ var DiscoverCmd = &cobra.Command{
 			logger.Fatal(fmt.Errorf("expected type to be: Connector, found %T", connector))
 		}
 
-		err := connector.Setup(utils.ReadFile(config), base.NewDriver(nil, nil, batchSize))
+		err := connector.Setup(utils.ReadFile(config_), base.NewDriver(nil, nil))
 		if err != nil {
 			logger.Fatal(err)
 		}
@@ -47,8 +47,8 @@ var DiscoverCmd = &cobra.Command{
 
 		recordsPerStream := 100
 		group := sync.WaitGroup{}
-		for _, wrappedStream := range wrapForSchemaDiscovery(streams) {
-			stream := wrappedStream
+		for _, stream_ := range streams {
+			stream := stream_
 			group.Add(1)
 
 			go func() {
@@ -78,32 +78,23 @@ var DiscoverCmd = &cobra.Command{
 					logger.Fatal(err)
 				}
 
-				stream.Stream.JSONSchema = &types.Schema{
+				stream.Self().WithJSONSchema(types.Schema{
 					Properties: properties,
-				}
+				})
 
 				group.Done()
 			}()
 		}
 
 		group.Wait()
-		logger.LogCatalog(streams)
+
+		unwrappedStreams := []*types.Stream{}
+		_, _ = utils.ArrayContains(streams, func(elem Stream) bool {
+			unwrappedStreams = append(unwrappedStreams, elem.GetStream())
+			return false
+		})
+
+		logger.LogCatalog(unwrappedStreams)
 		return nil
 	},
-}
-
-func wrapForSchemaDiscovery(streams []*types.Stream) []*types.WrappedStream {
-	wrappedStreams := []*types.WrappedStream{}
-
-	for _, stream := range streams {
-		// only adding streams for which json schema needs to be discovered
-		if stream.JSONSchema == nil {
-			wrappedStreams = append(wrappedStreams, &types.WrappedStream{
-				SyncMode: types.FullRefresh,
-				Stream:   stream,
-			})
-		}
-	}
-
-	return wrappedStreams
 }

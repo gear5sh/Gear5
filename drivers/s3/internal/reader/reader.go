@@ -16,7 +16,7 @@ type Reader interface {
 	HasNext() bool
 }
 
-func Init(s3 *s3.S3, _type, bucket, file string, batchSize uint64) (Reader, error) {
+func Init(s3 *s3.S3, _type, bucket, file string, batchSize *int64) (Reader, error) {
 	switch strings.ToLower(_type) {
 	case "parquet":
 		return InitParquet(s3, bucket, file, batchSize)

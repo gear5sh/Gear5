@@ -67,7 +67,7 @@ func (s *S3) Spec() (schema.JSONSchema, error) {
 
 func (s *S3) Check() error {
 	for stream, pattern := range s.config.Streams {
-		err := s.iteration(pattern, 1, func(reader reader.Reader, file *s3.Object) (bool, error) {
+		err := s.iteration(types.ToPtr(int64(100)), pattern, 1, func(reader reader.Reader, file *s3.Object) (bool, error) {
 			// break iteration after single item
 			return false, nil
 		})
@@ -79,12 +79,12 @@ func (s *S3) Check() error {
 	return nil
 }
 
-func (s *S3) Discover() ([]*types.Stream, error) {
-	streams := []*types.Stream{}
+func (s *S3) Discover() ([]protocol.Stream, error) {
+	streams := []protocol.Stream{}
 	for stream, pattern := range s.config.Streams {
 		var schema map[string]*types.Property
 		var err error
-		err = s.iteration(pattern, 1, func(reader reader.Reader, file *s3.Object) (bool, error) {
+		err = s.iteration(types.ToPtr(int64(1000)), pattern, 1, func(reader reader.Reader, file *s3.Object) (bool, error) {
 			schema, err = reader.GetSchema()
 			return false, err
 		})
@@ -96,16 +96,10 @@ func (s *S3) Discover() ([]*types.Stream, error) {
 			return nil, fmt.Errorf("no schema found")
 		}
 
-		streams = append(streams, &types.Stream{
-			Name:                stream,
-			Namespace:           pattern,
-			SupportedSyncModes:  []types.SyncMode{types.Incremental, types.FullRefresh},
-			SourceDefinedCursor: true,
-			DefaultCursorFields: []string{s.cursorField},
-			JSONSchema: &types.Schema{
-				Properties: schema,
-			},
-		})
+		streams = append(streams, types.NewStream(stream, pattern).WithSyncModes(types.Incremental, types.FullRefresh).
+			WithCursorFields(s.cursorField).WithJSONSchema(types.Schema{
+			Properties: schema,
+		}))
 	}
 
 	return streams, nil
@@ -125,25 +119,20 @@ func (s *S3) Read(stream protocol.Stream, channel chan<- types.Record) error {
 
 	// if incremental check for state
 	if stream.GetSyncMode() == types.Incremental {
-		state := s.Get(name, namespace)
+		state := stream.InitialState()
 		if state != nil {
-			value, found := state[s.cursorField]
-			if found {
-				stateCursor, err := typing.ReformatDate(value)
-				if err != nil {
-					logger.Warnf("failed to parse state for stream %s[%s]", name, namespace)
-				} else {
-					localCursor = &stateCursor
-				}
+			stateCursor, err := typing.ReformatDate(state)
+			if err != nil {
+				logger.Warnf("failed to parse state for stream %s[%s]", name, namespace)
 			} else {
-				logger.Warnf("Cursor field not found for stream %s[%s]", name, namespace)
+				localCursor = &stateCursor
 			}
 		} else {
 			logger.Warnf("State not found for stream %s[%s]", name, namespace)
 		}
 	}
 
-	err := s.iteration(pattern, s.config.PreLoadFactor, func(reader reader.Reader, file *s3.Object) (bool, error) {
+	err := s.iteration(types.ToPtr(stream.BatchSize()), pattern, s.config.PreLoadFactor, func(reader reader.Reader, file *s3.Object) (bool, error) {
 		if localCursor != nil && file.LastModified.Before(*localCursor) {
 			// continue iteration
 			return true, nil
@@ -165,7 +154,7 @@ func (s *S3) Read(stream protocol.Stream, channel chan<- types.Record) error {
 			}
 
 			for _, record := range records {
-				if !safego.Insert(channel, typing.ReformatRecord(name, namespace, record)) {
+				if !safego.Insert(channel, base.ReformatRecord(stream, record)) {
 					// discontinue iteration since failed to insert records
 					return false, nil
 				}
@@ -188,13 +177,13 @@ func (s *S3) Read(stream protocol.Stream, channel chan<- types.Record) error {
 
 	// update the state
 	if stream.GetSyncMode() == types.Incremental {
-		s.Update(name, namespace, s.cursorField, localCursor)
+		stream.SetState(localCursor)
 	}
 
 	return nil
 }
 
-func (s *S3) iteration(pattern string, preloadFactor int64, foreach func(reader reader.Reader, file *s3.Object) (bool, error)) error {
+func (s *S3) iteration(batchSize *int64, pattern string, preloadFactor int64, foreach func(reader reader.Reader, file *s3.Object) (bool, error)) error {
 	re, err := glob.Compile(pattern)
 	if err != nil {
 		return fmt.Errorf("failed to complie file pattern please check: https://github.com/gobwas/glob#performance")
@@ -260,7 +249,7 @@ s3Iteration:
 		// Iterate through the objects and process them
 		for _, file := range resp.Contents {
 			if re.Match(*file.Key) {
-				re, err := reader.Init(s.client, s.config.Type, s.config.Bucket, *file.Key, s.BatchSize())
+				re, err := reader.Init(s.client, s.config.Type, s.config.Bucket, *file.Key, batchSize)
 				if err != nil {
 					return fmt.Errorf("failed to initialize reader on file[%s]: %s", *file.Key, err)
 				}

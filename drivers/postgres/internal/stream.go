@@ -4,16 +4,15 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/piyushsingariya/shift/drivers/base"
+	"github.com/piyushsingariya/shift/protocol"
 	"github.com/piyushsingariya/shift/safego"
 	"github.com/piyushsingariya/shift/types"
 	"github.com/piyushsingariya/shift/typing"
 )
 
 type pgStream struct {
-	batchSize int64
-	cursor    string
-	state     interface{}
-	*types.Stream
+	protocol.Stream
 }
 
 const (
@@ -22,24 +21,19 @@ const (
 	readRecordsIncrementalWithoutState = `SELECT * FROM "%s"."%s" ORDER BY "%s" ASC NULLS FIRST OFFSET %d LIMIT %d`
 )
 
-func (p *pgStream) setInitialState(cursor string, state interface{}) {
-	p.cursor = cursor
-	p.state = state
-}
-
 func (p *pgStream) readFullRefresh(client *sqlx.DB, channel chan<- types.Record) error {
 	offset := int64(0)
-	limit := p.batchSize
+	limit := p.BatchSize()
 
 	for {
-		statement := fmt.Sprintf(readRecordsFullRefresh, p.Namespace, p.Name, offset*limit, limit)
+		statement := fmt.Sprintf(readRecordsFullRefresh, p.Namespace(), p.Name(), offset*limit, limit)
 
 		// Execute the query
 		rows, err := client.Queryx(statement)
 		if err != nil {
 			return typing.SQLError(typing.ReadTableError, err, fmt.Sprintf("failed to read after offset[%d] limit[%d]", offset*limit, limit), &typing.ErrorPayload{
-				Table:     p.Name,
-				Schema:    p.Namespace,
+				Table:     p.Name(),
+				Schema:    p.Namespace(),
 				Statement: statement,
 			})
 		}
@@ -60,7 +54,7 @@ func (p *pgStream) readFullRefresh(client *sqlx.DB, channel chan<- types.Record)
 			}
 
 			// insert record
-			if !safego.Insert(channel, typing.ReformatRecord(p.Name, p.Namespace, record)) {
+			if !safego.Insert(channel, base.ReformatRecord(p, record)) {
 				// channel was closed
 				return nil
 			}
@@ -86,19 +80,17 @@ func (p *pgStream) readFullRefresh(client *sqlx.DB, channel chan<- types.Record)
 
 func (p *pgStream) readIncremental(client *sqlx.DB, channel chan<- types.Record) error {
 	offset := int64(0)
-	limit := p.batchSize
-	var initialStateAtStart any
-	if p.state != nil {
-		initialStateAtStart = p.state
-	}
+	limit := p.BatchSize()
+	initialStateAtStart := p.GetState()
+	cursorDataType := p.JSONSchema().Properties[p.Cursor()].Type
 
 	var extract func() (*sqlx.Rows, error) = func() (*sqlx.Rows, error) {
 		if initialStateAtStart != nil {
-			statement := fmt.Sprintf(readRecordsIncrementalWithState, p.Namespace, p.Name, p.cursor, p.cursor, offset*limit, limit)
+			statement := fmt.Sprintf(readRecordsIncrementalWithState, p.Namespace, p.Name, p.Cursor(), p.Cursor(), offset*limit, limit)
 			// Execute the query
 			return client.Queryx(statement, initialStateAtStart)
 		}
-		statement := fmt.Sprintf(readRecordsIncrementalWithoutState, p.Namespace, p.Name, p.cursor, offset*limit, limit)
+		statement := fmt.Sprintf(readRecordsIncrementalWithoutState, p.Namespace, p.Name, p.Cursor(), offset*limit, limit)
 		// Execute the query
 		return client.Queryx(statement)
 	}
@@ -108,8 +100,8 @@ func (p *pgStream) readIncremental(client *sqlx.DB, channel chan<- types.Record)
 		rows, err := extract()
 		if err != nil {
 			return typing.SQLError(typing.ReadTableError, err, fmt.Sprintf("failed to read after offset[%d] limit[%d]", offset*limit, limit), &typing.ErrorPayload{
-				Table:  p.Name,
-				Schema: p.Namespace,
+				Table:  p.Name(),
+				Schema: p.Namespace(),
 			})
 		}
 
@@ -128,23 +120,23 @@ func (p *pgStream) readIncremental(client *sqlx.DB, channel chan<- types.Record)
 				return fmt.Errorf("failed to mapScan record data: %s", err)
 			}
 
-			if cursorVal, found := record[p.cursor]; found && cursorVal != nil {
+			if cursorVal, found := record[p.Cursor()]; found && cursorVal != nil {
 				// compare if not nil
-				if p.state != nil {
-					state, err := typing.MaximumOnDataType(p.JSONSchema.Properties[p.cursor].Type, p.state, cursorVal)
+				if p.GetState() != nil {
+					state, err := typing.MaximumOnDataType(cursorDataType, p.GetState(), cursorVal)
 					if err != nil {
 						return err
 					}
 
-					p.state = state
+					p.SetState(state)
 				} else {
 					// directly update
-					p.state = cursorVal
+					p.SetState(cursorVal)
 				}
 			}
 
 			// insert record
-			channel <- typing.ReformatRecord(p.Name, p.Namespace, record)
+			channel <- base.ReformatRecord(p, record)
 		}
 
 		// Check for any errors during row iteration

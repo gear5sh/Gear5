@@ -17,7 +17,7 @@ type Message struct {
 }
 
 type ActionRow struct {
-	Type Action `json:"type"`
+	// Type Action `json:"type"`
 	// Add alter
 	// add create
 	// add drop
