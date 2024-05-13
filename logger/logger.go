@@ -2,99 +2,145 @@ package logger
 
 import (
 	"fmt"
-	"io"
+	"log"
+	"net/http"
+	"net/http/httputil"
 	"os"
-	"strings"
+	"time"
 
-	"github.com/goccy/go-json"
-
+	"github.com/piyushsingariya/shift/logger/console"
 	"github.com/piyushsingariya/shift/types"
 )
 
-var (
-	writer      io.Writer
-	errorWriter io.Writer
-)
-
-func SetupWriter(w io.Writer, err io.Writer) {
-	writer = w
-	errorWriter = err
-}
-
 // Info writes record into os.stdout with log level INFO
 func Info(v ...interface{}) {
-	Log("", info, v...)
+	console.Log("", console.INFO, v...)
 }
 
 // Info writes record into os.stdout with log level INFO
 func Infof(format string, v ...interface{}) {
-	Log(format, info, v...)
+	console.Log(format, console.INFO, v...)
 }
 
 // Debug writes record into os.stdout with log level DEBUG
 func Debug(v ...interface{}) {
-	Log("", debug, v...)
+	console.Log("", console.DEBUG, v...)
 }
 
 // Debugf writes record into os.stdout with log level DEBUG
 func Debugf(format string, v ...interface{}) {
-	Log(format, debug, v...)
+	console.Log(format, console.DEBUG, v...)
 }
 
 // Error writes record into os.stdout with log level ERROR
 func Error(v ...interface{}) {
-	Log("", errorlevel, v...)
+	console.Log("", console.ERROR, v...)
 }
 
 // Fatal writes record into os.stdout with log level ERROR and exits
 func Fatal(v ...interface{}) {
-	Log("", errorlevel, v...)
+	console.Log("", console.ERROR, v...)
 	os.Exit(1)
 }
 
 // Fatal writes record into os.stdout with log level ERROR
 func Fatalf(format string, v ...interface{}) {
-	Log(format, errorlevel, v...)
+	console.Log(format, console.ERROR, v...)
 	os.Exit(1)
 }
 
 // Error writes record into os.stdout with log level ERROR
 func Errorf(format string, v ...interface{}) {
-	Log(format, errorlevel, v...)
+	console.Log(format, console.ERROR, v...)
 }
 
 // Warn writes record into os.stdout with log level WARN
 func Warn(v ...interface{}) {
-	Log("", warn, v...)
+	console.Log("", console.WARN, v...)
 }
 
 // Warn writes record into os.stdout with log level WARN
 func Warnf(format string, v ...interface{}) {
-	Log(format, warn, v...)
+	console.Log(format, console.WARN, v...)
 }
 
-func Log(format string, level Level, v ...interface{}) {
-	message := ""
-	if format == "" {
-		formatted := []string{}
-		for _, elem := range v {
-			formatted = append(formatted, fmt.Sprint(elem))
-		}
-		message = strings.Join(formatted, ", ")
-	} else {
-		message = fmt.Sprintf(format, v...)
+func LogRecord(record types.Record) {
+	message := types.Message{}
+	message.Type = types.RecordType
+	message.Record = &record
+	message.Record.EmittedAt = time.Now()
+
+	err := console.Print(console.INFO, message)
+	if err != nil {
+		Fatalf("failed to encode record %v: %s", record, err)
 	}
-	shiftMessage := types.Message{
-		Type: LogType,
-		Log: &types.Log{
-			Level:   level.String(),
-			Message: message,
-		},
+}
+
+func LogSpec(spec map[string]interface{}) {
+	message := types.Message{}
+	message.Spec = spec
+	message.Type = types.SpecType
+
+	Info("logging spec")
+	err := console.Print(console.INFO, message)
+	if err != nil {
+		Fatalf("failed to encode spec %v: %s", spec, err)
+	}
+}
+
+func LogCatalog(streams []*types.Stream) {
+	message := types.Message{}
+	message.Type = types.CatalogType
+	message.Catalog = types.GetWrappedCatalog(streams)
+	Info("logging catalog")
+	err := console.Print(console.INFO, message)
+	if err != nil {
+		Fatalf("failed to encode catalog %v: %s", streams, err)
+	}
+}
+
+func LogConnectionStatus(err error) {
+	message := types.Message{}
+	message.Type = types.ConnectionStatusType
+	message.ConnectionStatus = &types.StatusRow{}
+	if err != nil {
+		message.ConnectionStatus.Message = err.Error()
+		message.ConnectionStatus.Status = types.ConnectionFailed
+	} else {
+		message.ConnectionStatus.Status = types.ConnectionSucceed
 	}
 
-	if level == errorlevel {
-		json.NewEncoder(errorWriter).Encode(shiftMessage)
-		return
+	err = console.Print(console.INFO, message)
+	if err != nil {
+		Fatalf("failed to encode connection status: %s", err)
 	}
-	json.NewEncoder(writer).Encode(shiftMessage)
+}
+
+func LogResponse(response *http.Response) {
+	respDump, err := httputil.DumpResponse(response, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(string(respDump))
+}
+
+func LogRequest(req *http.Request) {
+	requestDump, err := httputil.DumpRequest(req, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(string(requestDump))
+}
+
+func LogState(state types.State) {
+	message := types.Message{}
+	message.Type = types.StateType
+	message.State = &state
+
+	err := console.Print(console.INFO, message)
+	if err != nil {
+		Fatalf("failed to encode connection status: %s", err)
+	}
 }

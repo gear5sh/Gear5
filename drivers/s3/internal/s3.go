@@ -165,7 +165,7 @@ func (s *S3) Read(stream protocol.Stream, channel chan<- types.Record) error {
 			}
 
 			for _, record := range records {
-				if !safego.Insert(channel, utils.ReformatRecord(name, namespace, record)) {
+				if !safego.Insert(channel, typing.ReformatRecord(name, namespace, record)) {
 					// discontinue iteration since failed to insert records
 					return false, nil
 				}

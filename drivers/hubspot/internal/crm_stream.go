@@ -122,7 +122,7 @@ func (c *CRMSearchStream) readRecords(send chan<- types.Record) error {
 				latest_cursor = &cursor
 			}
 
-			if !safego.Insert(send, utils.ReformatRecord(c.Name(), "", record)) {
+			if !safego.Insert(send, typing.ReformatRecord(c.Name(), "", record)) {
 				// channel was closed
 				return nil
 			}

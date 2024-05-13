@@ -100,7 +100,7 @@ func InitParquet(s3Session *s3.S3, bucket, fileKey string, batchSize uint64) (*P
 
 func (p *Parquet) parseFieldType(neededLogicalType, neededPQType string) (types.DataType, error) {
 	if pqType, found := ParquetTypes[neededLogicalType]; found {
-		if neededPQType != "" && !utils.ArrayContains(pqType.ParquetTypes, neededPQType) {
+		if neededPQType != "" && !utils.ExistInArray(pqType.ParquetTypes, neededPQType) {
 			return "", fmt.Errorf("incorrect parquet physical type[%s]; logical type[%s]", neededPQType, neededLogicalType)
 		}
 
@@ -108,7 +108,7 @@ func (p *Parquet) parseFieldType(neededLogicalType, neededPQType string) (types.
 	}
 
 	for _, pqType := range ParquetTypes {
-		if utils.ArrayContains(pqType.ParquetTypes, neededPQType) {
+		if utils.ExistInArray(pqType.ParquetTypes, neededPQType) {
 			return pqType.DataType, nil
 		}
 	}

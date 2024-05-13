@@ -15,6 +15,7 @@ import (
 
 	"github.com/goccy/go-json"
 
+	"github.com/piyushsingariya/shift/drivers/base"
 	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/types"
 	"github.com/piyushsingariya/shift/typing"
@@ -348,7 +349,7 @@ func (s *Stream) handleRequest(request *utils.Request) (int, any, error) {
 	retryAfter := time.Second
 
 	// only 3 attempts
-	err = utils.RetryOnFailure(3, &retryAfter, func() error {
+	err = base.RetryOnFailure(3, &retryAfter, func() error {
 		resp, err := s.client.Do(req)
 		if err != nil {
 			if errors.Is(err, context.DeadlineExceeded) {

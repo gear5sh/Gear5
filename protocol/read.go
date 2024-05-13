@@ -114,7 +114,9 @@ var ReadCmd = &cobra.Command{
 		}
 
 		// stop record iteration
-		utils.CloseRecordIteration(recordStream)
+		recordStream <- types.Record{
+			Close: true,
+		}
 		recordIterationWait.Wait()
 
 		logger.Infof("Total records read: %d", numRecords)

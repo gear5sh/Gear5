@@ -91,7 +91,7 @@ func (h *Hubspot) Type() string {
 // 				return nil, fmt.Errorf("hubspot stream not found while getting state of incremental stream[%s]", stream.Name())
 // 			}
 
-// 			if !utils.ArrayContains(hubspotStream.Modes(), types.Incremental) {
+// 			if !utils.ExistInArray(hubspotStream.Modes(), types.Incremental) {
 // 				logger.Warnf("Skipping getting state from stream[%s], this stream doesn't support incremental", stream.Name())
 // 				continue
 // 			}

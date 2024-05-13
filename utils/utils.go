@@ -8,8 +8,6 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/piyushsingariya/shift/jsonschema"
-	"github.com/piyushsingariya/shift/logger"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 )
@@ -48,34 +46,6 @@ func ArrayContains[T any](set []T, match func(elem T) bool) (int, bool) {
 	}
 
 	return -1, false
-}
-
-func ToJSONSchema(obj interface{}) (string, error) {
-	schema, err := jsonschema.Reflect(obj)
-	if err != nil {
-		return "", err
-	}
-
-	j, err := json.MarshalIndent(schema, "", " ")
-	if err != nil {
-		return "", err
-	}
-
-	return string(j), nil
-}
-
-func ToYamlSchema(obj interface{}) (string, error) {
-	jsonSchema, err := ToJSONSchema(obj)
-	if err != nil {
-		return "", err
-	}
-
-	yamlData, err := yaml.JSONToYAML([]byte(jsonSchema))
-	if err != nil {
-		return "", err
-	}
-
-	return string(yamlData), nil
 }
 
 // Unmarshal serializes and deserializes any from into the object
@@ -142,12 +112,8 @@ func CheckIfFilesExists(files ...string) error {
 	return nil
 }
 
-func ReadFile(file string) interface{} {
-	content, err := ReadFileE(file)
-	if err != nil {
-		logger.Error(err)
-		return nil
-	}
+func ReadFile(file string) any {
+	content, _ := ReadFileE(file)
 
 	return content
 }
@@ -187,33 +153,6 @@ func IsOfType(object interface{}, decidingKey string) (bool, error) {
 
 func StreamIdentifier(namespace, name string) string {
 	return namespace + name
-}
-
-func ToShiftSchema(obj interface{}) (string, error) {
-	schema, err := jsonschema.Reflect(obj)
-	if err != nil {
-		return "", err
-	}
-
-	j, err := json.MarshalIndent(schema, "", " ")
-	if err != nil {
-		return "", err
-	}
-
-	return string(j), nil
-}
-
-func RetryOnFailure(attempts int, sleep *time.Duration, f func() error) (err error) {
-	for i := 0; i < attempts; i++ {
-		if err = f(); err == nil {
-			return nil
-		}
-
-		logger.Infof("Retrying after %v...", sleep)
-		time.Sleep(*sleep)
-	}
-
-	return err
 }
 
 func IsSubset[T comparable](setArray, subsetArray []T) bool {

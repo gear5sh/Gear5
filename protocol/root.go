@@ -3,7 +3,7 @@ package protocol
 import (
 	"fmt"
 
-	"github.com/piyushsingariya/shift/logger"
+	"github.com/piyushsingariya/shift/logger/console"
 	"github.com/piyushsingariya/shift/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -75,5 +75,5 @@ func init() {
 	// Disable logging
 	logrus.SetOutput(nil)
 
-	logger.SetupWriter(RootCmd.OutOrStdout(), RootCmd.ErrOrStderr())
+	console.SetupWriter(RootCmd.OutOrStdout(), RootCmd.ErrOrStderr())
 }

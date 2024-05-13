@@ -117,7 +117,7 @@ func (p *Postgres) Read(stream protocol.Stream, channel chan<- types.Record) err
 		return pgStream.readFullRefresh(p.client, channel)
 	case types.Incremental:
 		// check if cursor field is supported
-		if !utils.ArrayContains(pgStream.DefaultCursorFields, stream.GetCursorField()) {
+		if !utils.ExistInArray(pgStream.DefaultCursorFields, stream.GetCursorField()) {
 			logger.Warnf("Stream %s.%s does not support cursor field[%s]; skipping...", stream.Namespace(), stream.Name(), stream.GetCursorField())
 			return nil
 		}
@@ -141,7 +141,7 @@ func (p *Postgres) Read(stream protocol.Stream, channel chan<- types.Record) err
 // 				return nil, fmt.Errorf("postgres stream not found while getting state of stream %s[%s]", stream.Name(), stream.Namespace())
 // 			}
 
-// 			if !(utils.ArrayContains(pgStream.SupportedSyncModes, types.Incremental) || utils.ArrayContains(pgStream.SupportedSyncModes, types.CDC)) {
+// 			if !(utils.ExistInArray(pgStream.SupportedSyncModes, types.Incremental) || utils.ExistInArray(pgStream.SupportedSyncModes, types.CDC)) {
 // 				logger.Warnf("Skipping getting state from stream %s[%s], this stream doesn't support incremental/CDC", stream.Name(), stream.Namespace())
 // 				continue
 // 			}
@@ -218,7 +218,7 @@ func (p *Postgres) setupStreams() error {
 		// currently only datetime fields is supported for cursor field, automatic generated fields can also be used
 		// future TODO
 		for propertyName, property := range stream.JSONSchema.Properties {
-			if utils.ArrayContains(property.Type, types.TIMESTAMP) {
+			if utils.ExistInArray(property.Type, types.TIMESTAMP) {
 				stream.DefaultCursorFields = append(stream.DefaultCursorFields, propertyName)
 			}
 		}

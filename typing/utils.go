@@ -9,7 +9,7 @@ import (
 
 func MaximumOnDataType[T any](typ []types.DataType, a, b T) (T, error) {
 	switch {
-	case _, found := utils.ArrayContains(typ, types.TIMESTAMP); found:
+	case utils.ExistInArray(typ, types.TIMESTAMP):
 		adate, err := ReformatDate(a)
 		if err != nil {
 			return a, fmt.Errorf("failed to reformat[%v] while comparing: %s", a, err)
@@ -19,7 +19,7 @@ func MaximumOnDataType[T any](typ []types.DataType, a, b T) (T, error) {
 			return a, fmt.Errorf("failed to reformat[%v] while comparing: %s", b, err)
 		}
 
-		if utis.MaxDate(adate, bdate) == adate {
+		if utils.MaxDate(adate, bdate) == adate {
 			return a, nil
 		}
 
@@ -34,12 +34,5 @@ func ReformatRecord(name, namespace string, record map[string]any) types.Record 
 		Stream:    name,
 		Namespace: namespace,
 		Data:      record,
-	}
-}
-
-// CloseRecordIteration closes iteration over a record channel
-func CloseRecordIteration(channel chan types.Record) {
-	channel <- types.Record{
-		Close: true,
 	}
 }
