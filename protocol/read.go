@@ -1,12 +1,10 @@
 package protocol
 
 import (
-	"fmt"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/piyushsingariya/shift/drivers/base"
 	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/types"
 	"github.com/piyushsingariya/shift/utils"
@@ -18,43 +16,18 @@ var ReadCmd = &cobra.Command{
 	Use:   "read",
 	Short: "Shift read command",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		if err := utils.CheckIfFilesExists(config, catalog); err != nil {
+		if err := utils.CheckIfFilesExists(config_, catalog_); err != nil {
 			return err
 		}
 
-		if state != "" {
-			return utils.CheckIfFilesExists(state)
+		if state_ != "" {
+			return utils.CheckIfFilesExists(state_)
 		}
 
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		connector, not := rawConnector.(Driver)
-		if !not {
-			return fmt.Errorf("expected type to be: Driver, found %T", connector)
-		}
-
-		cat := &types.Catalog{}
-		if err := utils.Unmarshal(utils.ReadFile(catalog), cat); err != nil {
-			return fmt.Errorf("failed to unmarshal catalog:%s", err)
-		}
-
-		if state == "" {
-			if err := connector.Setup(utils.ReadFile(config), base.NewDriver(cat, nil, batchSize)); err != nil {
-				return err
-			}
-		} else {
-			st := types.State{}
-			err := utils.Unmarshal(utils.ReadFile(state), &st)
-			if err != nil {
-				return fmt.Errorf("failed to unmarshal state file")
-			}
-			if err := connector.Setup(utils.ReadFile(config), base.NewDriver(cat, st, batchSize)); err != nil {
-				return err
-			}
-		}
-
-		recordStream := make(chan types.Record, 2*batchSize)
+		recordStream := make(chan types.Record, 2*batchSize_)
 		numRecords := int64(0)
 		batch := uint64(0)
 		recordIterationWait := sync.WaitGroup{}
@@ -75,8 +48,7 @@ var ReadCmd = &cobra.Command{
 				batch++
 
 				// log state after a batch
-				if batch >= batchSize {
-					state := connector.GetState()
+				if batch >= batchSize_ {
 					if !state.IsZero() {
 						logger.LogState(state)
 					}
@@ -86,18 +58,27 @@ var ReadCmd = &cobra.Command{
 			}
 		}()
 
-		streamNames := []string{}
-
-		for _, stream := range connector.Catalog().Streams {
-			if stream.Namespace() != "" {
-				streamNames = append(streamNames, fmt.Sprintf("%s[%s]", stream.Name(), stream.Namespace()))
-			} else {
-				streamNames = append(streamNames, stream.Name())
+		selectedStreams := []string{}
+		validStreams := []Stream{}
+		_, _ = utils.ArrayContains(catalog.Streams, func(elem *types.WrappedStream) bool {
+			state_, err := elem.SetupAndValidate(state)
+			if err != nil {
+				logger.Errorf("Skipping stream %s due to error: %s", elem.ID(), err)
+				return false
 			}
-		}
-		logger.Infof("Selected streams are %s", strings.Join(streamNames, ", "))
 
-		for _, stream := range connector.Catalog().Streams {
+			if state_ != types.StateValid {
+				logger.Errorf("Skipping stream %s due to reason: %s", elem.ID(), state_)
+				return false
+			}
+
+			selectedStreams = append(selectedStreams, elem.ID())
+			validStreams = append(validStreams, elem)
+			return false
+		})
+		logger.Infof("Valid selected streams are %s", strings.Join(selectedStreams, ", "))
+
+		for _, stream := range catalog.Streams {
 			if stream.Namespace() != "" {
 				logger.Infof("Reading stream %s[%s]", stream.Name(), stream.Namespace())
 			} else {
@@ -105,9 +86,9 @@ var ReadCmd = &cobra.Command{
 			}
 
 			streamStartTime := time.Now()
-			err := connector.Read(stream, recordStream)
+			err := _driver.Read(stream, recordStream)
 			if err != nil {
-				logger.Fatalf("Error occurred while reading records from [%s]: %s", connector.Type(), err)
+				logger.Fatalf("Error occurred while reading records from [%s]: %s", _driver.Type(), err)
 			}
 
 			logger.Infof("Finished reading stream %s[%s] in %s", stream.Name(), stream.Namespace(), time.Since(streamStartTime).String())
@@ -120,7 +101,6 @@ var ReadCmd = &cobra.Command{
 		recordIterationWait.Wait()
 
 		logger.Infof("Total records read: %d", numRecords)
-		state := connector.GetState()
 		if !state.IsZero() {
 			logger.LogState(state)
 		}

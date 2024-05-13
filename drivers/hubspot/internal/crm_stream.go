@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/piyushsingariya/shift/drivers/base"
 	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/safego"
 	"github.com/piyushsingariya/shift/types"
@@ -32,7 +33,7 @@ func newCRMSearchStream(incrementalStream IncrementalStream, primaryKey, lastMod
 }
 
 func (c *CRMSearchStream) path() (string, string) {
-	if c._state != nil {
+	if c.state_ != nil {
 		return fmt.Sprintf("/crm/v3/objects/%s/search", c.entity), http.MethodPost
 	}
 	return fmt.Sprintf("/crm/v3/objects/%s", c.entity), http.MethodGet
@@ -55,10 +56,10 @@ func (c *CRMSearchStream) processSearch(nextPageToken map[string]any) ([]map[str
 		return nil, nil, err
 	}
 	payload := map[string]any{}
-	if c._state != nil {
+	if c.state_ != nil {
 		payload = map[string]any{
 			"filters": []map[string]any{
-				{"value": int(c._state.Unix() * 1000), "propertyName": c.lastModifiedField, "operator": "GTE"},
+				{"value": int(c.state_.Unix() * 1000), "propertyName": c.lastModifiedField, "operator": "GTE"},
 			},
 			"sorts": []map[string]any{
 				{"propertyName": c.lastModifiedField, "direction": "ASCENDING"},
@@ -99,7 +100,7 @@ func (c *CRMSearchStream) readRecords(send chan<- types.Record) error {
 		var rawResponse any
 		var err error
 
-		if c._state != nil {
+		if c.state_ != nil {
 			records, rawResponse, err = c.processSearch(nextPageToken)
 			if err != nil {
 				return err
@@ -122,7 +123,7 @@ func (c *CRMSearchStream) readRecords(send chan<- types.Record) error {
 				latest_cursor = &cursor
 			}
 
-			if !safego.Insert(send, typing.ReformatRecord(c.Name(), "", record)) {
+			if !safego.Insert(send, base.ReformatRecord(c, record)) {
 				// channel was closed
 				return nil
 			}
@@ -132,7 +133,7 @@ func (c *CRMSearchStream) readRecords(send chan<- types.Record) error {
 		if err != nil {
 			logger.Warnf("Error occured while getting next page token from response[%v] for stream %s: %s", rawResponse, c.Name(), err)
 			paginationComplete = true
-		} else if c._state != nil && nextPageToken["after"].(int) >= 10000 {
+		} else if c.state_ != nil && nextPageToken["after"].(int) >= 10000 {
 			// Hubspot documentation states that the search endpoints are limited to 10,000 total results
 			// for any given query. Attempting to page beyond 10,000 will result in a 400 error.
 			// https://developers.hubspot.com/docs/api/crm/search. We stop getting data at 10,000 and

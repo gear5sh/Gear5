@@ -14,11 +14,22 @@ var CheckCmd = &cobra.Command{
 	Use:   "check",
 	Short: "Shift spec command",
 	PreRun: func(cmd *cobra.Command, args []string) {
-		if config == "" {
-			logger.LogConnectionStatus(fmt.Errorf("--config not passed"))
-		}
+		err := func() error {
+			if config == "" {
+				return fmt.Errorf("--config not passed")
+			}
 
-		if err := utils.CheckIfFilesExists(config); err != nil {
+			if err := utils.CheckIfFilesExists(config_); err != nil {
+				return err
+			}
+
+			if catalog_ != "" {
+				return utils.CheckIfFilesExists(catalog_)
+			}
+
+			return nil
+		}()
+		if err != nil {
 			logger.LogConnectionStatus(err)
 		}
 	},
@@ -29,10 +40,13 @@ var CheckCmd = &cobra.Command{
 				return fmt.Errorf("expected type to be: Connector, found %T", connector)
 			}
 
-			err := connector.Setup(utils.ReadFile(config), base.NewDriver(nil, nil, batchSize))
+			err := connector.Setup(utils.ReadFile(config_), base.NewDriver(nil, nil))
 			if err != nil {
 				return err
 			}
+
+			// TODO: Validate Streams
+			// Check if the streams are valid
 
 			return connector.Check()
 		}()

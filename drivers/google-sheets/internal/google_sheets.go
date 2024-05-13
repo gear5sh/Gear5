@@ -60,13 +60,18 @@ func (gs *GoogleSheets) Check() error {
 	return nil
 }
 
-func (gs *GoogleSheets) Discover() ([]*types.Stream, error) {
+func (gs *GoogleSheets) Discover() ([]protocol.Stream, error) {
 	streams, _, err := gs.getAllSheetStreams()
 	if err != nil {
 		return nil, err
 	}
 
-	return streams, nil
+	wrapped := []protocol.Stream{}
+	for _, stream := range streams {
+		wrapped = append(wrapped, types.WrapStream(stream))
+	}
+
+	return wrapped, nil
 }
 
 func (gs *GoogleSheets) Read(stream protocol.Stream, channel chan<- types.Record) error {

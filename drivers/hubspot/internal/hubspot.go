@@ -57,20 +57,13 @@ func (h *Hubspot) Check() error {
 	return nil
 }
 
-func (h *Hubspot) Discover() ([]*types.Stream, error) {
-	streams := []*types.Stream{}
+func (h *Hubspot) Discover() ([]protocol.Stream, error) {
+	streams := []protocol.Stream{}
 
-	for streamName, hstream := range h.allStreams {
-		stream := &types.Stream{
-			Name:                    streamName,
-			SupportedSyncModes:      hstream.Modes(),
-			SourceDefinedPrimaryKey: hstream.PrimaryKey(),
-		}
-
-		if hstream.cursorField() != "" {
-			stream.DefaultCursorFields = append(stream.DefaultCursorFields, hstream.cursorField())
-			stream.SourceDefinedCursor = true
-		}
+	for _, hstream := range h.allStreams {
+		stream := types.NewStream(hstream.Name(), "").WithSyncModes(hstream.Modes()...).
+			WithPrimaryKeys(hstream.PrimaryKey()...)
+		stream.WithCursorFields(hstream.cursorField())
 
 		streams = append(streams, stream)
 	}
@@ -109,7 +102,7 @@ func (h *Hubspot) Read(stream protocol.Stream, channel chan<- types.Record) erro
 		return fmt.Errorf("invalid stream passed: %s", stream.Name())
 	}
 
-	hstream.setup(stream.GetSyncMode(), h.Get(stream.Name(), stream.Namespace()))
+	// hstream.setup(stream.GetSyncMode(), h.Get(stream.Name(), stream.Namespace()))
 
 	err := hstream.readRecords(channel)
 	if err != nil {

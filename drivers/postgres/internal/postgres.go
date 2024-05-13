@@ -24,8 +24,8 @@ type Postgres struct {
 	client      *sqlx.DB
 	accessToken string
 	config      *Config
-	catalog     *types.Catalog
-	state       types.State
+	// catalog     *types.Catalog
+	// state       types.State
 }
 
 func (p *Postgres) Setup(config any, base *base.Driver) error {
@@ -79,18 +79,15 @@ func (p *Postgres) Check() error {
 	return nil
 }
 
-func (p *Postgres) Discover() ([]*types.Stream, error) {
-	streams := []*types.Stream{}
+func (p *Postgres) Discover() ([]protocol.Stream, error) {
+	streams := []protocol.Stream{}
 	for _, stream := range p.allStreams {
-		streams = append(streams, stream.Stream)
+		streams = append(streams, stream)
 	}
 
 	return streams, nil
 }
 
-func (p *Postgres) Catalog() *types.Catalog {
-	return p.catalog
-}
 func (p *Postgres) Type() string {
 	return "Postgres"
 }
@@ -107,24 +104,10 @@ func (p *Postgres) Read(stream protocol.Stream, channel chan<- types.Record) err
 		return nil
 	}
 
-	if !utils.ExistInArray(pgStream.SupportedSyncModes, stream.GetSyncMode()) {
-		logger.Warnf("Stream %s.%s does not support sync mode[%s]; skipping...", stream.Namespace(), stream.Name(), stream.GetSyncMode())
-		return nil
-	}
-
 	switch stream.GetSyncMode() {
 	case types.FullRefresh:
 		return pgStream.readFullRefresh(p.client, channel)
 	case types.Incremental:
-		// check if cursor field is supported
-		if !utils.ExistInArray(pgStream.DefaultCursorFields, stream.GetCursorField()) {
-			logger.Warnf("Stream %s.%s does not support cursor field[%s]; skipping...", stream.Namespace(), stream.Name(), stream.GetCursorField())
-			return nil
-		}
-
-		// set state
-		pgStream.setInitialState(stream.GetCursorField(), p.state.Get(stream.Name(), stream.Namespace())[stream.GetCursorField()])
-
 		// read incrementally
 		return pgStream.readIncremental(p.client, channel)
 	}
@@ -234,10 +217,7 @@ func (p *Postgres) setupStreams() error {
 			stream.SourceDefinedPrimaryKey = append(stream.SourceDefinedPrimaryKey, column.Name)
 		}
 
-		p.allStreams[utils.StreamIdentifier(table.Schema, table.Name)] = &pgStream{
-			Stream:    stream,
-			batchSize: p.batchSize,
-		}
+		p.allStreams[utils.StreamIdentifier(table.Schema, table.Name)] = &pgStream{}
 	}
 
 	return nil

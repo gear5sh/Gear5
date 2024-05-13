@@ -28,11 +28,3 @@ func MaximumOnDataType[T any](typ []types.DataType, a, b T) (T, error) {
 		return a, fmt.Errorf("comparison not available for data types %v now", typ)
 	}
 }
-
-func ReformatRecord(name, namespace string, record map[string]any) types.Record {
-	return types.Record{
-		Stream:    name,
-		Namespace: namespace,
-		Data:      record,
-	}
-}

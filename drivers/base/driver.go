@@ -1,36 +1,24 @@
 package base
 
-import (
-	"github.com/piyushsingariya/shift/types"
-)
+import "github.com/piyushsingariya/shift/types"
 
 type Driver struct {
-	types.State
+	// types.State
 
-	catalog   *types.Catalog
-	batchSize uint64
+	// catalog *types.Catalog
 }
 
-func NewDriver(catalog *types.Catalog, state types.State, batchSize uint64) *Driver {
+func NewDriver(catalog *types.Catalog, state types.State) *Driver {
 	return &Driver{
-		catalog:   catalog,
-		State:     state,
-		batchSize: batchSize,
+		// catalog: catalog,
+		// State:   state,
 	}
 }
 
-func (d *Driver) BatchSize() uint64 {
-	return d.batchSize
-}
+// func (d *Driver) Catalog() *types.Catalog {
+// 	return d.catalog
+// }
 
-func (d *Driver) SetBatchSize(size uint64) {
-	d.batchSize = size
-}
-
-func (d *Driver) Catalog() *types.Catalog {
-	return d.catalog
-}
-
-func (d *Driver) GetState() types.State {
-	return d.State
-}
+// func (d *Driver) GetState() types.State {
+// 	return d.State
+// }

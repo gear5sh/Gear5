@@ -25,7 +25,7 @@ type IncrementalStream struct {
 	lastSlice               any
 	needChunk               bool
 
-	_state    *time.Time
+	state_    *time.Time
 	_mode     *types.SyncMode
 	_initSync time.Time
 }
@@ -53,11 +53,11 @@ func (i *IncrementalStream) state() map[string]any {
 		logger.Fatalf("sync_mode is not defined for stream %s", i.Name())
 	}
 
-	if i._state != nil {
+	if i.state_ != nil {
 		if i.statePk == "timestamp" {
-			return map[string]any{i.cursorField(): i._state.Unix() * 1000}
+			return map[string]any{i.cursorField(): i.state_.Unix() * 1000}
 		}
-		return map[string]any{i.cursorField(): i._state.String()}
+		return map[string]any{i.cursorField(): i.state_.String()}
 	}
 
 	return nil
@@ -72,7 +72,7 @@ func (i *IncrementalStream) setup(mode types.SyncMode, state map[string]any) {
 				logger.Fatalf("failed to reformate date in state map: %v : %s", value, err)
 			}
 
-			i._state = &date
+			i.state_ = &date
 		}
 	}
 }
@@ -84,19 +84,19 @@ func (i *IncrementalStream) updateState(latestCursor time.Time, isLastRecord boo
 	// started. With the proposed `state strategy`, it would capture all possible
 	// updated entities in incremental synch.
 	newState := time.Time{}
-	if i._state != nil {
-		newState = utils.MaxDate(*i._state, latestCursor)
+	if i.state_ != nil {
+		newState = utils.MaxDate(*i.state_, latestCursor)
 	} else {
 		newState = latestCursor
 	}
 
-	if i._state != nil && newState != *i._state {
-		logger.Infof("Advancing bookmark for %s stream from %s to %s", i.Name(), i._state.GoString(), newState.GoString())
-		i._state = &newState
-		i.startDate = *i._state
+	if i.state_ != nil && newState != *i.state_ {
+		logger.Infof("Advancing bookmark for %s stream from %s to %s", i.Name(), i.state_.GoString(), newState.GoString())
+		i.state_ = &newState
+		i.startDate = *i.state_
 	}
 
 	if isLastRecord {
-		i._state = &i._initSync
+		i.state_ = &i._initSync
 	}
 }
