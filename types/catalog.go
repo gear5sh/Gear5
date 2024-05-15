@@ -48,7 +48,7 @@ type Record struct {
 
 // ConfiguredCatalog is a dto for formatted airbyte catalog serialization
 type Catalog struct {
-	Streams []*WrappedStream `json:"streams,omitempty"`
+	Streams []*ConfiguredStream `json:"streams,omitempty"`
 }
 
 // Schema is a dto for Airbyte catalog Schema object serialization

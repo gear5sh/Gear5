@@ -82,13 +82,13 @@ var DiscoverCmd = &cobra.Command{
 
 		group.Wait()
 
-		unwrappedStreams := []*types.Stream{}
+		extractedStreams := []*types.Stream{}
 		_, _ = utils.ArrayContains(streams, func(elem Stream) bool {
-			unwrappedStreams = append(unwrappedStreams, elem.GetStream())
+			extractedStreams = append(extractedStreams, elem.GetStream())
 			return false
 		})
 
-		logger.LogCatalog(unwrappedStreams)
+		logger.LogCatalog(extractedStreams)
 		return nil
 	},
 }

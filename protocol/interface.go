@@ -28,7 +28,7 @@ type Adapter interface {
 }
 
 type Stream interface {
-	Self() *types.WrappedStream
+	Self() *types.ConfiguredStream
 	Name() string
 	Namespace() string
 	JSONSchema() *types.Schema
