@@ -1,12 +1,11 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"reflect"
 	"time"
-
-	"github.com/goccy/go-json"
 
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -52,6 +51,7 @@ func ArrayContains[T any](set []T, match func(elem T) bool) (int, bool) {
 // return error if occurred
 func Unmarshal(from interface{}, object interface{}) error {
 	reformatted := reformatInnerMaps(from)
+	fmt.Println("Hellow brother", reformatted)
 	b, err := json.Marshal(reformatted)
 	if err != nil {
 		return fmt.Errorf("error marshalling object: %v", err)

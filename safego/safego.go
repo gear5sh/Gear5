@@ -1,6 +1,7 @@
 package safego
 
 import (
+	"os"
 	"runtime/debug"
 	"strings"
 	"sync"
@@ -68,7 +69,7 @@ func (exec *Execution) WithRestartTimeout(timeout time.Duration) *Execution {
 	return exec
 }
 
-func Recovery() {
+func Recovery(exit bool) {
 	err := recover()
 	if err != nil {
 		logger.Error(err)
@@ -76,6 +77,9 @@ func Recovery() {
 		for _, str := range strings.Split(string(debug.Stack()), "\n") {
 			logger.Error(strings.ReplaceAll(str, "\t", ""))
 		}
+	}
+	if exit {
+		os.Exit(1)
 	}
 	logger.Infof("Time of execution %v", time.Since(startTime).String())
 }

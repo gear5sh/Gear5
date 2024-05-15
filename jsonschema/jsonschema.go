@@ -7,7 +7,6 @@ import (
 
 	"github.com/piyushsingariya/shift/jsonschema/generator"
 	"github.com/piyushsingariya/shift/jsonschema/schema"
-	gojo "github.com/swaggest/jsonschema-go"
 	"sigs.k8s.io/yaml"
 )
 
@@ -53,9 +52,7 @@ func (r *Reflector) GetPackageName(s interface{}) string {
 }
 
 func ToJSONSchema(obj interface{}) (string, error) {
-	reflector := gojo.Reflector{}
-
-	schema, err := reflector.Reflect(obj)
+	schema, err := Reflect(obj)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -67,6 +64,22 @@ func ToJSONSchema(obj interface{}) (string, error) {
 
 	return string(j), nil
 }
+
+// func ToJSONSchema(obj interface{}) (string, error) {
+// 	reflector := gojo.Reflector{}
+
+// 	schema, err := reflector.Reflect(obj)
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+
+// 	j, err := json.MarshalIndent(schema, "", " ")
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+
+// 	return string(j), nil
+// }
 
 func ToYamlSchema(obj interface{}) (string, error) {
 	jsonSchema, err := ToJSONSchema(obj)

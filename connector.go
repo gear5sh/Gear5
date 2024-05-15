@@ -15,7 +15,7 @@ var (
 )
 
 func RegisterDriver(driver protocol.Driver) {
-	defer safego.Recovery()
+	defer safego.Recovery(true)
 
 	if globalAdapter != nil {
 		logger.Fatal(fmt.Errorf("adapter already registered: %s", globalAdapter.Type()))
