@@ -9,12 +9,13 @@ import (
 
 // Input/Processed object for Stream
 type ConfiguredStream struct {
-	Stream      *Stream      `json:"stream,omitempty"`
-	SyncMode    SyncMode     `json:"sync_mode,omitempty"`    // Mode being used for syncing data
-	CursorField string       `json:"cursor_field,omitempty"` // Column being used as cursor; MUST NOT BE mutated
-	CursorValue any          `json:"-"`                      // Cached initial state value
-	batchSize   int64        `json:"-"`                      // Batch size for syncing data
-	state       *StreamState `json:"-"`                      // in-memory state copy for individual stream
+	Stream         *Stream      `json:"stream,omitempty"`
+	SyncMode       SyncMode     `json:"sync_mode,omitempty"`    // Mode being used for syncing data
+	CursorField    string       `json:"cursor_field,omitempty"` // Column being used as cursor; MUST NOT BE mutated
+	ExcludeColumns []string     `json:"exclude_columns"`        // TODO: Implement excluding columns from fetching
+	CursorValue    any          `json:"-"`                      // Cached initial state value
+	batchSize      int64        `json:"-"`                      // Batch size for syncing data
+	state          *StreamState `json:"-"`                      // in-memory state copy for individual stream
 
 	// DestinationSyncMode string   `json:"destination_sync_mode,omitempty"`
 }
@@ -33,7 +34,11 @@ type Stream struct {
 }
 
 func (s *ConfiguredStream) ID() string {
-	return fmt.Sprintf("%s[%s]", s.Name(), s.Namespace())
+	if s.Namespace() != "" {
+		return fmt.Sprintf("%s.%s", s.Namespace(), s.Name())
+	}
+
+	return s.Name()
 }
 
 func (s *ConfiguredStream) Name() string {
