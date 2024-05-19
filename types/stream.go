@@ -41,6 +41,10 @@ func (s *ConfiguredStream) ID() string {
 	return s.Name()
 }
 
+func (s *ConfiguredStream) Self() *ConfiguredStream {
+	return s
+}
+
 func (s *ConfiguredStream) Name() string {
 	return s.Stream.Name
 }
@@ -104,7 +108,7 @@ func (s *ConfiguredStream) SetBatchSize(size int64) {
 }
 
 // Returns empty and missing and error
-func (s *ConfiguredStream) SetupAndValidate(state State) (StateError, error) {
+func (s *ConfiguredStream) SetupAndValidate(state *State) (StateError, error) {
 	if !utils.ExistInArray(s.SupportedSyncModes(), s.SyncMode) {
 		return "", fmt.Errorf("invalid sync mode[%s]; valid are %v", s.SyncMode, s.SupportedSyncModes())
 	}
@@ -117,13 +121,13 @@ func (s *ConfiguredStream) SetupAndValidate(state State) (StateError, error) {
 }
 
 // Returns empty and missing
-func (s *ConfiguredStream) setCursorValue(state State) StateError {
+func (s *ConfiguredStream) setCursorValue(state *State) StateError {
 	if !state.IsZero() {
-		i, contains := utils.ArrayContains(state, func(elem *StreamState) bool {
+		i, contains := utils.ArrayContains(state.Streams, func(elem *StreamState) bool {
 			return elem.Namespace == s.Namespace() && elem.Stream == s.Name()
 		})
 		if contains {
-			value, found := state[i].State[s.CursorField]
+			value, found := state.Streams[i].State[s.CursorField]
 			if !found {
 				return StateCursorMissing
 			}
@@ -139,37 +143,31 @@ func (s *ConfiguredStream) setCursorValue(state State) StateError {
 	return StateValid
 }
 
-func NewStream(name, namespace string) *ConfiguredStream {
-	return &ConfiguredStream{
-		Stream: &Stream{
-			Name:      name,
-			Namespace: namespace,
-		},
+func NewStream(name, namespace string) *Stream {
+	return &Stream{
+		Name:      name,
+		Namespace: namespace,
 	}
 }
 
-func (s *ConfiguredStream) Self() *ConfiguredStream {
+func (s *Stream) WithSyncModes(modes ...SyncMode) *Stream {
+	s.SupportedSyncModes = modes
 	return s
 }
 
-func (s *ConfiguredStream) WithSyncModes(modes ...SyncMode) *ConfiguredStream {
-	s.Stream.SupportedSyncModes = modes
+func (s *Stream) WithPrimaryKeys(keys ...string) *Stream {
+	s.SourceDefinedPrimaryKey = keys
 	return s
 }
 
-func (s *ConfiguredStream) WithPrimaryKeys(keys ...string) *ConfiguredStream {
-	s.Stream.SourceDefinedPrimaryKey = keys
+func (s *Stream) WithCursorFields(columns ...string) *Stream {
+	s.DefaultCursorFields = columns
+	s.SourceDefinedCursor = true
 	return s
 }
 
-func (s *ConfiguredStream) WithCursorFields(columns ...string) *ConfiguredStream {
-	s.Stream.DefaultCursorFields = columns
-	s.Stream.SourceDefinedCursor = true
-	return s
-}
-
-func (s *ConfiguredStream) WithJSONSchema(schema Schema) *ConfiguredStream {
-	s.Stream.JSONSchema = &schema
+func (s *Stream) WithJSONSchema(schema Schema) *Stream {
+	s.JSONSchema = &schema
 	return s
 }
 
@@ -187,8 +185,9 @@ func GetWrappedCatalog(streams []*Stream) *Catalog {
 	return catalog
 }
 
-func WrapStream(stream *Stream) *ConfiguredStream {
+func (s *Stream) Wrap() *ConfiguredStream {
 	return &ConfiguredStream{
-		Stream: stream,
+		Stream:   s,
+		SyncMode: FULLREFRESH,
 	}
 }

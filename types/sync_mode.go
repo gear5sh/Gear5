@@ -3,7 +3,7 @@ package types
 type SyncMode string
 
 const (
-	FullRefresh SyncMode = "full_refresh"
-	Incremental SyncMode = "incremental"
+	FULLREFRESH SyncMode = "full_refresh"
+	INCREMENTAL SyncMode = "incremental"
 	CDC         SyncMode = "cdc"
 )
