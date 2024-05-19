@@ -3,15 +3,12 @@ package base
 import "github.com/piyushsingariya/shift/types"
 
 type Driver struct {
-	// types.State
-
-	// catalog *types.Catalog
+	*types.State
 }
 
-func NewDriver(catalog *types.Catalog, state types.State) *Driver {
+func NewDriver(state *types.State) *Driver {
 	return &Driver{
-		// catalog: catalog,
-		// State:   state,
+		State: state,
 	}
 }
 

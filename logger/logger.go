@@ -66,7 +66,7 @@ func Warnf(format string, v ...interface{}) {
 
 func LogRecord(record types.Record) {
 	message := types.Message{}
-	message.Type = types.RecordType
+	message.Type = types.RecordMessage
 	message.Record = &record
 	message.Record.EmittedAt = time.Now()
 
@@ -79,7 +79,7 @@ func LogRecord(record types.Record) {
 func LogSpec(spec map[string]interface{}) {
 	message := types.Message{}
 	message.Spec = spec
-	message.Type = types.SpecType
+	message.Type = types.SpecMessage
 
 	Info("logging spec")
 	err := console.Print(console.INFO, message)
@@ -90,7 +90,7 @@ func LogSpec(spec map[string]interface{}) {
 
 func LogCatalog(streams []*types.Stream) {
 	message := types.Message{}
-	message.Type = types.CatalogType
+	message.Type = types.CataLogMessage
 	message.Catalog = types.GetWrappedCatalog(streams)
 	Info("logging catalog")
 	err := console.Print(console.INFO, message)
@@ -101,7 +101,7 @@ func LogCatalog(streams []*types.Stream) {
 
 func LogConnectionStatus(err error) {
 	message := types.Message{}
-	message.Type = types.ConnectionStatusType
+	message.Type = types.ConnectionStatusMessage
 	message.ConnectionStatus = &types.StatusRow{}
 	if err != nil {
 		message.ConnectionStatus.Message = err.Error()
@@ -134,10 +134,10 @@ func LogRequest(req *http.Request) {
 	fmt.Println(string(requestDump))
 }
 
-func LogState(state types.State) {
+func LogState(state *types.State) {
 	message := types.Message{}
-	message.Type = types.StateType
-	message.State = &state
+	message.Type = types.StateMessage
+	message.State = state
 
 	err := console.Print(console.INFO, message)
 	if err != nil {

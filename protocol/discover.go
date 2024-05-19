@@ -20,12 +20,7 @@ var DiscoverCmd = &cobra.Command{
 		return utils.CheckIfFilesExists(config_)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := _driver.Setup(utils.ReadFile(config_), base.NewDriver(nil, nil))
-		if err != nil {
-			logger.Fatal(err)
-		}
-
-		err = _driver.Check()
+		err := _driver.Setup(utils.ReadFile(config_), base.NewDriver(nil))
 		if err != nil {
 			logger.Fatal(err)
 		}
@@ -50,9 +45,9 @@ var DiscoverCmd = &cobra.Command{
 				channel := make(chan types.Record, recordsPerStream)
 				count := 0
 				go func() {
-					err := _driver.Read(stream, channel)
+					err := _driver.Read(stream.Wrap(), channel)
 					if err != nil {
-						logger.Fatalf("Error occurred while reading records from [%s]: %s", stream.Name(), err)
+						logger.Fatalf("Error occurred while reading records from [%s]: %s", stream.Name, err)
 					}
 
 					// close channel incase records are less than recordsPerStream
@@ -72,7 +67,7 @@ var DiscoverCmd = &cobra.Command{
 					logger.Fatal(err)
 				}
 
-				stream.Self().WithJSONSchema(types.Schema{
+				stream.WithJSONSchema(types.Schema{
 					Properties: properties,
 				})
 
@@ -82,13 +77,7 @@ var DiscoverCmd = &cobra.Command{
 
 		group.Wait()
 
-		extractedStreams := []*types.Stream{}
-		_, _ = utils.ArrayContains(streams, func(elem Stream) bool {
-			extractedStreams = append(extractedStreams, elem.GetStream())
-			return false
-		})
-
-		logger.LogCatalog(extractedStreams)
+		logger.LogCatalog(streams)
 		return nil
 	},
 }

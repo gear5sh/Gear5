@@ -17,7 +17,7 @@ var (
 	batchSize_ uint64
 
 	catalog *types.Catalog
-	state   types.State
+	state   *types.State
 	config  any
 
 	isDriver        = false
@@ -36,14 +36,12 @@ var RootCmd = &cobra.Command{
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// TODO: Add config check
 		if catalog_ != "" {
-			catalog = &types.Catalog{}
 			if err := utils.Unmarshal(utils.ReadFile(catalog_), catalog); err != nil {
 				return fmt.Errorf("failed to unmarshal catalog: %s", err)
 			}
 		}
 
 		if state_ != "" {
-			state = types.State{}
 			err := utils.Unmarshal(utils.ReadFile(state_), &state)
 			if err != nil {
 				return fmt.Errorf("failed to unmarshal state file: %s", err)
@@ -98,6 +96,9 @@ func getAvailableCommands() []*cobra.Command {
 }
 
 func init() {
+	state = &types.State{}
+	catalog = &types.Catalog{}
+
 	driverCommands = append(driverCommands, SpecCmd, CheckCmd, DiscoverCmd, ReadCmd)
 	adapterCommands = append(adapterCommands, SpecCmd, CheckCmd, DiscoverCmd, WriteCmd)
 

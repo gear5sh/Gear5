@@ -78,7 +78,7 @@ func Log(format string, level Level, v ...interface{}) error {
 		message = fmt.Sprintf(format, v...)
 	}
 	shiftMessage := types.Message{
-		Type: types.LogType,
+		Type: types.LogMessage,
 		Log: &types.Log{
 			Level:   level.String(),
 			Message: message,
