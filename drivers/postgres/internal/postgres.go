@@ -17,13 +17,10 @@ import (
 type Postgres struct {
 	*base.Driver
 
-	allStreams  map[string]*pgStream
 	batchSize   int64
 	client      *sqlx.DB
 	accessToken string
-	config      *Config
-	// catalog     *types.Catalog
-	// state       types.State
+	config      *Config // postgres driver connection config
 }
 
 func (p *Postgres) Setup(config any, base *base.Driver) error {
@@ -57,7 +54,7 @@ func (p *Postgres) Setup(config any, base *base.Driver) error {
 
 	p.config = &cfg
 
-	return p.setupStreams()
+	return p.loadStreams()
 }
 
 func (p *Postgres) CloseConnection() {
@@ -79,8 +76,8 @@ func (p *Postgres) Check() error {
 
 func (p *Postgres) Discover() ([]*types.Stream, error) {
 	streams := []*types.Stream{}
-	for _, stream := range p.allStreams {
-		streams = append(streams, stream.Self().GetStream())
+	for _, stream := range p.SourceStreams {
+		streams = append(streams, stream)
 	}
 
 	return streams, nil
@@ -95,50 +92,32 @@ func (p *Postgres) Streams() ([]*types.Stream, error) {
 }
 
 func (p *Postgres) Read(stream protocol.Stream, channel chan<- types.Record) error {
-	identifier := utils.StreamIdentifier(stream.Namespace(), stream.Name())
-	pgStream, found := p.allStreams[identifier]
+	source, found := p.SourceStreams[stream.ID()]
 	if !found {
-		logger.Warnf("Stream %s.%s not found; skipping...", stream.Namespace(), stream.Name())
+		logger.Warnf("Stream %s not found; skipping...", stream.ID())
+		return nil
+	}
+
+	err := stream.Validate(source)
+	if err != nil {
+		logger.Warnf("Skipping; Configured Stream %s found invalid due to reason: %s", stream.ID(), err)
 		return nil
 	}
 
 	switch stream.GetSyncMode() {
 	case types.FULLREFRESH:
-		return pgStream.readFullRefresh(p.client, channel)
+		return freshSync(p.client, stream, channel)
 	case types.INCREMENTAL:
 		// read incrementally
-		return pgStream.readIncremental(p.client, channel)
+		return incrementalSync(p.client, stream, channel)
+	case types.CDC:
+		return walSync(p.client, stream, channel)
 	}
 
 	return nil
 }
 
-// func (p *Postgres) GetState() (*types.State, error) {
-// 	state := &types.State{}
-// 	for _, stream := range p.Catalog().Streams {
-// 		if stream.SyncMode == types.Incremental || stream.SyncMode == types.CDC {
-// 			pgStream, found := p.allStreams[utils.StreamIdentifier(stream.Namespace(), stream.Name())]
-// 			if !found {
-// 				return nil, fmt.Errorf("postgres stream not found while getting state of stream %s[%s]", stream.Name(), stream.Namespace())
-// 			}
-
-// 			if !(utils.ExistInArray(pgStream.SupportedSyncModes, types.Incremental) || utils.ExistInArray(pgStream.SupportedSyncModes, types.CDC)) {
-// 				logger.Warnf("Skipping getting state from stream %s[%s], this stream doesn't support incremental/CDC", stream.Name(), stream.Namespace())
-// 				continue
-// 			}
-
-// 			state.Add(stream.Name(), stream.Namespace(), map[string]any{
-// 				pgStream.cursor: pgStream.state,
-// 			})
-// 		}
-// 	}
-
-// 	return state, nil
-// }
-
-func (p *Postgres) setupStreams() error {
-	p.allStreams = make(map[string]*pgStream)
-
+func (p *Postgres) loadStreams() error {
 	var tableNamesOutput []Table
 	err := p.client.Select(&tableNamesOutput, getPrivilegedTablesTmpl)
 	if err != nil {
@@ -167,10 +146,8 @@ func (p *Postgres) setupStreams() error {
 			return fmt.Errorf("failed to retrieve primary key columns for table %s[%s]: %s", table.Name, table.Schema, err)
 		}
 
-		stream := &types.Stream{
-			Name:      table.Name,
-			Namespace: table.Schema,
-		}
+		// create new stream
+		stream := types.NewStream(table.Name, table.Schema)
 
 		for _, column := range columnSchemaOutput {
 			datatype := types.UNKNOWN
@@ -183,28 +160,27 @@ func (p *Postgres) setupStreams() error {
 			stream.UpsertField(column.Name, datatype, strings.EqualFold("yes", *column.IsNullable))
 		}
 
-		stream.SupportedSyncModes = append(stream.SupportedSyncModes, types.FULLREFRESH)
-
 		// currently only datetime fields is supported for cursor field, automatic generated fields can also be used
 		// future TODO
 		for propertyName, property := range stream.Schema.Properties {
 			if utils.ExistInArray(property.Type, types.TIMESTAMP) {
-				stream.DefaultCursorFields = append(stream.DefaultCursorFields, propertyName)
+				stream.WithCursorField(propertyName)
 			}
 		}
 
 		// source has cursor fields, hence incremental also supported
-		if len(stream.DefaultCursorFields) > 0 {
-			stream.SourceDefinedCursor = true
-			stream.SupportedSyncModes = append(stream.SupportedSyncModes, types.INCREMENTAL)
+		stream.WithSyncMode(types.FULLREFRESH)
+		if stream.DefaultCursorFields.Len() > 0 {
+			stream.WithSyncMode(types.INCREMENTAL)
 		}
 
 		// add primary keys for stream
 		for _, column := range primaryKeyOutput {
-			stream.SourceDefinedPrimaryKey = append(stream.SourceDefinedPrimaryKey, column.Name)
+			stream.WithPrimaryKey(column.Name)
 		}
 
-		p.allStreams[utils.StreamIdentifier(table.Schema, table.Name)] = &pgStream{}
+		// Cache it
+		p.SourceStreams[utils.StreamIdentifier(table.Schema, table.Name)] = stream
 	}
 
 	return nil

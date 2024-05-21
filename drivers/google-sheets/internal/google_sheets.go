@@ -68,7 +68,7 @@ func (gs *GoogleSheets) Discover() ([]protocol.Stream, error) {
 
 	wrapped := []protocol.Stream{}
 	for _, stream := range streams {
-		wrapped = append(wrapped, types.WrapStream(stream))
+		wrapped = append(wrapped, stream.Wrap())
 	}
 
 	return wrapped, nil

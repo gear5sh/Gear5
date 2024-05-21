@@ -7,9 +7,9 @@ import (
 	"github.com/piyushsingariya/shift/utils"
 )
 
-func MaximumOnDataType[T any](typ []types.DataType, a, b T) (T, error) {
-	switch {
-	case utils.ExistInArray(typ, types.TIMESTAMP):
+func MaximumOnDataType[T any](typ types.DataType, a, b T) (T, error) {
+	switch typ {
+	case types.TIMESTAMP:
 		adate, err := ReformatDate(a)
 		if err != nil {
 			return a, fmt.Errorf("failed to reformat[%v] while comparing: %s", a, err)

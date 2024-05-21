@@ -61,9 +61,9 @@ func (h *Hubspot) Discover() ([]protocol.Stream, error) {
 	streams := []protocol.Stream{}
 
 	for _, hstream := range h.allStreams {
-		stream := types.NewStream(hstream.Name(), "").WithSyncModes(hstream.Modes()...).
-			WithPrimaryKeys(hstream.PrimaryKey()...)
-		stream.WithCursorFields(hstream.cursorField())
+		stream := types.NewStream(hstream.Name(), "").WithSyncMode(hstream.Modes()...).
+			WithPrimaryKey(hstream.PrimaryKey()...)
+		stream.WithCursorField(hstream.cursorField())
 
 		streams = append(streams, stream)
 	}

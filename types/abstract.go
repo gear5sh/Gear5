@@ -4,19 +4,20 @@ func ToPtr[T any](val T) *T {
 	return &val
 }
 
-func Set[T any](array []T) []T {
-	setArray := []T{}
-	set := make(map[any]bool)
-	for _, item := range array {
-		if _, found := set[item]; found {
-			continue
-		}
-		set[item] = true
-		setArray = append(setArray, item)
-	}
+// TODO: Deprecate this
+// func Set[T any](array []T) []T {
+// 	setArray := []T{}
+// 	set := make(map[any]bool)
+// 	for _, item := range array {
+// 		if _, found := set[item]; found {
+// 			continue
+// 		}
+// 		set[item] = true
+// 		setArray = append(setArray, item)
+// 	}
 
-	return setArray
-}
+// 	return setArray
+// }
 
 func Keys[T comparable](v map[T]any) []T {
 	setArray := []T{}

@@ -33,16 +33,12 @@ type Stream interface {
 	Schema() *types.TypeSchema
 	GetStream() *types.Stream
 	GetSyncMode() types.SyncMode
-	SupportedSyncModes() []types.SyncMode
+	SupportedSyncModes() *types.Set[types.SyncMode]
 	Cursor() string
 	InitialState() any
 	GetState() any
 	SetState(value any)
 	BatchSize() int64
 	SetBatchSize(size int64)
-
-	// WithSyncModes(modes []types.SyncMode) Stream
-	// WithPrimaryKeys(keys []string) Stream
-	// WithCursorFields(columns []string) Stream
-	// WithJSONSchema(schema types.Schema) Stream
+	Validate(source *types.Stream) error
 }
