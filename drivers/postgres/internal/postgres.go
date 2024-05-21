@@ -103,10 +103,6 @@ func (p *Postgres) Type() string {
 	return "Postgres"
 }
 
-func (p *Postgres) Streams() ([]*types.Stream, error) {
-	return nil, nil
-}
-
 func (p *Postgres) Read(stream protocol.Stream, channel chan<- types.Record) error {
 	switch stream.GetSyncMode() {
 	case types.FULLREFRESH:
@@ -114,9 +110,12 @@ func (p *Postgres) Read(stream protocol.Stream, channel chan<- types.Record) err
 	case types.INCREMENTAL:
 		// read incrementally
 		return incrementalSync(p.client, stream, channel)
-	case types.CDC:
-		return walSync(p.client, stream, channel)
 	}
+
+	return nil
+}
+
+func (p *Postgres) GroupRead(channel chan<- types.Record, streams ...protocol.Stream) error {
 
 	return nil
 }

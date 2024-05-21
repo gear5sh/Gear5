@@ -150,8 +150,12 @@ func IsOfType(object interface{}, decidingKey string) (bool, error) {
 	return false, nil
 }
 
-func StreamIdentifier(namespace, name string) string {
-	return namespace + name
+func StreamIdentifier(name, namespace string) string {
+	if namespace != "" {
+		return fmt.Sprintf("%s.%s", namespace, name)
+	}
+
+	return name
 }
 
 func IsSubset[T comparable](setArray, subsetArray []T) bool {
