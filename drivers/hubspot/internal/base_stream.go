@@ -65,7 +65,7 @@ func newStream(name, entity string, client *http.Client, startDate time.Time) *S
 		limitField:        "limit",
 		limit:             100,
 		offset:            0,
-		availableSyncMode: []types.SyncMode{types.FullRefresh},
+		availableSyncMode: []types.SyncMode{types.FULLREFRESH},
 	}
 }
 
