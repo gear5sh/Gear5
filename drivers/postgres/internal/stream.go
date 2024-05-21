@@ -82,7 +82,7 @@ func (p *pgStream) readIncremental(client *sqlx.DB, channel chan<- types.Record)
 	offset := int64(0)
 	limit := p.BatchSize()
 	initialStateAtStart := p.GetState()
-	cursorDataType := p.JSONSchema().Properties[p.Cursor()].Type
+	cursorDataType := p.Schema().Properties[p.Cursor()].Type
 
 	var extract func() (*sqlx.Rows, error) = func() (*sqlx.Rows, error) {
 		if initialStateAtStart != nil {

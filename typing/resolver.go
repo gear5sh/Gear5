@@ -2,7 +2,7 @@ package typing
 
 import "github.com/piyushsingariya/shift/types"
 
-func Resolve(objects ...map[string]interface{}) (map[string]*types.Property, error) {
+func Resolve(stream *types.Stream, objects ...map[string]interface{}) error {
 	allfields := Fields{}
 
 	for _, object := range objects {
@@ -21,5 +21,9 @@ func Resolve(objects ...map[string]interface{}) (map[string]*types.Property, err
 		allfields.Merge(fields)
 	}
 
-	return allfields.ToProperties(), nil
+	for column, field := range allfields {
+		stream.UpsertField(column, *field.dataType, field.isNullable())
+	}
+
+	return nil
 }

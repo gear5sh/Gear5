@@ -52,12 +52,12 @@ type Catalog struct {
 }
 
 // Schema is a dto for Airbyte catalog Schema object serialization
-type Schema struct {
+type TypeSchema struct {
 	Properties map[string]*Property `json:"properties,omitempty"`
 }
 
 // Property is a dto for catalog properties representation
 type Property struct {
-	Type       []DataType           `json:"type,omitempty"`
-	Properties map[string]*Property `json:"properties,omitempty"`
+	Type   []DataType `json:"type,omitempty"`
+	Format string     `json:"format,omitempty"`
 }

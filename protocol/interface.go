@@ -7,7 +7,7 @@ import (
 
 type Connector interface {
 	Setup(config any, base *base.Driver) error
-	Spec() (any, error)
+	Spec() any
 	Check() error
 
 	Type() string
@@ -26,10 +26,11 @@ type Adapter interface {
 }
 
 type Stream interface {
+	ID() string
 	Self() *types.ConfiguredStream
 	Name() string
 	Namespace() string
-	JSONSchema() *types.Schema
+	Schema() *types.TypeSchema
 	GetStream() *types.Stream
 	GetSyncMode() types.SyncMode
 	SupportedSyncModes() []types.SyncMode
