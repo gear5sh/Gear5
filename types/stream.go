@@ -24,7 +24,7 @@ type ConfiguredStream struct {
 type Stream struct {
 	Name                       string            `json:"name,omitempty"`
 	Namespace                  string            `json:"namespace,omitempty"`
-	JSONSchema                 *Schema           `json:"json_schema,omitempty"`
+	Schema                     *TypeSchema       `json:"json_schema,omitempty"`
 	SupportedSyncModes         []SyncMode        `json:"supported_sync_modes,omitempty"`
 	SourceDefinedPrimaryKey    []string          `json:"source_defined_primary_key,omitempty"`
 	SourceDefinedCursor        bool              `json:"source_defined_cursor"`
@@ -57,8 +57,8 @@ func (s *ConfiguredStream) Namespace() string {
 	return s.Stream.Namespace
 }
 
-func (s *ConfiguredStream) JSONSchema() *Schema {
-	return s.Stream.JSONSchema
+func (s *ConfiguredStream) Schema() *TypeSchema {
+	return s.Stream.Schema
 }
 
 func (s *ConfiguredStream) SupportedSyncModes() []SyncMode {
@@ -166,8 +166,30 @@ func (s *Stream) WithCursorFields(columns ...string) *Stream {
 	return s
 }
 
-func (s *Stream) WithJSONSchema(schema Schema) *Stream {
-	s.JSONSchema = &schema
+func (s *Stream) UpsertField(name string, typ DataType, nullable bool) {
+	if s.Schema == nil {
+		s.Schema = &TypeSchema{
+			Properties: map[string]*Property{},
+		}
+	}
+
+	property := &Property{
+		Type: []DataType{typ},
+	}
+
+	if typ == TIMESTAMP {
+		property.Format = "date-time"
+	}
+
+	if nullable {
+		property.Type = append(property.Type, NULL)
+	}
+
+	s.Schema.Properties[name] = property
+}
+
+func (s *Stream) WithSchema(schema TypeSchema) *Stream {
+	s.Schema = &schema
 	return s
 }
 

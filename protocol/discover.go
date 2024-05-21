@@ -62,14 +62,10 @@ var DiscoverCmd = &cobra.Command{
 					}
 				}
 
-				properties, err := typing.Resolve(objects...)
+				err := typing.Resolve(stream, objects...)
 				if err != nil {
 					logger.Fatal(err)
 				}
-
-				stream.WithJSONSchema(types.Schema{
-					Properties: properties,
-				})
 
 				group.Done()
 			}()

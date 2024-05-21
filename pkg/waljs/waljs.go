@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/apache/arrow/go/v16/arrow"
@@ -18,7 +17,8 @@ import (
 	"github.com/jackc/pgx/v5/pgproto3"
 	"github.com/piyushsingariya/shift/pkg/waljs/internal/helpers"
 	"github.com/piyushsingariya/shift/pkg/waljs/internal/schemas"
-	"github.com/sirupsen/logrus"
+	"github.com/piyushsingariya/shift/protocol"
+	"github.com/sirupsen/logger"
 )
 
 var pluginArguments = []string{"\"pretty-print\" 'true'"}
@@ -174,7 +174,7 @@ func NewConnection(config Config) (*WalJSocket, error) {
 		return nil, fmt.Errorf("failed to identify the system: %s", err)
 	}
 
-	logrus.Info("System identification result", "SystemID:", sysident.SystemID, "Timeline:", sysident.Timeline, "XLogPos:", sysident.XLogPos, "Database:", sysident.DBName)
+	logger.Info("System identification result", "SystemID:", sysident.SystemID, "Timeline:", sysident.Timeline, "XLogPos:", sysident.XLogPos, "Database:", sysident.DBName)
 
 	var confirmedLSNFromDB string
 	// check is replication slot exist to get last restart SLN
@@ -187,7 +187,7 @@ func NewConnection(config Config) (*WalJSocket, error) {
 		} else {
 			slotCheckRow := slotCheckResults[0].Rows[0]
 			confirmedLSNFromDB = string(slotCheckRow[0])
-			logrus.Info("Replication slot restart LSN extracted from DB", "LSN", confirmedLSNFromDB)
+			logger.Info("Replication slot restart LSN extracted from DB", "LSN", confirmedLSNFromDB)
 		}
 	}
 
@@ -219,7 +219,7 @@ func NewConnection(config Config) (*WalJSocket, error) {
 		// 		Mode:           pglogrepl.LogicalReplication,
 		// 	})
 		// if err != nil {
-		// 	logrus.Fatalf("Failed to create replication slot for the database: %s", err.Error())
+		// 	logger.Fatalf("Failed to create replication slot for the database: %s", err.Error())
 		// }
 		// stream.snapshotName = createSlotResult.SnapshotName
 
@@ -236,7 +236,7 @@ func (s *WalJSocket) startLr() error {
 	if err != nil {
 		return fmt.Errorf("starting replication slot failed: %s", err)
 	}
-	logrus.Infof("Started logical replication on slot[%s]", s.slotName)
+	logger.Infof("Started logical replication on slot[%s]", s.slotName)
 
 	return nil
 }
@@ -245,7 +245,7 @@ func (s *WalJSocket) AckLSN(lsn string) {
 	var err error
 	s.clientXLogPos, err = pglogrepl.ParseLSN(lsn)
 	if err != nil {
-		logrus.Fatalf("Failed to parse LSN for Acknowledge %s", err.Error())
+		logger.Fatalf("Failed to parse LSN for Acknowledge %s", err.Error())
 	}
 
 	err = pglogrepl.SendStandbyStatusUpdate(context.Background(), s.pgConn, pglogrepl.StandbyStatusUpdate{
@@ -254,9 +254,9 @@ func (s *WalJSocket) AckLSN(lsn string) {
 	})
 
 	if err != nil {
-		logrus.Fatalf("SendStandbyStatusUpdate failed: %s", err.Error())
+		logger.Fatalf("SendStandbyStatusUpdate failed: %s", err.Error())
 	}
-	logrus.Debugf("Sent Standby status message at LSN#%s", s.clientXLogPos.String())
+	logger.Debugf("Sent Standby status message at LSN#%s", s.clientXLogPos.String())
 	s.nextStandbyMessageDeadline = time.Now().Add(s.standbyMessageTimeout)
 }
 
@@ -273,9 +273,9 @@ func (s *WalJSocket) streamMessagesAsync() {
 				})
 
 				if err != nil {
-					logrus.Fatalf("SendStandbyStatusUpdate failed: %s", err.Error())
+					logger.Fatalf("SendStandbyStatusUpdate failed: %s", err.Error())
 				}
-				logrus.Debugf("Sent Standby status message at LSN#%s", s.clientXLogPos.String())
+				logger.Debugf("Sent Standby status message at LSN#%s", s.clientXLogPos.String())
 				s.nextStandbyMessageDeadline = time.Now().Add(s.standbyMessageTimeout)
 			}
 
@@ -286,16 +286,16 @@ func (s *WalJSocket) streamMessagesAsync() {
 				if pgconn.Timeout(err) {
 					continue
 				}
-				logrus.Fatalf("Failed to receive messages from PostgreSQL %s", err.Error())
+				logger.Fatalf("Failed to receive messages from PostgreSQL %s", err.Error())
 			}
 
 			if errMsg, ok := rawMsg.(*pgproto3.ErrorResponse); ok {
-				logrus.Fatalf("Received broken Postgres WAL. Error: %+v", errMsg)
+				logger.Fatalf("Received broken Postgres WAL. Error: %+v", errMsg)
 			}
 
 			msg, ok := rawMsg.(*pgproto3.CopyData)
 			if !ok {
-				logrus.Warnf("Received unexpected message: %T\n", rawMsg)
+				logger.Warnf("Received unexpected message: %T\n", rawMsg)
 				continue
 			}
 
@@ -303,7 +303,7 @@ func (s *WalJSocket) streamMessagesAsync() {
 			case pglogrepl.PrimaryKeepaliveMessageByteID:
 				pkm, err := pglogrepl.ParsePrimaryKeepaliveMessage(msg.Data[1:])
 				if err != nil {
-					logrus.Fatalf("ParsePrimaryKeepaliveMessage failed: %s", err.Error())
+					logger.Fatalf("ParsePrimaryKeepaliveMessage failed: %s", err.Error())
 				}
 
 				if pkm.ReplyRequested {
@@ -313,7 +313,7 @@ func (s *WalJSocket) streamMessagesAsync() {
 			case pglogrepl.XLogDataByteID:
 				xld, err := pglogrepl.ParseXLogData(msg.Data[1:])
 				if err != nil {
-					logrus.Fatalf("ParseXLogData failed: %s", err.Error())
+					logger.Fatalf("ParseXLogData failed: %s", err.Error())
 				}
 				clientXLogPos := xld.WALStart + pglogrepl.LSN(len(xld.WALData))
 				s.changeFilter.FilterChange(clientXLogPos.String(), xld.WALData, func(change Wal2JsonChanges) {
@@ -323,11 +323,12 @@ func (s *WalJSocket) streamMessagesAsync() {
 		}
 	}
 }
-func (s *WalJSocket) processSnapshot() {
-	snapshotter := NewSnapshotter(s.pgxConn, s.snapshotName)
 
-	if err := snapshotter.Prepare(); err != nil {
-		logrus.Errorf("failed to prepare database snapshot: %s", err)
+func (s *WalJSocket) processSnapshot(stream protocol.Stream) {
+	snapshotter := NewSnapshotter(stream, int(stream.BatchSize()))
+
+	if err := snapshotter.Prepare(s.pgxConn); err != nil {
+		logger.Errorf("failed to prepare database snapshot: %s", err)
 		s.cleanUpOnFailure()
 		os.Exit(1)
 	}
@@ -336,76 +337,91 @@ func (s *WalJSocket) processSnapshot() {
 		snapshotter.CloseConn()
 	}()
 
-	for _, table := range s.tableSchemas {
-		logrus.Info("Processing database snapshot", "schema", s.schema, "table", table)
+	// fields := stream
 
-		var offset = 0
+	// Schema := arrow.NewSchema([]arrow.Field{{
+	// 	Name:     "id",
+	// 	Type:     helpers.MapPlainTypeToArrow("Int64"),
+	// 	Nullable: false,
+	// }, {
+	// 	Name:     "name",
+	// 	Type:     helpers.MapPlainTypeToArrow(""),
+	// 	Nullable: false,
+	// }, {
+	// 	Name:     "email",
+	// 	Type:     helpers.MapPlainTypeToArrow(""),
+	// 	Nullable: false,
+	// }, {
+	// 	Name:     "created_at",
+	// 	Type:     helpers.MapPlainTypeToArrow("Timestamp"),
+	// 	Nullable: false,
+	// }}, nil),
 
-		pk, err := s.getPrimaryKeyColumn(table.TableName)
+	// for _, table := range s.tableSchemas {
+	logger.Infof("Processing database snapshot: %s", stream.ID())
+
+	var offset = 0
+
+	// pk, err := s.getPrimaryKeyColumn(table.TableName)
+	// if err != nil {
+	// 	logger.Fatalf("Failed to resolve pk %s", err.Error())
+	// }
+
+	logger.Info("Query snapshot", "batch-size", stream.BatchSize())
+	builder := array.NewRecordBuilder(memory.DefaultAllocator, table.Schema)
+
+	for {
+		rows, err := snapshotter.QuerySnapshot(offset)
 		if err != nil {
-			logrus.Fatalf("Failed to resolve pk %s", err.Error())
+			logger.Errorf("Failed to query snapshot data %s", err.Error())
+			s.cleanUpOnFailure()
+			os.Exit(1)
 		}
 
-		logrus.Info("Query snapshot", "batch-size", s.snapshotBatchSize)
-		builder := array.NewRecordBuilder(memory.DefaultAllocator, table.Schema)
+		var rowsCount = 0
+		for rows.Next() {
+			rowsCount += 1
 
-		colNames := make([]string, 0, len(table.Schema.Fields()))
+			columns, err := rows
 
-		for _, col := range table.Schema.Fields() {
-			colNames = append(colNames, pgx.Identifier{col.Name}.Sanitize())
-		}
-
-		for {
-			var snapshotRows pgx.Rows
-			logrus.Info("Query snapshot: ", "table", table.TableName, "columns", colNames, "batch-size", s.snapshotBatchSize, "offset", offset)
-			if snapshotRows, err = snapshotter.QuerySnapshotData(table.TableName, colNames, pk, s.snapshotBatchSize, offset); err != nil {
-				logrus.Errorf("Failed to query snapshot data %s", err.Error())
-				s.cleanUpOnFailure()
-				os.Exit(1)
+			values, err := rows.Values()
+			if err != nil {
+				panic(err)
 			}
 
-			var rowsCount = 0
-			for snapshotRows.Next() {
-				rowsCount += 1
-
-				values, err := snapshotRows.Values()
-				if err != nil {
+			for i, v := range values {
+				s := scalar.NewScalar(table.Schema.Field(i).Type)
+				if err := s.Set(v); err != nil {
 					panic(err)
 				}
 
-				for i, v := range values {
-					s := scalar.NewScalar(table.Schema.Field(i).Type)
-					if err := s.Set(v); err != nil {
-						panic(err)
-					}
-
-					scalar.AppendToBuilder(builder.Field(i), s)
-				}
-				var snapshotChanges = Wal2JsonChanges{
-					Lsn: "",
-					Changes: []Wal2JsonChange{
-						{
-							Kind:   "insert",
-							Schema: s.schema,
-							Table:  strings.Split(table.TableName, ".")[1],
-							Row:    builder.NewRecord(),
-						},
+				scalar.AppendToBuilder(builder.Field(i), s)
+			}
+			var snapshotChanges = Wal2JsonChanges{
+				Lsn: "",
+				Changes: []Wal2JsonChange{
+					{
+						Kind:   "insert",
+						Schema: stream.Namespace(),
+						Table:  stream.Name(),
+						Row:    builder.NewRecord(),
 					},
-				}
-
-				s.snapshotMessages <- snapshotChanges
+				},
 			}
 
-			snapshotRows.Close()
-
-			offset += s.snapshotBatchSize
-
-			if s.snapshotBatchSize != rowsCount {
-				break
-			}
+			s.snapshotMessages <- snapshotChanges
 		}
 
+		rows.Close()
+
+		offset += s.snapshotBatchSize
+
+		if int(stream.BatchSize()) != rowsCount {
+			break
+		}
 	}
+
+	// }
 
 	// err := s.startLr()
 	// if err != nil {
@@ -441,26 +457,26 @@ func (s *WalJSocket) cleanUpOnFailure() {
 	s.pgxConn.Close(context.TODO())
 }
 
-func (s *WalJSocket) getPrimaryKeyColumn(tableName string) (string, error) {
-	q := fmt.Sprintf(`
-		SELECT a.attname
-		FROM   pg_index i
-		JOIN   pg_attribute a ON a.attrelid = i.indrelid
-							 AND a.attnum = ANY(i.indkey)
-		WHERE  i.indrelid = '%s'::regclass
-		AND    i.indisprimary;
-	`, strings.Split(tableName, ".")[1])
+// func (s *WalJSocket) getPrimaryKeyColumn(tableName string) (string, error) {
+// 	q := fmt.Sprintf(`
+// 		SELECT a.attname
+// 		FROM   pg_index i
+// 		JOIN   pg_attribute a ON a.attrelid = i.indrelid
+// 							 AND a.attnum = ANY(i.indkey)
+// 		WHERE  i.indrelid = '%s'::regclass
+// 		AND    i.indisprimary;
+// 	`, strings.Split(tableName, ".")[1])
 
-	reader := s.pgConn.Exec(context.Background(), q)
-	data, err := reader.ReadAll()
-	if err != nil {
-		return "", err
-	}
+// 	reader := s.pgConn.Exec(context.Background(), q)
+// 	data, err := reader.ReadAll()
+// 	if err != nil {
+// 		return "", err
+// 	}
 
-	pkResultRow := data[0].Rows[0]
-	pkColName := string(pkResultRow[0])
-	return pkColName, nil
-}
+// 	pkResultRow := data[0].Rows[0]
+// 	pkColName := string(pkResultRow[0])
+// 	return pkColName, nil
+// }
 
 func (s *WalJSocket) Stop() error {
 	if s.pgConn != nil {

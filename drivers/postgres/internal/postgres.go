@@ -8,8 +8,6 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/piyushsingariya/shift/drivers/base"
-	"github.com/piyushsingariya/shift/jsonschema"
-	"github.com/piyushsingariya/shift/jsonschema/schema"
 	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/protocol"
 	"github.com/piyushsingariya/shift/types"
@@ -71,18 +69,18 @@ func (p *Postgres) CloseConnection() {
 	}
 }
 
-func (p *Postgres) Spec() (schema.JSONSchema, error) {
-	return jsonschema.Reflect(Config{})
+func (p *Postgres) Spec() any {
+	return Config{}
 }
 
 func (p *Postgres) Check() error {
 	return nil
 }
 
-func (p *Postgres) Discover() ([]protocol.Stream, error) {
-	streams := []protocol.Stream{}
+func (p *Postgres) Discover() ([]*types.Stream, error) {
+	streams := []*types.Stream{}
 	for _, stream := range p.allStreams {
-		streams = append(streams, stream)
+		streams = append(streams, stream.Self().GetStream())
 	}
 
 	return streams, nil
@@ -105,9 +103,9 @@ func (p *Postgres) Read(stream protocol.Stream, channel chan<- types.Record) err
 	}
 
 	switch stream.GetSyncMode() {
-	case types.FullRefresh:
+	case types.FULLREFRESH:
 		return pgStream.readFullRefresh(p.client, channel)
-	case types.Incremental:
+	case types.INCREMENTAL:
 		// read incrementally
 		return pgStream.readIncremental(p.client, channel)
 	}
@@ -174,33 +172,22 @@ func (p *Postgres) setupStreams() error {
 			Namespace: table.Schema,
 		}
 
-		stream.JSONSchema = &types.Schema{
-			Properties: make(map[string]*types.Property),
-		}
-
 		for _, column := range columnSchemaOutput {
-			datatypes := []types.DataType{}
+			datatype := types.UNKNOWN
 			if val, found := pgTypeToDataTypes[*column.DataType]; found {
-				datatypes = append(datatypes, val)
+				datatype = val
 			} else {
 				logger.Warnf("failed to get respective type in datatypes for column: %s[%s]", column.Name, column.DataType)
-				datatypes = append(datatypes, types.UNKNOWN)
 			}
 
-			if strings.EqualFold("yes", *column.IsNullable) {
-				datatypes = append(datatypes, types.NULL)
-			}
-
-			stream.JSONSchema.Properties[column.Name] = &types.Property{
-				Type: datatypes,
-			}
+			stream.UpsertField(column.Name, datatype, strings.EqualFold("yes", *column.IsNullable))
 		}
 
-		stream.SupportedSyncModes = append(stream.SupportedSyncModes, types.FullRefresh)
+		stream.SupportedSyncModes = append(stream.SupportedSyncModes, types.FULLREFRESH)
 
 		// currently only datetime fields is supported for cursor field, automatic generated fields can also be used
 		// future TODO
-		for propertyName, property := range stream.JSONSchema.Properties {
+		for propertyName, property := range stream.Schema.Properties {
 			if utils.ExistInArray(property.Type, types.TIMESTAMP) {
 				stream.DefaultCursorFields = append(stream.DefaultCursorFields, propertyName)
 			}
@@ -209,7 +196,7 @@ func (p *Postgres) setupStreams() error {
 		// source has cursor fields, hence incremental also supported
 		if len(stream.DefaultCursorFields) > 0 {
 			stream.SourceDefinedCursor = true
-			stream.SupportedSyncModes = append(stream.SupportedSyncModes, types.Incremental)
+			stream.SupportedSyncModes = append(stream.SupportedSyncModes, types.INCREMENTAL)
 		}
 
 		// add primary keys for stream
