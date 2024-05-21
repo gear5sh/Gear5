@@ -160,11 +160,7 @@ func NewStream(name, namespace string) *Stream {
 }
 
 func (s *Stream) ID() string {
-	if s.Namespace != "" {
-		return fmt.Sprintf("%s.%s", s.Namespace, s.Name)
-	}
-
-	return s.Name
+	return utils.StreamIdentifier(s.Name, s.Namespace)
 }
 
 func (s *Stream) WithSyncMode(modes ...SyncMode) *Stream {

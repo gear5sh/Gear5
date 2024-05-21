@@ -17,7 +17,7 @@ func NewDriver(state *types.State) *Driver {
 	}
 }
 
-func (d *Driver) GroupReadMode() bool {
+func (d *Driver) BulkRead() bool {
 	return d.GroupRead
 }
 

@@ -104,10 +104,10 @@ var ReadCmd = &cobra.Command{
 		logger.Infof("Valid selected streams are %s", strings.Join(selectedStreams, ", "))
 
 		// Driver running on GroupRead
-		if _driver.GroupReadMode() {
-			driver, yes := _driver.(GRDriver)
+		if _driver.BulkRead() {
+			driver, yes := _driver.(BulkDriver)
 			if !yes {
-				return fmt.Errorf("%s does not implement GRDriver", _driver.Type())
+				return fmt.Errorf("%s does not implement BulkDriver", _driver.Type())
 			}
 
 			err := driver.GroupRead(recordStream, validStreams...)
