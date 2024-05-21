@@ -61,14 +61,9 @@ var ReadCmd = &cobra.Command{
 		selectedStreams := []string{}
 		validStreams := []Stream{}
 		_, _ = utils.ArrayContains(catalog.Streams, func(elem *types.ConfiguredStream) bool {
-			state_, err := elem.SetupAndValidate(state)
-			if err != nil {
-				logger.Errorf("Skipping stream %s due to error: %s", elem.ID(), err)
-				return false
-			}
-
-			if state_ != types.StateValid {
-				logger.Errorf("Skipping stream %s due to reason: %s", elem.ID(), state_)
+			err := elem.SetupState(state)
+			if err != types.StateValid {
+				logger.Errorf("Skipping stream %s due to reason: %s", elem.ID(), err)
 				return false
 			}
 

@@ -96,8 +96,8 @@ func (s *S3) Discover() ([]protocol.Stream, error) {
 			return nil, fmt.Errorf("no schema found")
 		}
 
-		streams = append(streams, types.NewStream(stream, pattern).WithSyncModes(types.Incremental, types.FullRefresh).
-			WithCursorFields(s.cursorField).WithJSONSchema(types.Schema{
+		streams = append(streams, types.NewStream(stream, pattern).WithSyncMode(types.Incremental, types.FullRefresh).
+			WithCursorField(s.cursorField).WithJSONSchema(types.Schema{
 			Properties: schema,
 		}))
 	}

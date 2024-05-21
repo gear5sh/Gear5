@@ -111,11 +111,11 @@ func (s *Snapshotter) QuerySnapshotData(table string, columns []string, pk strin
 	return s.tx.Query(context.TODO(), fmt.Sprintf("SELECT %s FROM %s ORDER BY %s LIMIT %d OFFSET %d;", joinedColumns, table, pk, limit, offset))
 }
 
-func (s *Snapshotter) QuerySnapshot(offset int) (pgx.Rows, error) {
-	return s.tx.Query(context.TODO(), fmt.Sprintf("SELECT * FROM %s.%s ORDER BY %s LIMIT %d OFFSET %d;",
-		s.stream.Name(),
-		s.stream.Namespace(), s.batchSize, offset))
-}
+// func (s *Snapshotter) QuerySnapshot(offset int) (pgx.Rows, error) {
+// 	return s.tx.Query(context.TODO(), fmt.Sprintf("SELECT * FROM %s.%s ORDER BY %s LIMIT %d OFFSET %d;",
+// 		s.stream.Name(),
+// 		s.stream.Namespace(), s.batchSize, offset))
+// }
 
 func (s *Snapshotter) ReleaseSnapshot() error {
 	return s.tx.Commit(context.Background())

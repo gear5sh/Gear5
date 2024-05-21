@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/apache/arrow/go/v16/arrow"
@@ -15,10 +16,11 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgproto3"
+	"github.com/piyushsingariya/shift/logger"
+	"github.com/piyushsingariya/shift/pkg/jdbc"
 	"github.com/piyushsingariya/shift/pkg/waljs/internal/helpers"
 	"github.com/piyushsingariya/shift/pkg/waljs/internal/schemas"
 	"github.com/piyushsingariya/shift/protocol"
-	"github.com/sirupsen/logger"
 )
 
 var pluginArguments = []string{"\"pretty-print\" 'true'"}
@@ -225,7 +227,7 @@ func NewConnection(config Config) (*WalJSocket, error) {
 
 		fmt.Println(stream.snapshotName)
 		// New messages will be streamed after the snapshot has been processed.
-		go stream.processSnapshot()
+		// go stream.processSnapshot()
 	}
 
 	return stream, err
@@ -360,74 +362,111 @@ func (s *WalJSocket) processSnapshot(stream protocol.Stream) {
 	// for _, table := range s.tableSchemas {
 	logger.Infof("Processing database snapshot: %s", stream.ID())
 
-	var offset = 0
+	// var offset = 0
 
 	// pk, err := s.getPrimaryKeyColumn(table.TableName)
 	// if err != nil {
 	// 	logger.Fatalf("Failed to resolve pk %s", err.Error())
 	// }
 
-	logger.Info("Query snapshot", "batch-size", stream.BatchSize())
-	builder := array.NewRecordBuilder(memory.DefaultAllocator, table.Schema)
+	schema := stream.Schema().ToArrow()
 
-	for {
-		rows, err := snapshotter.QuerySnapshot(offset)
+	logger.Info("Query snapshot", "batch-size", stream.BatchSize())
+	builder := array.NewRecordBuilder(memory.DefaultAllocator, schema)
+	baseQuery := fmt.Sprintf("SELECT * FROM %s.%s ORDER BY %s ", stream.Name(),
+		stream.Namespace(), strings.Join(stream.GetStream().SourceDefinedPrimaryKey.Array(), ", "))
+
+	setter := jdbc.WithContextOffsetter(context.TODO(), baseQuery, int(stream.BatchSize()), snapshotter.tx.Query)
+
+	setter.Capture(func(rows pgx.Rows) error {
+		values, err := rows.Values()
 		if err != nil {
-			logger.Errorf("Failed to query snapshot data %s", err.Error())
-			s.cleanUpOnFailure()
-			os.Exit(1)
+			panic(err)
 		}
 
-		var rowsCount = 0
-		for rows.Next() {
-			rowsCount += 1
-
-			columns, err := rows
-
-			values, err := rows.Values()
-			if err != nil {
+		for i, v := range values {
+			s := scalar.NewScalar(schema.Field(i).Type)
+			if err := s.Set(v); err != nil {
 				panic(err)
 			}
 
-			for i, v := range values {
-				s := scalar.NewScalar(table.Schema.Field(i).Type)
-				if err := s.Set(v); err != nil {
-					panic(err)
-				}
-
-				scalar.AppendToBuilder(builder.Field(i), s)
-			}
-			var snapshotChanges = Wal2JsonChanges{
-				Lsn: "",
-				Changes: []Wal2JsonChange{
-					{
-						Kind:   "insert",
-						Schema: stream.Namespace(),
-						Table:  stream.Name(),
-						Row:    builder.NewRecord(),
-					},
+			scalar.AppendToBuilder(builder.Field(i), s)
+		}
+		var snapshotChanges = Wal2JsonChanges{
+			Lsn: "",
+			Changes: []Wal2JsonChange{
+				{
+					Kind:   "insert",
+					Schema: stream.Namespace(),
+					Table:  stream.Name(),
+					Row:    builder.NewRecord(),
 				},
-			}
-
-			s.snapshotMessages <- snapshotChanges
+			},
 		}
 
-		rows.Close()
+		s.snapshotMessages <- snapshotChanges
 
-		offset += s.snapshotBatchSize
+		return nil
+	})
 
-		if int(stream.BatchSize()) != rowsCount {
-			break
-		}
+	// for {
+	// 	rows, err := snapshotter.QuerySnapshot(offset)
+	// 	if err != nil {
+	// 		logger.Errorf("Failed to query snapshot data %s", err.Error())
+	// 		s.cleanUpOnFailure()
+	// 		os.Exit(1)
+	// 	}
+
+	// 	var rowsCount = 0
+	// 	for rows.Next() {
+	// 		rowsCount += 1
+
+	// 		columns, err := rows
+
+	// 		values, err := rows.Values()
+	// 		if err != nil {
+	// 			panic(err)
+	// 		}
+
+	// 		for i, v := range values {
+	// 			s := scalar.NewScalar(table.Schema.Field(i).Type)
+	// 			if err := s.Set(v); err != nil {
+	// 				panic(err)
+	// 			}
+
+	// 			scalar.AppendToBuilder(builder.Field(i), s)
+	// 		}
+	// 		var snapshotChanges = Wal2JsonChanges{
+	// 			Lsn: "",
+	// 			Changes: []Wal2JsonChange{
+	// 				{
+	// 					Kind:   "insert",
+	// 					Schema: stream.Namespace(),
+	// 					Table:  stream.Name(),
+	// 					Row:    builder.NewRecord(),
+	// 				},
+	// 			},
+	// 		}
+
+	// 		s.snapshotMessages <- snapshotChanges
+	// 	}
+
+	// 	rows.Close()
+
+	// 	offset += s.snapshotBatchSize
+
+	// 	if int(stream.BatchSize()) != rowsCount {
+	// 		break
+	// 	}
+	// }
+
+	// }
+
+	err := s.startLr()
+	if err != nil {
+		panic(err)
 	}
-
-	// }
-
-	// err := s.startLr()
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// go s.streamMessagesAsync()
+	go s.streamMessagesAsync()
 }
 
 func (s *WalJSocket) OnMessage(callback OnMessage) {
