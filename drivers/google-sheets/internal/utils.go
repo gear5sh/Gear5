@@ -185,20 +185,14 @@ func SafeNameConversion(text string) (string, error) {
 }
 
 func headersToStream(sheetName string, headers []string) *types.Stream {
-	stream := types.Stream{}
-	stream.Name = sheetName
-	stream.SupportedSyncModes = []types.SyncMode{types.FullRefresh}
-	stream.JSONSchema = &types.Schema{}
-	stream.JSONSchema.Properties = make(map[string]*types.Property)
+	stream := types.NewStream(sheetName, "")
+	stream.WithSyncMode(types.FULLREFRESH)
 
 	for _, header := range headers {
-		stream.JSONSchema.Properties[header] = &types.Property{
-			// for simplicity, every field is a string
-			Type: []types.DataType{types.STRING},
-		}
+		stream.UpsertField(header, types.STRING, false)
 	}
 
-	return &stream
+	return stream
 }
 
 func GetIndexToColumn(sheet spreadsheet.Sheet) (map[int]string, error) {

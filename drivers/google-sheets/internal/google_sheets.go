@@ -5,8 +5,6 @@ import (
 	"strings"
 
 	"github.com/piyushsingariya/shift/drivers/base"
-	"github.com/piyushsingariya/shift/jsonschema"
-	"github.com/piyushsingariya/shift/jsonschema/schema"
 	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/protocol"
 	"github.com/piyushsingariya/shift/types"
@@ -43,8 +41,8 @@ func (gs *GoogleSheets) Setup(config any, base *base.Driver) error {
 	return nil
 }
 
-func (gs *GoogleSheets) Spec() (schema.JSONSchema, error) {
-	return jsonschema.Reflect(Config{})
+func (gs *GoogleSheets) Spec() any {
+	return Config{}
 }
 
 func (gs *GoogleSheets) Type() string {
@@ -60,18 +58,13 @@ func (gs *GoogleSheets) Check() error {
 	return nil
 }
 
-func (gs *GoogleSheets) Discover() ([]protocol.Stream, error) {
+func (gs *GoogleSheets) Discover() ([]*types.Stream, error) {
 	streams, _, err := gs.getAllSheetStreams()
 	if err != nil {
 		return nil, err
 	}
 
-	wrapped := []protocol.Stream{}
-	for _, stream := range streams {
-		wrapped = append(wrapped, stream.Wrap())
-	}
-
-	return wrapped, nil
+	return streams, nil
 }
 
 func (gs *GoogleSheets) Read(stream protocol.Stream, channel chan<- types.Record) error {
