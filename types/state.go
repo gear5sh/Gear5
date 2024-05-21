@@ -1,5 +1,7 @@
 package types
 
+import "errors"
+
 type StateType string
 
 const (
@@ -15,12 +17,9 @@ type State struct {
 	Streams []*StreamState `json:"streams"`
 }
 
-type StateError string
-
-const (
-	StateValid         StateError = "valid"
-	StateMissing       StateError = "stream missing from state"
-	StateCursorMissing StateError = "cursor field missing from state"
+var (
+	ErrStateMissing       = errors.New("stream missing from state")
+	ErrStateCursorMissing = errors.New("cursor field missing from state")
 )
 
 func (s *State) SetType(typ StateType) {

@@ -62,7 +62,7 @@ type Config struct {
 	// required=true,
 	// oneOf=["Standard","CDC"]
 	// )
-	UpdateMethod interface{} `json:"update_method"`
+	UpdateMethod any `json:"update_method"`
 }
 
 // Standard Sync
@@ -72,7 +72,16 @@ type Standard struct {
 // Capture Write Ahead Logs
 type CDC struct {
 	// A plugin logical replication slot. Read about replication slots.
+	// @jsonschema(
+	// required=true
+	// )
 	ReplicationSlot string `json:"replication_slot"`
+	// Initial Wait Time for first CDC Log
+	// @jsonschema(
+	// required=true,
+	// default=0
+	// )
+	InitialWaitTime int `json:"intial_wait_time"`
 }
 
 func (c *Config) Validate() error {
