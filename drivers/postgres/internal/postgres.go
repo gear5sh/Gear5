@@ -186,8 +186,8 @@ func (p *Postgres) loadStreams() error {
 			stream.WithPrimaryKey(column.Name)
 		}
 
-		// Cache it
-		p.SourceStreams[utils.StreamIdentifier(table.Schema, table.Name)] = stream
+		// cache it
+		p.SourceStreams[stream.ID()] = stream
 	}
 
 	return nil
