@@ -5,6 +5,7 @@ go 1.22
 toolchain go1.22.3
 
 require (
+	github.com/apache/arrow/go/v16 v16.0.0
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.20.0
@@ -17,7 +18,6 @@ require (
 )
 
 require (
-	github.com/apache/arrow/go/v16 v16.0.0 // indirect
 	github.com/brainicorn/goblex v0.0.0-20210908194630-cfe0cfdf87dd // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
@@ -43,7 +43,6 @@ require (
 )
 
 require (
-	github.com/apache/arrow/go/v14 v14.0.2
 	github.com/brainicorn/ganno v0.0.0-20220304182003-e638228cd865
 	github.com/cloudquery/plugin-sdk/v4 v4.42.2
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect

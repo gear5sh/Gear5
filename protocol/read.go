@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -34,7 +35,7 @@ var ReadCmd = &cobra.Command{
 			return err
 		}
 
-		// Setting Up Record iteration
+		// Setting Record iteration
 		recordStream := make(chan types.Record, 2*batchSize_)
 		numRecords := int64(0)
 		batch := uint64(0)
@@ -99,18 +100,33 @@ var ReadCmd = &cobra.Command{
 			validStreams = append(validStreams, elem)
 			return false
 		})
+
 		logger.Infof("Valid selected streams are %s", strings.Join(selectedStreams, ", "))
 
-		for _, stream := range validStreams {
-			logger.Infof("Reading stream %s", stream.ID())
-
-			streamStartTime := time.Now()
-			err := _driver.Read(stream, recordStream)
-			if err != nil {
-				logger.Fatalf("Error occurred while reading records from [%s]: %s", _driver.Type(), err)
+		// Driver running on GroupRead
+		if _driver.GroupReadMode() {
+			driver, yes := _driver.(GRDriver)
+			if !yes {
+				return fmt.Errorf("%s does not implement GRDriver", _driver.Type())
 			}
 
-			logger.Infof("Finished reading stream %s[%s] in %s", stream.Name(), stream.Namespace(), time.Since(streamStartTime).String())
+			err := driver.GroupRead(recordStream, validStreams...)
+			if err != nil {
+				return fmt.Errorf("error occurred while reading records: %s", err)
+			}
+		} else {
+			// Driver running on Stream mode
+			for _, stream := range validStreams {
+				logger.Infof("Reading stream %s", stream.ID())
+
+				streamStartTime := time.Now()
+				err := _driver.Read(stream, recordStream)
+				if err != nil {
+					return fmt.Errorf("error occurred while reading records: %s", err)
+				}
+
+				logger.Infof("Finished reading stream %s[%s] in %s", stream.Name(), stream.Namespace(), time.Since(streamStartTime).String())
+			}
 		}
 
 		// stop record iteration
