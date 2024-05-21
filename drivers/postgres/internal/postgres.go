@@ -21,6 +21,8 @@ type Postgres struct {
 	client      *sqlx.DB
 	accessToken string
 	config      *Config // postgres driver connection config
+	cdcEnabled  bool
+	cdcConfig   CDC
 }
 
 func (p *Postgres) Setup(config any, base *base.Driver) error {
@@ -35,6 +37,20 @@ func (p *Postgres) Setup(config any, base *base.Driver) error {
 	err = cfg.Validate()
 	if err != nil {
 		return fmt.Errorf("failed to validate config: %s", err)
+	}
+
+	found, _ := utils.IsOfType(cfg.UpdateMethod, "replication_slot")
+	if found {
+		logger.Info("Found CDC Configuration")
+		cdc := &CDC{}
+		if err := utils.Unmarshal(cfg.UpdateMethod, cdc); err != nil {
+			return err
+		}
+
+		p.cdcEnabled = true
+		p.cdcConfig = *cdc
+	} else {
+		logger.Info("Standard Replication is selected")
 	}
 
 	db, err := sqlx.Open("pgx", cfg.ToConnectionString())
@@ -92,18 +108,6 @@ func (p *Postgres) Streams() ([]*types.Stream, error) {
 }
 
 func (p *Postgres) Read(stream protocol.Stream, channel chan<- types.Record) error {
-	source, found := p.SourceStreams[stream.ID()]
-	if !found {
-		logger.Warnf("Stream %s not found; skipping...", stream.ID())
-		return nil
-	}
-
-	err := stream.Validate(source)
-	if err != nil {
-		logger.Warnf("Skipping; Configured Stream %s found invalid due to reason: %s", stream.ID(), err)
-		return nil
-	}
-
 	switch stream.GetSyncMode() {
 	case types.FULLREFRESH:
 		return freshSync(p.client, stream, channel)
@@ -168,10 +172,14 @@ func (p *Postgres) loadStreams() error {
 			}
 		}
 
-		// source has cursor fields, hence incremental also supported
-		stream.WithSyncMode(types.FULLREFRESH)
-		if stream.DefaultCursorFields.Len() > 0 {
-			stream.WithSyncMode(types.INCREMENTAL)
+		if !p.cdcEnabled {
+			stream.WithSyncMode(types.FULLREFRESH)
+			// source has cursor fields, hence incremental also supported
+			if stream.DefaultCursorFields.Len() > 0 {
+				stream.WithSyncMode(types.INCREMENTAL)
+			}
+		} else {
+			stream.WithSyncMode(types.CDC)
 		}
 
 		// add primary keys for stream

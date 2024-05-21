@@ -17,6 +17,12 @@ type Driver interface {
 	Connector
 	Discover() ([]*types.Stream, error)
 	Read(stream Stream, channel chan<- types.Record) error
+	GroupReadMode() bool
+}
+
+// Group Read Driver
+type GRDriver interface {
+	GroupRead(channel chan<- types.Record, streams ...Stream) error
 }
 
 type Adapter interface {

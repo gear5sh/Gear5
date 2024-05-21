@@ -34,11 +34,7 @@ type Stream struct {
 }
 
 func (s *ConfiguredStream) ID() string {
-	if s.Namespace() != "" {
-		return fmt.Sprintf("%s.%s", s.Namespace(), s.Name())
-	}
-
-	return s.Name()
+	return s.Stream.ID()
 }
 
 func (s *ConfiguredStream) Self() *ConfiguredStream {
@@ -121,7 +117,7 @@ func (s *ConfiguredStream) SetBatchSize(size int64) {
 // }
 
 // Returns empty and missing
-func (s *ConfiguredStream) SetupState(state *State) StateError {
+func (s *ConfiguredStream) SetupState(state *State) error {
 	if !state.IsZero() {
 		i, contains := utils.ArrayContains(state.Streams, func(elem *StreamState) bool {
 			return elem.Namespace == s.Namespace() && elem.Stream == s.Name()
@@ -129,18 +125,18 @@ func (s *ConfiguredStream) SetupState(state *State) StateError {
 		if contains {
 			value, found := state.Streams[i].State[s.CursorField]
 			if !found {
-				return StateCursorMissing
+				return ErrStateCursorMissing
 			}
 
 			s.CursorValue = value
 
-			return StateValid
+			return nil
 		}
 
-		return StateMissing
+		return ErrStateMissing
 	}
 
-	return StateValid
+	return nil
 }
 
 // Validate Configured Stream with Source Stream
@@ -161,6 +157,14 @@ func NewStream(name, namespace string) *Stream {
 		Name:      name,
 		Namespace: namespace,
 	}
+}
+
+func (s *Stream) ID() string {
+	if s.Namespace != "" {
+		return fmt.Sprintf("%s.%s", s.Namespace, s.Name)
+	}
+
+	return s.Name
 }
 
 func (s *Stream) WithSyncMode(modes ...SyncMode) *Stream {
@@ -241,4 +245,13 @@ func (s *Stream) Wrap() *ConfiguredStream {
 		Stream:   s,
 		SyncMode: FULLREFRESH,
 	}
+}
+
+func StreamsToMap(streams ...*Stream) map[string]*Stream {
+	output := make(map[string]*Stream)
+	for _, stream := range streams {
+		output[stream.ID()] = stream
+	}
+
+	return output
 }

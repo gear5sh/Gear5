@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/piyushsingariya/shift/drivers/base"
 	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/types"
 	"github.com/piyushsingariya/shift/utils"
@@ -27,6 +28,13 @@ var ReadCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// Driver Setup
+		err := _driver.Setup(utils.ReadFile(config_), base.NewDriver(state))
+		if err != nil {
+			return err
+		}
+
+		// Setting Up Record iteration
 		recordStream := make(chan types.Record, 2*batchSize_)
 		numRecords := int64(0)
 		batch := uint64(0)
@@ -58,13 +66,33 @@ var ReadCmd = &cobra.Command{
 			}
 		}()
 
+		// Get Source Streams
+		streams, err := _driver.Discover()
+		if err != nil {
+			return err
+		}
+
+		streamsMap := types.StreamsToMap(streams...)
+
+		// Validating Streams and attaching State
 		selectedStreams := []string{}
 		validStreams := []Stream{}
 		_, _ = utils.ArrayContains(catalog.Streams, func(elem *types.ConfiguredStream) bool {
-			err := elem.SetupState(state)
-			if err != types.StateValid {
-				logger.Errorf("Skipping stream %s due to reason: %s", elem.ID(), err)
+			source, found := streamsMap[elem.ID()]
+			if !found {
+				logger.Warnf("Skipping; Configured Stream %s not found in source", elem.ID())
 				return false
+			}
+
+			err := elem.Validate(source)
+			if err != nil {
+				logger.Warnf("Skipping; Configured Stream %s found invalid due to reason: %s", elem.ID(), err)
+				return false
+			}
+
+			err = elem.SetupState(state)
+			if err != nil {
+				logger.Warnf("failed to set stream[%s] state due to reason: %s", elem.ID(), err)
 			}
 
 			selectedStreams = append(selectedStreams, elem.ID())
@@ -73,12 +101,8 @@ var ReadCmd = &cobra.Command{
 		})
 		logger.Infof("Valid selected streams are %s", strings.Join(selectedStreams, ", "))
 
-		for _, stream := range catalog.Streams {
-			if stream.Namespace() != "" {
-				logger.Infof("Reading stream %s[%s]", stream.Name(), stream.Namespace())
-			} else {
-				logger.Infof("Reading stream %s", stream.Name())
-			}
+		for _, stream := range validStreams {
+			logger.Infof("Reading stream %s", stream.ID())
 
 			streamStartTime := time.Now()
 			err := _driver.Read(stream, recordStream)
