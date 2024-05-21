@@ -4,36 +4,35 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/apache/arrow/go/v16/arrow"
 	"github.com/apache/arrow/go/v16/arrow/array"
 	"github.com/apache/arrow/go/v16/arrow/memory"
 	"github.com/cloudquery/plugin-sdk/v4/scalar"
-	"github.com/piyushsingariya/shift/pkg/waljs/internal/schemas"
+	"github.com/piyushsingariya/shift/protocol"
+	"github.com/piyushsingariya/shift/types"
 )
 
 type ChangeFilter struct {
-	tablesWhiteList map[string]*arrow.Schema
-	schemaWhiteList string
+	tables *types.Set[*arrow.Schema]
 }
 
 type Filtered func(change Wal2JsonChanges)
 
-func NewChangeFilter(tableSchemas []schemas.DataTableSchema, schema string) ChangeFilter {
-	tablesMap := map[string]*arrow.Schema{}
-	for _, table := range tableSchemas {
-		tablesMap[strings.Split(table.TableName, ".")[1]] = table.Schema
+func NewChangeFilter(streams ...protocol.Stream) ChangeFilter {
+	filter := ChangeFilter{
+		tables: types.NewSet[*arrow.Schema](),
 	}
 
-	return ChangeFilter{
-		tablesWhiteList: tablesMap,
-		schemaWhiteList: schema,
+	for _, stream := range streams {
+		filter.tables.Insert(stream.Schema().ToArrow())
 	}
+
+	return filter
 }
 
 func (c ChangeFilter) FilterChange(lsn string, change []byte, OnFiltered Filtered) {
-	var changes WallMessage
+	var changes WALMessage
 	if err := json.NewDecoder(bytes.NewReader(change)).Decode(&changes); err != nil {
 		panic(fmt.Errorf("cant parse change from database to filter it %v", err))
 	}
@@ -46,9 +45,6 @@ func (c ChangeFilter) FilterChange(lsn string, change []byte, OnFiltered Filtere
 		var filteredChanges = Wal2JsonChanges{
 			Lsn:     lsn,
 			Changes: []Wal2JsonChange{},
-		}
-		if ch.Schema != c.schemaWhiteList {
-			continue
 		}
 
 		var (

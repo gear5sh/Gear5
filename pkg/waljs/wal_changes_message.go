@@ -1,6 +1,6 @@
 package waljs
 
-type WallMessage struct {
+type WALMessage struct {
 	Change []struct {
 		Kind         string        `json:"kind"`
 		Schema       string        `json:"schema"`
