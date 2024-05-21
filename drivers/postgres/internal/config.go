@@ -55,6 +55,24 @@ type Config struct {
 	// required=true
 	// )
 	SSLConfiguration *utils.SSLConfig `json:"ssl"`
+
+	// Configures how data is extracted from the database.
+	//
+	// @jsonschema(
+	// required=true,
+	// oneOf=["Standard","CDC"]
+	// )
+	UpdateMethod interface{} `json:"update_method"`
+}
+
+// Standard Sync
+type Standard struct {
+}
+
+// Capture Write Ahead Logs
+type CDC struct {
+	// A plugin logical replication slot. Read about replication slots.
+	ReplicationSlot string `json:"replication_slot"`
 }
 
 func (c *Config) Validate() error {

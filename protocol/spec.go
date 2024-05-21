@@ -24,7 +24,7 @@ var SpecCmd = &cobra.Command{
 			config := _rawConnector.Spec()
 			schemaInMap := make(map[string]interface{})
 
-			schema, err := jsonschema.ToJSONSchema(config)
+			schema, err := jsonschema.Reflect(config)
 			if err != nil {
 				return err
 			}
