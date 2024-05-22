@@ -41,13 +41,6 @@ var RootCmd = &cobra.Command{
 			}
 		}
 
-		if state_ != "" {
-			err := utils.Unmarshal(utils.ReadFile(state_), &state)
-			if err != nil {
-				return fmt.Errorf("failed to unmarshal state file: %s", err)
-			}
-		}
-
 		// if isDriver {
 		// 	if err := _driver.Setup(utils.ReadFile(config_), base.NewDriver(catalog, state)); err != nil {
 		// 		return err
@@ -96,9 +89,6 @@ func getAvailableCommands() []*cobra.Command {
 }
 
 func init() {
-	state = &types.State{}
-	catalog = &types.Catalog{}
-
 	driverCommands = append(driverCommands, SpecCmd, CheckCmd, DiscoverCmd, ReadCmd)
 	adapterCommands = append(adapterCommands, SpecCmd, CheckCmd, DiscoverCmd, WriteCmd)
 

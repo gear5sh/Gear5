@@ -9,10 +9,11 @@ import (
 )
 
 type Config struct {
-	ChangeTables               *types.Set[protocol.Stream]
+	Tables                     *types.Set[protocol.Stream]
 	FullSyncTables             *types.Set[protocol.Stream] // full sync tables must be a subset of ChangeTables
 	Connection                 url.URL
 	ReplicationSlotName        string
+	InitialWaitTime            int
 	SnapshotMemorySafetyFactor float64
 	TLSConfig                  *tls.Config
 	State                      *WALState

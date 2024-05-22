@@ -9,6 +9,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/piyushsingariya/shift/drivers/base"
 	"github.com/piyushsingariya/shift/logger"
+	"github.com/piyushsingariya/shift/pkg/waljs"
 	"github.com/piyushsingariya/shift/protocol"
 	"github.com/piyushsingariya/shift/types"
 	"github.com/piyushsingariya/shift/utils"
@@ -22,6 +23,7 @@ type Postgres struct {
 	config      *Config // postgres driver connection config
 	cdcEnabled  bool
 	cdcConfig   CDC
+	cdcState    *waljs.WALState
 }
 
 func (p *Postgres) Setup(config any, base *base.Driver) error {
