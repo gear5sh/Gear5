@@ -21,6 +21,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/klauspost/compress v1.17.7 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
+	github.com/mitchellh/hashstructure v1.1.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/xitongsys/parquet-go v1.6.2 // indirect
 	golang.org/x/crypto v0.22.0 // indirect

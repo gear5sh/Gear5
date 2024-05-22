@@ -27,6 +27,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/joomcode/errorx v1.1.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
+	github.com/mitchellh/hashstructure v1.1.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/cobra v1.8.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect

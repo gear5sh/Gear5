@@ -10,22 +10,22 @@ import (
 	"github.com/apache/arrow/go/v16/arrow/memory"
 	"github.com/cloudquery/plugin-sdk/v4/scalar"
 	"github.com/piyushsingariya/shift/protocol"
-	"github.com/piyushsingariya/shift/types"
+	"github.com/piyushsingariya/shift/utils"
 )
 
 type ChangeFilter struct {
-	tables *types.Set[*arrow.Schema]
+	tables map[string]*arrow.Schema
 }
 
 type Filtered func(change Wal2JsonChanges)
 
 func NewChangeFilter(streams ...protocol.Stream) ChangeFilter {
 	filter := ChangeFilter{
-		tables: types.NewSet[*arrow.Schema](),
+		tables: make(map[string]*arrow.Schema),
 	}
 
 	for _, stream := range streams {
-		filter.tables.Insert(stream.Schema().ToArrow())
+		filter.tables[stream.ID()] = stream.Schema().ToArrow()
 	}
 
 	return filter
@@ -47,16 +47,12 @@ func (c ChangeFilter) FilterChange(lsn string, change []byte, OnFiltered Filtere
 			Changes: []Wal2JsonChange{},
 		}
 
-		var (
-			arrowTableSchema *arrow.Schema
-			tableExist       bool
-		)
-
-		if arrowTableSchema, tableExist = c.tablesWhiteList[ch.Table]; !tableExist {
+		schema, exists := c.tables[utils.StreamIdentifier(ch.Table, ch.Schema)]
+		if !exists {
 			continue
 		}
 
-		builder := array.NewRecordBuilder(memory.DefaultAllocator, arrowTableSchema)
+		builder := array.NewRecordBuilder(memory.DefaultAllocator, schema)
 		changesMap := map[string]interface{}{}
 		if ch.Kind == "delete" {
 			for i, changedValue := range ch.Oldkeys.Keyvalues {
@@ -68,11 +64,10 @@ func (c ChangeFilter) FilterChange(lsn string, change []byte, OnFiltered Filtere
 			}
 		}
 
-		arrowSchema := c.tablesWhiteList[ch.Table]
-		for i, arrowField := range arrowSchema.Fields() {
+		for i, arrowField := range schema.Fields() {
 			fieldName := arrowField.Name
 			value := changesMap[fieldName]
-			s := scalar.NewScalar(arrowSchema.Field(i).Type)
+			s := scalar.NewScalar(schema.Field(i).Type)
 			if err := s.Set(value); err != nil {
 				panic(fmt.Errorf("error setting value for column %s: %w", arrowField.Name, err))
 			}

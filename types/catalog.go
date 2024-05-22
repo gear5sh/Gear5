@@ -85,8 +85,9 @@ func (t *TypeSchema) ToArrow() *arrow.Schema {
 
 // Property is a dto for catalog properties representation
 type Property struct {
-	Type   []DataType `json:"type,omitempty"`
-	Format string     `json:"format,omitempty"`
+	Type []DataType `json:"type,omitempty"`
+	// TODO: Decide to keep in the Protocol Or Not
+	// Format string     `json:"format,omitempty"`
 }
 
 func (p *Property) DataType() DataType {
