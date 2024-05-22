@@ -2,6 +2,7 @@ package driver
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/lib/pq"
@@ -9,6 +10,7 @@ import (
 )
 
 type Config struct {
+	Connection *url.URL `json:"-"`
 	// Hostname of the database.
 	//
 	// @jsonschema(
@@ -95,12 +97,14 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("ssl config not set")
 	}
 
-	return c.SSLConfiguration.Validate()
-}
-
-func (c *Config) ToConnectionString() string {
 	// Construct the connection string
-	connStr := fmt.Sprintf("host=%s port=%d dbname=%s user=%s password=%s", c.Host, c.Port, c.Database, c.Username, c.Password)
+	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", c.Username, c.Password, c.Host, c.Port, c.Database)
+	parsed, err := url.Parse(connStr)
+	if err != nil {
+		return err
+	}
+
+	query := parsed.Query()
 
 	// Set additional connection parameters if available
 	if len(c.JDBCURLParams) > 0 {
@@ -108,30 +112,33 @@ func (c *Config) ToConnectionString() string {
 		for k, v := range c.JDBCURLParams {
 			params += fmt.Sprintf("%s=%s ", pq.QuoteIdentifier(k), pq.QuoteLiteral(v))
 		}
-		connStr += " options='" + params + "'"
+
+		query.Add("options", params)
 	}
 
 	// Enable SSL if SSLConfig is provided
 	if c.SSLConfiguration != nil {
 		sslmode := string(c.SSLConfiguration.Mode)
 		if sslmode != "" {
-			connStr += " sslmode=" + sslmode
+			query.Add("sslmode", sslmode)
 		}
 
 		if c.SSLConfiguration.ServerCA != "" {
-			connStr += " sslrootcert=" + c.SSLConfiguration.ServerCA
+			query.Add("sslrootcert", c.SSLConfiguration.ServerCA)
 		}
 
 		if c.SSLConfiguration.ClientCert != "" {
-			connStr += " sslcert=" + c.SSLConfiguration.ClientCert
+			query.Add("sslcert", c.SSLConfiguration.ClientCert)
 		}
 
 		if c.SSLConfiguration.ClientKey != "" {
-			connStr += " sslkey=" + c.SSLConfiguration.ClientKey
+			query.Add("sslkey", c.SSLConfiguration.ClientKey)
 		}
 	}
+	parsed.RawQuery = query.Encode()
+	c.Connection = parsed
 
-	return connStr
+	return c.SSLConfiguration.Validate()
 }
 
 type Table struct {

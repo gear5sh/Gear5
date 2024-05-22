@@ -48,6 +48,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pglogrepl v0.0.0-20240307033717-828fbfe908e9
 	github.com/joomcode/errorx v1.1.0
+	github.com/mitchellh/hashstructure v1.1.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/tools v0.20.0

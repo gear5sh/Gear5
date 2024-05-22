@@ -17,7 +17,6 @@ import (
 type Postgres struct {
 	*base.Driver
 
-	batchSize   int64
 	client      *sqlx.DB
 	accessToken string
 	config      *Config // postgres driver connection config
@@ -53,7 +52,7 @@ func (p *Postgres) Setup(config any, base *base.Driver) error {
 		logger.Info("Standard Replication is selected")
 	}
 
-	db, err := sqlx.Open("pgx", cfg.ToConnectionString())
+	db, err := sqlx.Open("pgx", cfg.Connection.String())
 	if err != nil {
 		return fmt.Errorf("failed to connect database: %s", err)
 	}
@@ -111,11 +110,6 @@ func (p *Postgres) Read(stream protocol.Stream, channel chan<- types.Record) err
 		// read incrementally
 		return incrementalSync(p.client, stream, channel)
 	}
-
-	return nil
-}
-
-func (p *Postgres) GroupRead(channel chan<- types.Record, streams ...protocol.Stream) error {
 
 	return nil
 }

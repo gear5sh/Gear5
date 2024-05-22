@@ -149,6 +149,10 @@ func (s *ConfiguredStream) Validate(source *Stream) error {
 		return fmt.Errorf("invalid cursor field [%s]; valid are %v", s.SyncMode, s.SupportedSyncModes())
 	}
 
+	if !source.SourceDefinedPrimaryKey.ProperSubsetOf(s.Stream.SourceDefinedPrimaryKey) {
+		return fmt.Errorf("differnce found with primary keys: %v", source.SourceDefinedPrimaryKey.Difference(s.Stream.SourceDefinedPrimaryKey).Array())
+	}
+
 	return nil
 }
 
@@ -206,9 +210,9 @@ func (s *Stream) UpsertField(column string, typ DataType, nullable bool) {
 		Type: []DataType{typ},
 	}
 
-	if typ == TIMESTAMP {
-		property.Format = "date-time"
-	}
+	// if typ == TIMESTAMP {
+	// 	property.Format = "date-time"
+	// }
 
 	if nullable {
 		property.Type = append(property.Type, NULL)
