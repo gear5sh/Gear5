@@ -36,9 +36,9 @@ type Socket struct {
 	lsnrestart                 pglogrepl.LSN
 }
 
-func NewConnection(config Config) (*Socket, error) {
-	if !config.FullSyncTables.SubsetOf(config.ChangeTables) {
-		return nil, fmt.Errorf("mismatch: full sync tables are not subset of change tables")
+func NewConnection(config *Config) (*Socket, error) {
+	if !config.FullSyncTables.SubsetOf(config.Tables) {
+		return nil, fmt.Errorf("mismatch: full sync tables are not subset of all tables")
 	}
 
 	conn, err := pgx.Connect(context.Background(), config.Connection.String())
@@ -67,12 +67,13 @@ func NewConnection(config Config) (*Socket, error) {
 	}
 
 	connection := &Socket{
-		Config:       &config,
-		pgConn:       dbConn,
-		pgxConn:      conn,
-		messages:     make(chan Wal2JsonChanges),
-		err:          make(chan error),
-		changeFilter: NewChangeFilter(config.ChangeTables.Array()...),
+		Config:                config,
+		standbyMessageTimeout: time.Second,
+		pgConn:                dbConn,
+		pgxConn:               conn,
+		messages:              make(chan Wal2JsonChanges),
+		err:                   make(chan error),
+		changeFilter:          NewChangeFilter(config.Tables.Array()...),
 	}
 
 	sysident, err := pglogrepl.IdentifySystem(context.Background(), connection.pgConn)
@@ -105,9 +106,9 @@ func NewConnection(config Config) (*Socket, error) {
 	connection.lsnrestart = lsnrestart
 	connection.clientXLogPos = lsnrestart
 
-	connection.standbyMessageTimeout = time.Second * 10
-	connection.nextStandbyMessageDeadline = time.Now().Add(connection.standbyMessageTimeout)
-	connection.ctx, connection.cancel = context.WithCancel(context.Background())
+	// Setup initial wait timeout to be the next message deadline to wait for a change log
+	connection.nextStandbyMessageDeadline = time.Now().Add(time.Second*time.Duration(config.InitialWaitTime) + time.Second)
+	connection.ctx, connection.cancel = context.WithTimeout(context.TODO(), time.Second*time.Duration(config.InitialWaitTime))
 
 	go connection.start()
 	return connection, err
@@ -123,93 +124,109 @@ func (s *Socket) startLr() error {
 	return nil
 }
 
-// Confirm that Logs has been changed
-func (s *Socket) AcknowledgeLSN(lsn string) error {
-	parsed, err := pglogrepl.ParseLSN(lsn)
-	if err != nil {
-		return fmt.Errorf("failed to parse LSN for Acknowledge: %s", err)
-	}
-
-	err = pglogrepl.SendStandbyStatusUpdate(context.Background(), s.pgConn, pglogrepl.StandbyStatusUpdate{
-		WALWritePosition: s.clientXLogPos,
-		WALFlushPosition: s.clientXLogPos,
+// Confirm that Logs has been recorded
+func (s *Socket) AcknowledgeLSN(lsn pglogrepl.LSN) error {
+	err := pglogrepl.SendStandbyStatusUpdate(context.Background(), s.pgConn, pglogrepl.StandbyStatusUpdate{
+		WALWritePosition: lsn,
+		WALFlushPosition: lsn,
 	})
 	if err != nil {
 		return fmt.Errorf("SendStandbyStatusUpdate failed: %s", err)
 	}
 
-	s.clientXLogPos = parsed
-	logger.Debugf("Sent Standby status message at LSN#%s", s.clientXLogPos.String())
-	s.nextStandbyMessageDeadline = time.Now().Add(s.standbyMessageTimeout)
+	// Update local pointer and state
+	s.clientXLogPos = lsn
+	s.Config.State.LSN = lsn.String()
 
+	logger.Debugf("Sent Standby status message at LSN#%s", s.clientXLogPos.String())
 	return nil
 }
 
+func (s *Socket) increaseDeadline() {
+	s.nextStandbyMessageDeadline = time.Now().Add(s.standbyMessageTimeout)
+}
+
+func (s *Socket) deadlineCrossed() bool {
+	return time.Now().After(s.nextStandbyMessageDeadline)
+}
+
 func (s *Socket) streamMessagesAsync() {
+	var cachedLSN *pglogrepl.LSN
+
 	for {
 		select {
 		case <-s.ctx.Done():
+			//  Initial Wait timeout is triggered
 			s.cancel()
+			s.err <- nil
 			return
 		default:
-			if time.Now().After(s.nextStandbyMessageDeadline) {
-				err := pglogrepl.SendStandbyStatusUpdate(context.Background(), s.pgConn, pglogrepl.StandbyStatusUpdate{
-					WALWritePosition: s.clientXLogPos,
-				})
+			func() {
+				if s.deadlineCrossed() {
+					if cachedLSN != nil {
+						err := s.AcknowledgeLSN(*cachedLSN)
+						if err != nil {
+							s.err <- err
+							return
+						}
+					}
 
-				if err != nil {
-					s.err <- fmt.Errorf("SendStandbyStatusUpdate failed: %s", err)
-					return
-				}
-				logger.Debugf("Sent Standby status message at LSN#%s", s.clientXLogPos.String())
-				s.nextStandbyMessageDeadline = time.Now().Add(s.standbyMessageTimeout)
-			}
-
-			ctx, cancel := context.WithDeadline(context.Background(), s.nextStandbyMessageDeadline)
-			rawMsg, err := s.pgConn.ReceiveMessage(ctx)
-			s.cancel = cancel
-			if err != nil {
-				if pgconn.Timeout(err) {
-					continue
-				}
-				s.err <- fmt.Errorf("failed to receive messages from PostgreSQL %s", err)
-				return
-			}
-
-			if errMsg, ok := rawMsg.(*pgproto3.ErrorResponse); ok {
-				s.err <- fmt.Errorf("received broken Postgres WAL. Error: %+v", errMsg)
-				return
-			}
-
-			msg, ok := rawMsg.(*pgproto3.CopyData)
-			if !ok {
-				logger.Warnf("Received unexpected message: %T\n", rawMsg)
-				continue
-			}
-
-			switch msg.Data[0] {
-			case pglogrepl.PrimaryKeepaliveMessageByteID:
-				pkm, err := pglogrepl.ParsePrimaryKeepaliveMessage(msg.Data[1:])
-				if err != nil {
-					s.err <- fmt.Errorf("ParsePrimaryKeepaliveMessage failed: %s", err)
+					s.err <- nil
 					return
 				}
 
-				if pkm.ReplyRequested {
-					s.nextStandbyMessageDeadline = time.Time{}
-				}
+				ctx, cancel := context.WithDeadline(context.Background(), s.nextStandbyMessageDeadline)
+				defer cancel()
 
-			case pglogrepl.XLogDataByteID:
-				xld, err := pglogrepl.ParseXLogData(msg.Data[1:])
+				rawMsg, err := s.pgConn.ReceiveMessage(ctx)
 				if err != nil {
-					s.err <- fmt.Errorf("ParseXLogData failed: %s", err)
+					if pgconn.Timeout(err) {
+						return
+					}
+					s.err <- fmt.Errorf("failed to receive messages from PostgreSQL %s", err)
 					return
 				}
-				clientXLogPos := xld.WALStart + pglogrepl.LSN(len(xld.WALData))
-				s.changeFilter.FilterChange(clientXLogPos.String(), xld.WALData, func(change Wal2JsonChanges) {
-					s.messages <- change
-				})
-			}
+
+				if errMsg, ok := rawMsg.(*pgproto3.ErrorResponse); ok {
+					s.err <- fmt.Errorf("received broken Postgres WAL. Error: %+v", errMsg)
+					return
+				}
+
+				msg, ok := rawMsg.(*pgproto3.CopyData)
+				if !ok {
+					logger.Warnf("Received unexpected message: %T\n", rawMsg)
+					return
+				}
+
+				switch msg.Data[0] {
+				case pglogrepl.PrimaryKeepaliveMessageByteID:
+					pkm, err := pglogrepl.ParsePrimaryKeepaliveMessage(msg.Data[1:])
+					if err != nil {
+						s.err <- fmt.Errorf("ParsePrimaryKeepaliveMessage failed: %s", err)
+						return
+					}
+
+					if pkm.ReplyRequested {
+						s.nextStandbyMessageDeadline = time.Time{}
+					}
+
+				case pglogrepl.XLogDataByteID:
+					xld, err := pglogrepl.ParseXLogData(msg.Data[1:])
+					if err != nil {
+						s.err <- fmt.Errorf("ParseXLogData failed: %s", err)
+						return
+					}
+
+					// Cache LSN here to be used during acknowledgement
+					clientXLogPos := xld.WALStart + pglogrepl.LSN(len(xld.WALData))
+					cachedLSN = &clientXLogPos
+					s.changeFilter.FilterChange(clientXLogPos.String(), xld.WALData, func(change Wal2JsonChanges) {
+						s.messages <- change
+					})
+				}
+
+				s.increaseDeadline()
+			}()
 		}
 	}
 }

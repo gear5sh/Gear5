@@ -20,7 +20,7 @@ var DiscoverCmd = &cobra.Command{
 		return utils.CheckIfFilesExists(config_)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := _driver.Setup(utils.ReadFile(config_), base.NewDriver(nil))
+		err := _driver.Setup(utils.ReadFile(config_), base.NewDriver())
 		if err != nil {
 			logger.Fatal(err)
 		}

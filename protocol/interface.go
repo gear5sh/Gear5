@@ -23,6 +23,8 @@ type Driver interface {
 // Bulk Read Driver
 type BulkDriver interface {
 	GroupRead(channel chan<- types.Record, streams ...Stream) error
+	GlobalState() any
+	StateType() types.StateType
 }
 
 type Adapter interface {

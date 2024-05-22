@@ -23,16 +23,33 @@ var ReadCmd = &cobra.Command{
 		}
 
 		if state_ != "" {
-			return utils.CheckIfFilesExists(state_)
+			err := utils.CheckIfFilesExists(state_)
+			if err != nil {
+				return err
+			}
+
+			state = &types.State{}
+
+			err = utils.Unmarshal(utils.ReadFile(state_), &state)
+			if err != nil {
+				return fmt.Errorf("failed to unmarshal state file: %s", err)
+			}
 		}
 
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Driver Setup
-		err := _driver.Setup(utils.ReadFile(config_), base.NewDriver(state))
+		err := _driver.Setup(utils.ReadFile(config_), base.NewDriver())
 		if err != nil {
 			return err
+		}
+
+		// Setup default state
+		if state == nil {
+			state = &types.State{
+				Type: types.StreamType,
+			}
 		}
 
 		// Setting Record iteration
@@ -109,6 +126,10 @@ var ReadCmd = &cobra.Command{
 			if !yes {
 				return fmt.Errorf("%s does not implement BulkDriver", _driver.Type())
 			}
+
+			// Update the state type and Global State from Connector
+			state.Type = driver.StateType()
+			state.Global = driver.GlobalState()
 
 			err := driver.GroupRead(recordStream, validStreams...)
 			if err != nil {

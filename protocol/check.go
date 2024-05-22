@@ -35,7 +35,7 @@ var CheckCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		err := func() error {
-			err := _rawConnector.Setup(utils.ReadFile(config_), base.NewDriver(nil))
+			err := _rawConnector.Setup(utils.ReadFile(config_), base.NewDriver())
 			if err != nil {
 				return err
 			}
