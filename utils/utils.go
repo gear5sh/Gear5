@@ -111,30 +111,28 @@ func CheckIfFilesExists(files ...string) error {
 	return nil
 }
 
-func ReadFile(file string) any {
-	content, _ := ReadFileE(file)
+// func ReadFile(file string) any {
+// 	content, _ := ReadFileE(file)
 
-	return content
-}
+// 	return content
+// }
 
-func ReadFileE(file string) (interface{}, error) {
+func UnmarshalFile(file string, dest any) error {
 	if err := CheckIfFilesExists(file); err != nil {
-		return nil, err
+		return err
 	}
 
 	data, err := os.ReadFile(file)
 	if err != nil {
-		return nil, fmt.Errorf("file not found : %s", err)
+		return fmt.Errorf("file not found : %s", err)
 	}
 
-	var content interface{}
-
-	err = yaml.Unmarshal(data, &content)
+	err = yaml.Unmarshal(data, dest)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return content, nil
+	return nil
 }
 
 func IsOfType(object interface{}, decidingKey string) (bool, error) {

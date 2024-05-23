@@ -97,8 +97,8 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("ssl config not set")
 	}
 
-	// Construct the connection string
-	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", c.Username, c.Password, c.Host, c.Port, c.Database)
+	// construct the connection string
+	connStr := fmt.Sprintf("postgres://%s:%s@%s:%d/%s", c.Username, c.Password, c.Host, c.Port, c.Database)
 	parsed, err := url.Parse(connStr)
 	if err != nil {
 		return err

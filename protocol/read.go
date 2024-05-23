@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/piyushsingariya/shift/drivers/base"
 	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/types"
 	"github.com/piyushsingariya/shift/utils"
@@ -18,29 +17,36 @@ var ReadCmd = &cobra.Command{
 	Use:   "read",
 	Short: "Shift read command",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		if err := utils.CheckIfFilesExists(config_, catalog_); err != nil {
-			return err
+		if config_ == "" {
+			return fmt.Errorf("--config not passed")
+		} else {
+			if err := utils.UnmarshalFile(config_, _rawConnector.Config()); err != nil {
+				return err
+			}
+		}
+
+		if catalog_ != "" {
+			catalog = &types.Catalog{}
+			if err := utils.UnmarshalFile(catalog_, &catalog); err != nil {
+				return err
+			}
 		}
 
 		if state_ != "" {
-			err := utils.CheckIfFilesExists(state_)
-			if err != nil {
-				return err
-			}
-
 			state = &types.State{}
-
-			err = utils.Unmarshal(utils.ReadFile(state_), &state)
-			if err != nil {
-				return fmt.Errorf("failed to unmarshal state file: %s", err)
+			if err := utils.UnmarshalFile(state_, &state); err != nil {
+				return err
 			}
 		}
 
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// base driver setup
+		_driver.SetupBase()
+
 		// Driver Setup
-		err := _driver.Setup(utils.ReadFile(config_), base.NewDriver())
+		err := _driver.Setup()
 		if err != nil {
 			return err
 		}

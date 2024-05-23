@@ -3,7 +3,6 @@ package protocol
 import (
 	"sync"
 
-	"github.com/piyushsingariya/shift/drivers/base"
 	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/safego"
 	"github.com/piyushsingariya/shift/types"
@@ -20,7 +19,7 @@ var DiscoverCmd = &cobra.Command{
 		return utils.CheckIfFilesExists(config_)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := _driver.Setup(utils.ReadFile(config_), base.NewDriver())
+		err := _driver.Setup()
 		if err != nil {
 			logger.Fatal(err)
 		}

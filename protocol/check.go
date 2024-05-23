@@ -3,8 +3,8 @@ package protocol
 import (
 	"fmt"
 
-	"github.com/piyushsingariya/shift/drivers/base"
 	"github.com/piyushsingariya/shift/logger"
+	"github.com/piyushsingariya/shift/types"
 	"github.com/piyushsingariya/shift/utils"
 	"github.com/spf13/cobra"
 )
@@ -15,16 +15,19 @@ var CheckCmd = &cobra.Command{
 	Short: "Shift spec command",
 	PreRun: func(cmd *cobra.Command, args []string) {
 		err := func() error {
-			if config == "" {
+			if config_ == "" {
 				return fmt.Errorf("--config not passed")
-			}
-
-			if err := utils.CheckIfFilesExists(config_); err != nil {
-				return err
+			} else {
+				if err := utils.UnmarshalFile(config_, _rawConnector.Config()); err != nil {
+					return err
+				}
 			}
 
 			if catalog_ != "" {
-				return utils.CheckIfFilesExists(catalog_)
+				catalog = &types.Catalog{}
+				if err := utils.UnmarshalFile(catalog_, &catalog); err != nil {
+					return err
+				}
 			}
 
 			return nil
@@ -35,15 +38,60 @@ var CheckCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		err := func() error {
-			err := _rawConnector.Setup(utils.ReadFile(config_), base.NewDriver())
-			if err != nil {
-				return err
+			// setup base
+			if isDriver {
+				_driver.SetupBase()
 			}
 
-			// TODO: Validate Streams
-			// Check if the streams are valid
+			// Catalog has been passed setup and is driver; Connector should be setup
+			if isDriver && catalog != nil {
+				err := _rawConnector.Setup()
+				if err != nil {
+					return err
+				}
 
-			return _rawConnector.Check()
+				// Get Source Streams
+				streams, err := _driver.Discover()
+				if err != nil {
+					return err
+				}
+
+				streamsMap := types.StreamsToMap(streams...)
+
+				// Validating Streams
+				invalidStreams := []string{}
+				missingStreams := []string{}
+				_, _ = utils.ArrayContains(catalog.Streams, func(stream *types.ConfiguredStream) bool {
+					source, found := streamsMap[stream.ID()]
+					if !found {
+						missingStreams = append(missingStreams, stream.ID())
+						return false
+					}
+
+					err := stream.Validate(source)
+					if err != nil {
+						invalidStreams = append(invalidStreams, stream.ID())
+					}
+
+					return false
+				})
+
+				if len(invalidStreams) > 0 && len(missingStreams) > 0 {
+					return fmt.Errorf("found missing streams: %v and invalid streams: %v", missingStreams, invalidStreams)
+				} else if len(invalidStreams) > 0 {
+					return fmt.Errorf("found invalid streams: %v", invalidStreams)
+				} else if len(missingStreams) > 0 {
+					return fmt.Errorf("found missing streams: %v", missingStreams)
+				}
+			} else {
+				// Only perform checks
+				err := _rawConnector.Check()
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
 		}()
 
 		// success
