@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
@@ -28,19 +29,18 @@ var DiscoverCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		_driver.SetupBase()
 		err := _driver.Setup()
 		if err != nil {
-			logger.Fatal(err)
+			return err
 		}
 
 		streams, err := _driver.Discover()
 		if err != nil {
-			logger.Fatal(err)
+			return err
 		}
 
 		if len(streams) == 0 {
-			logger.Fatal("no streams found in connector")
+			return errors.New("no streams found in connector")
 		}
 
 		recordsPerStream := 100

@@ -153,7 +153,7 @@ func (p *Postgres) loadStreams() error {
 			if val, found := pgTypeToDataTypes[*column.DataType]; found {
 				datatype = val
 			} else {
-				logger.Warnf("failed to get respective type in datatypes for column: %s[%s]", column.Name, column.DataType)
+				logger.Warnf("failed to get respective type in datatypes for column: %s[%s]", column.Name, *column.DataType)
 			}
 
 			stream.UpsertField(column.Name, datatype, strings.EqualFold("yes", *column.IsNullable))

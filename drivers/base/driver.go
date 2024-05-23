@@ -9,12 +9,10 @@ type Driver struct {
 	GroupRead     bool                     // Used in CDC mode
 }
 
-func (d *Driver) SetupBase() {
-	if d == nil {
-		d = &Driver{}
+func NewBase() *Driver {
+	return &Driver{
+		SourceStreams: make(map[string]*types.Stream),
 	}
-
-	d.SourceStreams = make(map[string]*types.Stream)
 }
 
 func (d *Driver) BulkRead() bool {

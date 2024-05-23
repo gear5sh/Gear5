@@ -32,25 +32,6 @@ var (
 var RootCmd = &cobra.Command{
 	Use:   "shift",
 	Short: "Shift is a data pipeline connectors",
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		// TODO: Add config check
-		if catalog_ != "" {
-			if err := utils.UnmarshalFile(catalog_, catalog); err != nil {
-				return err
-			}
-		}
-
-		// if isDriver {
-		// 	if err := _driver.Setup(utils.ReadFile(config_), base.NewDriver(catalog, state)); err != nil {
-		// 		return err
-		// 	}
-
-		// 	return nil
-		// }
-
-		// return _adapter.Setup(utils.ReadFile(config_), base.NewDriver(catalog, state))
-		return nil
-	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
 			return cmd.Help()

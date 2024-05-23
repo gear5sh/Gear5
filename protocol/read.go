@@ -42,9 +42,6 @@ var ReadCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// base driver setup
-		_driver.SetupBase()
-
 		// Driver Setup
 		err := _driver.Setup()
 		if err != nil {

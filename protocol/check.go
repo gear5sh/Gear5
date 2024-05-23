@@ -33,11 +33,6 @@ var CheckCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		err := func() error {
-			// setup base
-			if isDriver {
-				_driver.SetupBase()
-			}
-
 			// Catalog has been passed setup and is driver; Connector should be setup
 			if isDriver && catalog != nil {
 				err := _rawConnector.Setup()
