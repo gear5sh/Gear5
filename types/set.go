@@ -85,10 +85,6 @@ func (this *Set[T]) Difference(set *Set[T]) *Set[T] {
 
 // Call f for each item in the set
 func (this *Set[T]) Range(f func(T)) {
-	if this == nil {
-		this = NewSet[T]()
-	}
-
 	for _, value := range this.storage {
 		f(value)
 	}
@@ -96,20 +92,12 @@ func (this *Set[T]) Range(f func(T)) {
 
 // Test to see whether or not the element is in the set
 func (this *Set[T]) Exists(element T) bool {
-	if this == nil {
-		this = NewSet[T]()
-	}
-
 	_, exists := this.hash[this.Hash(element)]
 	return exists
 }
 
 // Add an element to the set
 func (this *Set[T]) Insert(element T) {
-	if this == nil {
-		this = NewSet[T]()
-	}
-
 	hash := this.Hash(element)
 
 	this.hash[hash] = nothing{}
@@ -131,10 +119,6 @@ func (this *Set[T]) Intersection(set *Set[T]) *Set[T] {
 
 // Return the number of items in the set
 func (this *Set[T]) Len() int {
-	if this == nil {
-		this = NewSet[T]()
-	}
-
 	return len(this.hash)
 }
 
@@ -199,8 +183,6 @@ func (this *Set[T]) Array() []T {
 }
 
 func (this *Set[T]) UnmarshalJSON(data []byte) error {
-	*this = *NewSet[T]()
-
 	arr := []T{}
 	err := json.Unmarshal(data, &arr)
 	if err != nil {

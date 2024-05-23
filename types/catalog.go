@@ -108,3 +108,17 @@ func (p *Property) Nullable() bool {
 
 	return found
 }
+
+func GetWrappedCatalog(streams []*Stream) *Catalog {
+	catalog := &Catalog{
+		Streams: []*ConfiguredStream{},
+	}
+
+	for _, stream := range streams {
+		catalog.Streams = append(catalog.Streams, &ConfiguredStream{
+			Stream: stream,
+		})
+	}
+
+	return catalog
+}
