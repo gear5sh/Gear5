@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/piyushsingariya/shift/logger"
@@ -15,10 +16,19 @@ import (
 var DiscoverCmd = &cobra.Command{
 	Use:   "discover",
 	Short: "Shift discover command",
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		return utils.CheckIfFilesExists(config_)
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if config_ == "" {
+			return fmt.Errorf("--config not passed")
+		} else {
+			if err := utils.UnmarshalFile(config_, _rawConnector.Config()); err != nil {
+				return err
+			}
+		}
+
+		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		_driver.SetupBase()
 		err := _driver.Setup()
 		if err != nil {
 			logger.Fatal(err)

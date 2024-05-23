@@ -64,7 +64,7 @@ type Config struct {
 	// required=true,
 	// oneOf=["Standard","CDC"]
 	// )
-	UpdateMethod any `json:"update_method"`
+	UpdateMethod interface{} `json:"update_method"`
 }
 
 // Standard Sync

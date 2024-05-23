@@ -2,6 +2,7 @@ package shift
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/piyushsingariya/shift/logger"
 	protocol "github.com/piyushsingariya/shift/protocol"
@@ -28,6 +29,8 @@ func RegisterDriver(driver protocol.Driver) {
 	if err != nil {
 		logger.Fatal(err)
 	}
+
+	os.Exit(0)
 }
 
 func RegisterAdapter(adapter protocol.Adapter) (*cobra.Command, error) {

@@ -14,7 +14,8 @@ type Connector interface {
 	//
 	// Note: Check shouldn't be called before Setup as they're composed at Connector level
 	Check() error
-	// Composition of Check
+	// Composition with Check
+	//
 	// Sets up connections, and perform checks; loads/setup stream as well
 	//
 	// Note: Check shouldn't be called before Setup as they're composed at Connector level

@@ -33,8 +33,8 @@ var SpecCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("failed to generate json schema for config: %s", err)
 			}
-			logger.LogSpec(schemaInMap)
 
+			logger.LogSpec(schemaInMap)
 		}
 
 		return nil
