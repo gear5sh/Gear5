@@ -8,8 +8,6 @@ type Connector interface {
 	// Setting up config reference in driver i.e. must be pointer
 	Config() any
 	Spec() any
-	// Sets up base driver
-	SetupBase()
 	// Sets up connections and perform checks; doesn't load Streams
 	//
 	// Note: Check shouldn't be called before Setup as they're composed at Connector level
