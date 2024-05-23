@@ -18,7 +18,6 @@ var (
 
 	catalog *types.Catalog
 	state   *types.State
-	config  any
 
 	isDriver        = false
 	driverCommands  = []*cobra.Command{}
@@ -36,8 +35,8 @@ var RootCmd = &cobra.Command{
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// TODO: Add config check
 		if catalog_ != "" {
-			if err := utils.Unmarshal(utils.ReadFile(catalog_), catalog); err != nil {
-				return fmt.Errorf("failed to unmarshal catalog: %s", err)
+			if err := utils.UnmarshalFile(catalog_, catalog); err != nil {
+				return err
 			}
 		}
 

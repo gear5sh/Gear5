@@ -26,25 +26,27 @@ type Postgres struct {
 	cdcState    *waljs.WALState
 }
 
-func (p *Postgres) Setup(config any, base *base.Driver) error {
-	p.Driver = base
+func (p *Postgres) Config() any {
+	p.config = &Config{}
 
-	cfg := Config{}
-	err := utils.Unmarshal(config, &cfg)
-	if err != nil {
-		return err
-	}
+	return p.config
+}
 
-	err = cfg.Validate()
+func (p *Postgres) Spec() any {
+	return Config{}
+}
+
+func (p *Postgres) Check() error {
+	err := p.config.Validate()
 	if err != nil {
 		return fmt.Errorf("failed to validate config: %s", err)
 	}
 
-	found, _ := utils.IsOfType(cfg.UpdateMethod, "replication_slot")
+	found, _ := utils.IsOfType(p.config.UpdateMethod, "replication_slot")
 	if found {
 		logger.Info("Found CDC Configuration")
 		cdc := &CDC{}
-		if err := utils.Unmarshal(cfg.UpdateMethod, cdc); err != nil {
+		if err := utils.Unmarshal(p.config.UpdateMethod, cdc); err != nil {
 			return err
 		}
 
@@ -54,7 +56,7 @@ func (p *Postgres) Setup(config any, base *base.Driver) error {
 		logger.Info("Standard Replication is selected")
 	}
 
-	db, err := sqlx.Open("pgx", cfg.Connection.String())
+	db, err := sqlx.Open("pgx", p.config.Connection.String())
 	if err != nil {
 		return fmt.Errorf("failed to connect database: %s", err)
 	}
@@ -69,7 +71,13 @@ func (p *Postgres) Setup(config any, base *base.Driver) error {
 
 	p.client = db.Unsafe()
 
-	p.config = &cfg
+	return nil
+}
+
+func (p *Postgres) Setup() error {
+	if err := p.Check(); err != nil {
+		return err
+	}
 
 	return p.loadStreams()
 }
@@ -81,14 +89,6 @@ func (p *Postgres) CloseConnection() {
 			logger.Error("failed to close connection with postgres: %s", err)
 		}
 	}
-}
-
-func (p *Postgres) Spec() any {
-	return Config{}
-}
-
-func (p *Postgres) Check() error {
-	return nil
 }
 
 func (p *Postgres) Discover() ([]*types.Stream, error) {

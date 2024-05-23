@@ -1,20 +1,33 @@
 package protocol
 
 import (
-	"github.com/piyushsingariya/shift/drivers/base"
 	"github.com/piyushsingariya/shift/types"
 )
 
 type Connector interface {
-	Setup(config any, base *base.Driver) error
+	// Setting up config reference in driver i.e. must be pointer
+	Config() any
 	Spec() any
+	// Sets up base driver
+	SetupBase()
+	// Sets up connections and perform checks; doesn't load Streams
+	//
+	// Note: Check shouldn't be called before Setup as they're composed at Connector level
 	Check() error
+	// Composition of Check
+	// Sets up connections, and perform checks; loads/setup stream as well
+	//
+	// Note: Check shouldn't be called before Setup as they're composed at Connector level
+	Setup() error
 
 	Type() string
 }
 
 type Driver interface {
 	Connector
+	// Discover returns cached streams
+	//
+	// TODO: Remove error return in future if not required
 	Discover() ([]*types.Stream, error)
 	Read(stream Stream, channel chan<- types.Record) error
 	BulkRead() bool
