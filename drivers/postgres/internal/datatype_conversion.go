@@ -32,6 +32,8 @@ var pgTypeToDataTypes = map[string]types.DataType{
 	"text":              types.STRING,
 	"varchar":           types.STRING,
 	"longvarchar":       types.STRING,
+	"name":              types.STRING,
+	"uuid":              types.STRING,
 
 	// date/time
 	"time":                        types.TIMESTAMP,

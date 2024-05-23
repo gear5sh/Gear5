@@ -35,8 +35,6 @@ func NewOffsetter[T types.Iterable](baseQuery string, batchSize int,
 		args:      args,
 	}
 
-	go setter.start()
-
 	return setter
 }
 
