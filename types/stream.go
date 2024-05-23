@@ -10,12 +10,12 @@ import (
 // Input/Processed object for Stream
 type ConfiguredStream struct {
 	Stream         *Stream      `json:"stream,omitempty"`
-	SyncMode       SyncMode     `json:"sync_mode,omitempty"`    // Mode being used for syncing data
-	CursorField    string       `json:"cursor_field,omitempty"` // Column being used as cursor; MUST NOT BE mutated
-	ExcludeColumns []string     `json:"exclude_columns"`        // TODO: Implement excluding columns from fetching
-	CursorValue    any          `json:"-"`                      // Cached initial state value
-	batchSize      int64        `json:"-"`                      // Batch size for syncing data
-	state          *StreamState `json:"-"`                      // in-memory state copy for individual stream
+	SyncMode       SyncMode     `json:"sync_mode,omitempty"`       // Mode being used for syncing data
+	CursorField    string       `json:"cursor_field,omitempty"`    // Column being used as cursor; MUST NOT BE mutated
+	ExcludeColumns []string     `json:"exclude_columns,omitempty"` // TODO: Implement excluding columns from fetching
+	CursorValue    any          `json:"-"`                         // Cached initial state value
+	batchSize      int64        `json:"-"`                         // Batch size for syncing data
+	state          *StreamState `json:"-"`                         // in-memory state copy for individual stream
 
 	// DestinationSyncMode string   `json:"destination_sync_mode,omitempty"`
 }
@@ -102,19 +102,6 @@ func (s *ConfiguredStream) BatchSize() int64 {
 func (s *ConfiguredStream) SetBatchSize(size int64) {
 	s.batchSize = size
 }
-
-// Returns empty and missing and error
-// func (s *ConfiguredStream) SetupAndValidate(state *State) (StateError, error) {
-// 	if !utils.ExistInArray(s.SupportedSyncModes(), s.SyncMode) {
-// 		return "", fmt.Errorf("invalid sync mode[%s]; valid are %v", s.SyncMode, s.SupportedSyncModes())
-// 	}
-
-// 	if !utils.ExistInArray(s.Stream.DefaultCursorFields, s.CursorField) {
-// 		return "", fmt.Errorf("invalid cursor field [%s]; valid are %v", s.SyncMode, s.SupportedSyncModes())
-// 	}
-
-// 	return s.setCursorValue(state), nil
-// }
 
 // Returns empty and missing
 func (s *ConfiguredStream) SetupState(state *State) error {

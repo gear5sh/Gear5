@@ -46,6 +46,12 @@ var DiscoverCmd = &cobra.Command{
 		recordsPerStream := 100
 		group := sync.WaitGroup{}
 		for _, stream_ := range streams {
+			if stream_.Schema != nil {
+				continue
+			}
+
+			logger.Infof("Generating Type Schema for stream: %s", stream_.ID())
+
 			stream := stream_
 			group.Add(1)
 
@@ -76,6 +82,7 @@ var DiscoverCmd = &cobra.Command{
 					logger.Fatal(err)
 				}
 
+				logger.Infof("Type Schema generated for stream: %s", stream.ID())
 				group.Done()
 			}()
 		}
