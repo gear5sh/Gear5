@@ -13,28 +13,23 @@ import (
 var CheckCmd = &cobra.Command{
 	Use:   "check",
 	Short: "Shift spec command",
-	PreRun: func(cmd *cobra.Command, args []string) {
-		err := func() error {
-			if config_ == "" {
-				return fmt.Errorf("--config not passed")
-			} else {
-				if err := utils.UnmarshalFile(config_, _rawConnector.Config()); err != nil {
-					return err
-				}
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if config_ == "" {
+			return fmt.Errorf("--config not passed")
+		} else {
+			if err := utils.UnmarshalFile(config_, _rawConnector.Config()); err != nil {
+				return err
 			}
-
-			if catalog_ != "" {
-				catalog = &types.Catalog{}
-				if err := utils.UnmarshalFile(catalog_, &catalog); err != nil {
-					return err
-				}
-			}
-
-			return nil
-		}()
-		if err != nil {
-			logger.LogConnectionStatus(err)
 		}
+
+		if catalog_ != "" {
+			catalog = &types.Catalog{}
+			if err := utils.UnmarshalFile(catalog_, &catalog); err != nil {
+				return err
+			}
+		}
+
+		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		err := func() error {

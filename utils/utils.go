@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"sigs.k8s.io/yaml"
 )
 
 func Absolute[T int | int8 | int16 | int32 | int64 | float32 | float64](value T) T {
@@ -127,7 +126,7 @@ func UnmarshalFile(file string, dest any) error {
 		return fmt.Errorf("file not found : %s", err)
 	}
 
-	err = yaml.Unmarshal(data, dest)
+	err = json.Unmarshal(data, dest)
 	if err != nil {
 		return err
 	}
