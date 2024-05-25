@@ -110,6 +110,7 @@ func (s *ConfiguredStream) SetupState(state *State, batchSize int) error {
 			}
 
 			s.CursorValue = value
+			s.state = state.Streams[i]
 
 			return nil
 		}

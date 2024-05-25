@@ -10,6 +10,7 @@ const (
 	MixedType  StateType = "MIXED"
 )
 
+// TODO: Add validation tags; Write custom unmarshal that triggers validation
 // State is a dto for airbyte state serialization
 type State struct {
 	Type    StateType      `json:"type"`

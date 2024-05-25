@@ -17,7 +17,7 @@ import (
 
 const (
 	fullRefreshTemplate  = `SELECT * FROM "%s"."%s" ORDER BY %s`
-	withStateTemplate    = `SELECT * FROM "%s"."%s" where "%s">= $1 ORDER BY "%s" ASC NULLS FIRST`
+	withStateTemplate    = `SELECT * FROM "%s"."%s" where "%s">$1 ORDER BY "%s" ASC NULLS FIRST`
 	withoutStateTemplate = `SELECT * FROM "%s"."%s" ORDER BY "%s" ASC NULLS FIRST`
 )
 
@@ -55,7 +55,7 @@ func freshSync(client *sqlx.DB, stream protocol.Stream, channel chan<- types.Rec
 
 // Incremental Sync based on a Cursor Value
 func incrementalSync(client *sqlx.DB, stream protocol.Stream, channel chan<- types.Record) error {
-	intialState := stream.GetState()
+	intialState := stream.InitialState()
 
 	tx, err := client.BeginTx(context.TODO(), &sql.TxOptions{
 		Isolation: sql.LevelRepeatableRead,
