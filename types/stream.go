@@ -93,10 +93,11 @@ func (s *Stream) WithSchema(schema TypeSchema) *Stream {
 	return s
 }
 
-func (s *Stream) Wrap() *ConfiguredStream {
+func (s *Stream) Wrap(batchSize int) *ConfiguredStream {
 	return &ConfiguredStream{
-		Stream:   s,
-		SyncMode: FULLREFRESH,
+		Stream:    s,
+		SyncMode:  FULLREFRESH,
+		batchSize: batchSize,
 	}
 }
 

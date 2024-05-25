@@ -13,8 +13,8 @@ const (
 // State is a dto for airbyte state serialization
 type State struct {
 	Type    StateType      `json:"type"`
-	Global  any            `json:"global"`
-	Streams []*StreamState `json:"streams"`
+	Global  any            `json:"global,omitempty"`
+	Streams []*StreamState `json:"streams,omitempty"`
 }
 
 var (
@@ -47,7 +47,7 @@ func (s *State) SetType(typ StateType) {
 // }
 
 func (s *State) IsZero() bool {
-	return s.Global == 0 && len(s.Streams) == 0
+	return s.Global == nil && len(s.Streams) == 0
 }
 
 type StreamState struct {
