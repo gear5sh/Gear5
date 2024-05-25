@@ -101,15 +101,22 @@ func (s *Stream) Wrap() *ConfiguredStream {
 }
 
 func (s *Stream) UnmarshalJSON(data []byte) error {
-	s.DefaultCursorFields = NewSet[string]()
-	s.SourceDefinedPrimaryKey = NewSet[string]()
-	s.SupportedSyncModes = NewSet[SyncMode]()
+	// Define a type alias to avoid recursion
+	type Alias Stream
 
-	err := json.Unmarshal(data, s)
+	// Create a temporary alias value to unmarshal into
+	var temp Alias
+
+	temp.DefaultCursorFields = NewSet[string]()
+	temp.SourceDefinedPrimaryKey = NewSet[string]()
+	temp.SupportedSyncModes = NewSet[SyncMode]()
+
+	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
 
+	*s = Stream(temp)
 	return nil
 }
 

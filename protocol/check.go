@@ -60,6 +60,7 @@ var CheckCmd = &cobra.Command{
 
 					err := stream.Validate(source)
 					if err != nil {
+						logger.Error(err)
 						invalidStreams = append(invalidStreams, stream.ID())
 					}
 
