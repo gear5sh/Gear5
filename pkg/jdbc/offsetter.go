@@ -53,25 +53,29 @@ func WithContextOffsetter[T types.Iterable](ctx context.Context, baseQuery strin
 	return setter
 }
 
-func (o *Offsetter[T]) start() {
-	for !o.closed {
-		formattedQuery := fmt.Sprintf("%s OFFSET %d LIMIT %d", o.query, o.offset, o.batchSize)
-		var rows T
-		var err error
-		if o.withContext != nil {
-			rows, err = o.withContext(o.ctx, formattedQuery, o.args...)
-		} else {
-			rows, err = o.exec(formattedQuery, o.args...)
-		}
-		if err != nil {
-			o.err <- err
+// func (o *Offsetter[T]) start() {
+// 	for !o.closed {
+// 		formattedQuery := fmt.Sprintf("%s OFFSET %d LIMIT %d", o.query, o.offset, o.batchSize)
+// 		var rows T
+// 		var err error
+// 		if o.withContext != nil {
+// 			rows, err = o.withContext(o.ctx, formattedQuery, o.args...)
+// 		} else {
+// 			rows, err = o.exec(formattedQuery, o.args...)
+// 		}
+// 		if err != nil {
+// 			if !safego.Insert(o.err, err) {
+// 				return
+// 			}
 
-			return
-		}
+// 			return
+// 		}
 
-		o.rows <- rows
-	}
-}
+// 		if !safego.Insert(o.rows, rows) {
+// 			return
+// 		}
+// 	}
+// }
 
 func (o *Offsetter[T]) Close() {
 	o.closed = true
@@ -86,33 +90,45 @@ func (o *Offsetter[T]) Capture(onCapture func(T) error) error {
 		return fmt.Errorf("base query ends with ';': %s", o.query)
 	}
 
-	go o.start()
+	// go o.start()
 
 	for {
-		select {
-		case err := <-o.err:
+		// select {
+		// case err := <-o.err:
+		// 	return err
+		// case rows := <-o.rows:
+		formattedQuery := fmt.Sprintf("%s OFFSET %d LIMIT %d", o.query, o.offset, o.batchSize)
+		var rows T
+		var err error
+		if o.withContext != nil {
+			rows, err = o.withContext(o.ctx, formattedQuery, o.args...)
+		} else {
+			rows, err = o.exec(formattedQuery, o.args...)
+		}
+		if err != nil {
 			return err
-		case rows := <-o.rows:
-			length := 0
-			for rows.Next() {
-				err := onCapture(rows)
-				if err != nil {
-					return err
-				}
+		}
 
-				length++
-			}
-
-			err := rows.Err()
+		length := 0
+		for rows.Next() {
+			err := onCapture(rows)
 			if err != nil {
 				return err
 			}
 
-			if length != o.batchSize {
-				return nil
-			}
-
-			o.offset += length
+			length++
 		}
+
+		err = rows.Err()
+		if err != nil {
+			return err
+		}
+
+		if length != o.batchSize {
+			return nil
+		}
+
+		o.offset += length
+		// }
 	}
 }

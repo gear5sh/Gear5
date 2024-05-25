@@ -14,7 +14,7 @@ var (
 	config_    string
 	state_     string
 	catalog_   string
-	batchSize_ uint64
+	batchSize_ uint
 
 	catalog *types.Catalog
 	state   *types.State
@@ -75,7 +75,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&config_, "config", "", "", "(Required) Config for Shift connector")
 	RootCmd.PersistentFlags().StringVarP(&catalog_, "catalog", "", "", "(Required) Catalog for Shift connector")
 	RootCmd.PersistentFlags().StringVarP(&state_, "state", "", "", "(Required) State for Shift connector")
-	RootCmd.PersistentFlags().Uint64VarP(&batchSize_, "batch", "", 10000, "(Optional) Batch size for Shift connector")
+	RootCmd.PersistentFlags().UintVarP(&batchSize_, "batch", "", 10000, "(Optional) Batch size for Shift connector")
 
 	// Disable Cobra CLI's built-in usage and error handling
 	RootCmd.SilenceUsage = true

@@ -13,8 +13,9 @@ type ConfiguredStream struct {
 	CursorField    string       `json:"cursor_field,omitempty"`    // Column being used as cursor; MUST NOT BE mutated
 	ExcludeColumns []string     `json:"exclude_columns,omitempty"` // TODO: Implement excluding columns from fetching
 	CursorValue    any          `json:"-"`                         // Cached initial state value
-	batchSize      int64        `json:"-"`                         // Batch size for syncing data
+	batchSize      int          `json:"-"`                         // Batch size for syncing data
 	state          *StreamState `json:"-"`                         // in-memory state copy for individual stream
+	connectorState *State       `json:"-"`                         // in-memory pointer to central state
 
 	// DestinationSyncMode string   `json:"destination_sync_mode,omitempty"`
 }
@@ -61,13 +62,17 @@ func (s *ConfiguredStream) InitialState() any {
 
 func (s *ConfiguredStream) SetState(value any) {
 	if s.state == nil {
-		s.state = &StreamState{
+		ss := &StreamState{
 			Stream:    s.Name(),
 			Namespace: s.Namespace(),
 			State: map[string]any{
 				s.Cursor(): value,
 			},
 		}
+
+		// save references of state
+		s.state = ss
+		s.connectorState.Streams = append(s.connectorState.Streams, ss)
 		return
 	}
 
@@ -81,16 +86,19 @@ func (s *ConfiguredStream) GetState() any {
 	return s.state.State[s.Cursor()]
 }
 
-func (s *ConfiguredStream) BatchSize() int64 {
+func (s *ConfiguredStream) BatchSize() int {
 	return s.batchSize
 }
 
-func (s *ConfiguredStream) SetBatchSize(size int64) {
+func (s *ConfiguredStream) SetBatchSize(size int) {
 	s.batchSize = size
 }
 
 // Returns empty and missing
-func (s *ConfiguredStream) SetupState(state *State) error {
+func (s *ConfiguredStream) SetupState(state *State, batchSize int) error {
+	s.SetBatchSize(batchSize)
+	s.connectorState = state
+
 	if !state.IsZero() {
 		i, contains := utils.ArrayContains(state.Streams, func(elem *StreamState) bool {
 			return elem.Namespace == s.Namespace() && elem.Stream == s.Name()

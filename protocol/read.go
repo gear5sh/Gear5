@@ -58,7 +58,7 @@ var ReadCmd = &cobra.Command{
 		// Setting Record iteration
 		recordStream := make(chan types.Record, 2*batchSize_)
 		numRecords := int64(0)
-		batch := uint64(0)
+		batch := uint(0)
 		recordIterationWait := sync.WaitGroup{}
 
 		recordIterationWait.Add(1)
@@ -111,7 +111,7 @@ var ReadCmd = &cobra.Command{
 				return false
 			}
 
-			err = elem.SetupState(state)
+			err = elem.SetupState(state, int(batchSize_))
 			if err != nil {
 				logger.Warnf("failed to set stream[%s] state due to reason: %s", elem.ID(), err)
 			}

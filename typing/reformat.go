@@ -150,8 +150,10 @@ func ReformatDate(v interface{}) (time.Time, error) {
 			} else {
 				return parseCHDateTime(*v)
 			}
+		case *any:
+			return ReformatDate(*v)
 		}
-		return time.Time{}, fmt.Errorf("unknown type passed: unable to parse into time")
+		return time.Time{}, fmt.Errorf("unhandled type[%T] passed: unable to parse into time", v)
 	}()
 	if err != nil {
 		return time.Time{}, err

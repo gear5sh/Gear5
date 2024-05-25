@@ -60,7 +60,7 @@ var DiscoverCmd = &cobra.Command{
 				channel := make(chan types.Record, recordsPerStream)
 				count := 0
 				go func() {
-					err := _driver.Read(stream.Wrap(), channel)
+					err := _driver.Read(stream.Wrap(recordsPerStream), channel)
 					if err != nil {
 						logger.Fatalf("Error occurred while reading records from [%s]: %s", stream.Name, err)
 					}

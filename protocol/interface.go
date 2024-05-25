@@ -58,7 +58,7 @@ type Stream interface {
 	InitialState() any
 	GetState() any
 	SetState(value any)
-	BatchSize() int64
-	SetBatchSize(size int64)
+	BatchSize() int
+	SetBatchSize(size int)
 	Validate(source *types.Stream) error
 }

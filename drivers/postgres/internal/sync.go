@@ -17,8 +17,8 @@ import (
 
 const (
 	fullRefreshTemplate  = `SELECT * FROM "%s"."%s" ORDER BY %s`
-	withStateTemplate    = `SELECT * FROM "$1"."$2" where "$3">= $1 ORDER BY "$3" ASC NULLS FIRST`
-	withoutStateTemplate = `SELECT * FROM "$1"."$2" ORDER BY "$3" ASC NULLS FIRST`
+	withStateTemplate    = `SELECT * FROM "%s"."%s" where "%s">= $1 ORDER BY "%s" ASC NULLS FIRST`
+	withoutStateTemplate = `SELECT * FROM "%s"."%s" ORDER BY "%s" ASC NULLS FIRST`
 )
 
 // Simple Full Refresh Sync; Loads table fully
@@ -70,12 +70,14 @@ func incrementalSync(client *sqlx.DB, stream protocol.Stream, channel chan<- typ
 		return err
 	}
 
-	statement := withoutStateTemplate
+	args := []any{}
+	statement := fmt.Sprintf(withoutStateTemplate, stream.Namespace(), stream.Name(), stream.Cursor())
 	if intialState != nil {
-		statement = withStateTemplate
+		statement = fmt.Sprintf(withStateTemplate, stream.Namespace(), stream.Name(), stream.Cursor(), stream.Cursor())
+		args = append(args, intialState)
 	}
 
-	setter := jdbc.NewOffsetter(statement, int(stream.BatchSize()), tx.Query, stream.Namespace(), stream.Name(), stream.Cursor())
+	setter := jdbc.NewOffsetter(statement, int(stream.BatchSize()), tx.Query, args...)
 	return setter.Capture(func(rows *sql.Rows) error {
 		// Create a map to hold column names and values
 		record := make(types.RecordData)
