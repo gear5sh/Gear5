@@ -27,14 +27,14 @@ var ReadCmd = &cobra.Command{
 
 		if catalog_ != "" {
 			catalog = &types.Catalog{}
-			if err := utils.UnmarshalFile(catalog_, &catalog); err != nil {
+			if err := utils.UnmarshalFile(catalog_, catalog); err != nil {
 				return err
 			}
 		}
 
 		if state_ != "" {
 			state = &types.State{}
-			if err := utils.UnmarshalFile(state_, &state); err != nil {
+			if err := utils.UnmarshalFile(state_, state); err != nil {
 				return err
 			}
 		}
