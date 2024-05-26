@@ -8,9 +8,13 @@ import (
 
 // Input/Processed object for Stream
 type ConfiguredStream struct {
-	Stream         *Stream      `json:"stream,omitempty"`
-	SyncMode       SyncMode     `json:"sync_mode,omitempty"`       // Mode being used for syncing data
-	CursorField    string       `json:"cursor_field,omitempty"`    // Column being used as cursor; MUST NOT BE mutated
+	Stream   *Stream  `json:"stream,omitempty"`
+	SyncMode SyncMode `json:"sync_mode,omitempty"` // Mode being used for syncing data
+	// Column that's being used as cursor; MUST NOT BE mutated
+	//
+	// Cursor field is used in Incremental and in Mixed type GroupRead where connector uses
+	// this field as recovery column incase of some inconsistencies
+	CursorField    string       `json:"cursor_field,omitempty"`
 	ExcludeColumns []string     `json:"exclude_columns,omitempty"` // TODO: Implement excluding columns from fetching
 	CursorValue    any          `json:"-"`                         // Cached initial state value
 	batchSize      int          `json:"-"`                         // Batch size for syncing data

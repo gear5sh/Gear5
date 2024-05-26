@@ -36,9 +36,7 @@ func (s *Stream) ID() string {
 
 func (s *Stream) WithSyncMode(modes ...SyncMode) *Stream {
 	for _, mode := range modes {
-		if !s.SupportedSyncModes.Exists(mode) {
-			s.SupportedSyncModes.Insert(mode)
-		}
+		s.SupportedSyncModes.Insert(mode)
 	}
 
 	return s
@@ -46,9 +44,7 @@ func (s *Stream) WithSyncMode(modes ...SyncMode) *Stream {
 
 func (s *Stream) WithPrimaryKey(keys ...string) *Stream {
 	for _, key := range keys {
-		if !s.SourceDefinedPrimaryKey.Exists(key) {
-			s.SourceDefinedPrimaryKey.Insert(key)
-		}
+		s.SourceDefinedPrimaryKey.Insert(key)
 	}
 
 	return s
@@ -56,9 +52,7 @@ func (s *Stream) WithPrimaryKey(keys ...string) *Stream {
 
 func (s *Stream) WithCursorField(columns ...string) *Stream {
 	for _, column := range columns {
-		if !s.DefaultCursorFields.Exists(column) {
-			s.DefaultCursorFields.Insert(column)
-		}
+		s.DefaultCursorFields.Insert(column)
 	}
 
 	s.SourceDefinedCursor = true

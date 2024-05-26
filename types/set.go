@@ -98,6 +98,10 @@ func (this *Set[T]) Exists(element T) bool {
 
 // Add an element to the set
 func (this *Set[T]) Insert(element T) {
+	if this.Exists(element) {
+		return
+	}
+
 	hash := this.Hash(element)
 
 	this.hash[hash] = nothing{}

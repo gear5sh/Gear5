@@ -23,7 +23,7 @@ type Postgres struct {
 	config      *Config // postgres driver connection config
 	cdcEnabled  bool
 	cdcConfig   CDC
-	cdcState    *waljs.WALState
+	cdcState    *types.Global[waljs.WALState]
 }
 
 func (p *Postgres) Config() any {
