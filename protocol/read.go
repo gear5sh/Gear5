@@ -130,9 +130,10 @@ var ReadCmd = &cobra.Command{
 				return fmt.Errorf("%s does not implement BulkDriver", _driver.Type())
 			}
 
-			// Update the state type and Global State from Connector
-			state.Type = driver.StateType()
-			state.Global = driver.GlobalState()
+			// Setup Global State from Connector
+			if err := driver.SetupGlobalState(state); err != nil {
+				return err
+			}
 
 			err := driver.GroupRead(recordStream, validStreams...)
 			if err != nil {

@@ -16,7 +16,7 @@ type Config struct {
 	InitialWaitTime            int
 	SnapshotMemorySafetyFactor float64
 	TLSConfig                  *tls.Config
-	State                      *WALState
+	State                      *types.Global[WALState]
 }
 
 type WALState struct {

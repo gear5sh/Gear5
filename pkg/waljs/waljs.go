@@ -136,7 +136,12 @@ func (s *Socket) AcknowledgeLSN(lsn pglogrepl.LSN) error {
 
 	// Update local pointer and state
 	s.clientXLogPos = lsn
-	s.Config.State.LSN = lsn.String()
+	s.Config.State.State.LSN = lsn.String()
+
+	// after acknowledgement attach all streams to Global state
+	for _, stream := range s.Tables.Array() {
+		s.State.Streams.Insert(stream.ID())
+	}
 
 	logger.Debugf("Sent Standby status message at LSN#%s", s.clientXLogPos.String())
 	return nil
