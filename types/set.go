@@ -167,13 +167,13 @@ func (this *Set[T]) Union(set *Set[T]) *Set[T] {
 }
 
 func (this *Set[T]) String() string {
-	keys := []string{}
+	values := []string{}
 
-	for key := range this.hash {
-		keys = append(keys, fmt.Sprint(key))
+	for _, value := range this.storage {
+		values = append(values, fmt.Sprint(value))
 	}
 
-	return strings.Join(keys, " ")
+	return fmt.Sprintf("[%s]", strings.Join(values, ", "))
 }
 
 func (this *Set[T]) Array() []T {

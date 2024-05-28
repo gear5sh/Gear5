@@ -16,9 +16,13 @@ type Config struct {
 	InitialWaitTime            int
 	SnapshotMemorySafetyFactor float64
 	TLSConfig                  *tls.Config
-	State                      *types.Global[WALState]
+	State                      *types.Global[*WALState]
 }
 
 type WALState struct {
 	LSN string `json:"lsn"`
+}
+
+func (s *WALState) IsEmpty() bool {
+	return s.LSN == ""
 }

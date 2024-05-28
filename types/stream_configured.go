@@ -127,12 +127,12 @@ func (s *ConfiguredStream) SetupState(state *State, batchSize int) error {
 
 // Validate Configured Stream with Source Stream
 func (s *ConfiguredStream) Validate(source *Stream) error {
-	if !utils.ExistInArray(source.SupportedSyncModes.Array(), s.SyncMode) {
-		return fmt.Errorf("invalid sync mode[%s]; valid are %v", s.SyncMode, s.SupportedSyncModes().Array())
+	if !source.SupportedSyncModes.Exists(s.SyncMode) {
+		return fmt.Errorf("invalid sync mode[%s]; valid are %v", s.SyncMode, source.SupportedSyncModes)
 	}
 
-	if !utils.ExistInArray(source.DefaultCursorFields.Array(), s.CursorField) {
-		return fmt.Errorf("invalid cursor field [%s]; valid are %v", s.SyncMode, s.SupportedSyncModes())
+	if !source.DefaultCursorFields.Exists(s.CursorField) {
+		return fmt.Errorf("invalid cursor field [%s]; valid are %v", s.CursorField, source.DefaultCursorFields)
 	}
 
 	if source.SourceDefinedPrimaryKey.ProperSubsetOf(s.Stream.SourceDefinedPrimaryKey) {
