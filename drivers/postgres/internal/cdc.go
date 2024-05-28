@@ -4,8 +4,10 @@ import (
 	"fmt"
 
 	"github.com/piyushsingariya/shift/drivers/base"
+	"github.com/piyushsingariya/shift/pkg/jdbc"
 	"github.com/piyushsingariya/shift/pkg/waljs"
 	"github.com/piyushsingariya/shift/protocol"
+	"github.com/piyushsingariya/shift/safego"
 	"github.com/piyushsingariya/shift/types"
 )
 
@@ -62,9 +64,23 @@ func (p *Postgres) GroupRead(channel chan<- types.Record, streams ...protocol.St
 		return err
 	}
 
-	err = socket.OnMessage(func(message waljs.Wal2JsonChanges) {
+	return socket.OnMessage(func(message waljs.WalJSChange) bool {
+		if message.Kind == "delete" {
+			message.Data[jdbc.CDCDeletedAt] = message.Timestamp
+		}
+		if message.Timestamp != nil {
+			message.Data[jdbc.CDCUpdatedAt] = message.Timestamp
+		}
+		if message.LSN != nil {
+			message.Data[jdbc.CDCLSN] = message.LSN
+		}
 
+		// insert record
+		if !safego.Insert(channel, base.ReformatRecord(message.Stream, message.Data)) {
+			// channel was closed; exit OnMessage
+			return true
+		}
+
+		return false
 	})
-
-	return nil
 }

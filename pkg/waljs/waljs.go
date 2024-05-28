@@ -7,9 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/apache/arrow/go/v16/arrow/array"
-	"github.com/apache/arrow/go/v16/arrow/memory"
-	"github.com/cloudquery/plugin-sdk/v4/scalar"
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -18,7 +15,11 @@ import (
 	"github.com/piyushsingariya/shift/pkg/jdbc"
 )
 
-var pluginArguments = []string{"\"pretty-print\" 'false'"}
+var pluginArguments = []string{
+	"\"include-lsn\" 'on'",
+	"\"pretty-print\" 'off'",
+	"\"include-timestamp\" 'on'",
+}
 
 type Socket struct {
 	*Config
@@ -30,7 +31,7 @@ type Socket struct {
 	clientXLogPos              pglogrepl.LSN
 	standbyMessageTimeout      time.Duration
 	nextStandbyMessageDeadline time.Time
-	messages                   chan Wal2JsonChanges
+	messages                   chan WalJSChange
 	err                        chan error
 	changeFilter               ChangeFilter
 	lsnrestart                 pglogrepl.LSN
@@ -71,7 +72,7 @@ func NewConnection(config *Config) (*Socket, error) {
 		standbyMessageTimeout: time.Second,
 		pgConn:                dbConn,
 		pgxConn:               conn,
-		messages:              make(chan Wal2JsonChanges),
+		messages:              make(chan WalJSChange),
 		err:                   make(chan error),
 		changeFilter:          NewChangeFilter(config.Tables.Array()...),
 	}
@@ -219,9 +220,12 @@ main:
 					// Cache LSN here to be used during acknowledgement
 					clientXLogPos := xld.WALStart + pglogrepl.LSN(len(xld.WALData))
 					cachedLSN = &clientXLogPos
-					s.changeFilter.FilterChange(clientXLogPos.String(), xld.WALData, func(change Wal2JsonChanges) {
+					err = s.changeFilter.FilterChange(clientXLogPos, xld.WALData, func(change WalJSChange) {
 						s.messages <- change
 					})
+					if err != nil {
+						return true, err
+					}
 				}
 
 				s.increaseDeadline()
@@ -250,9 +254,7 @@ func (s *Socket) start() {
 			}()
 
 			logger.Infof("Processing database snapshot: %s", stream.ID())
-			schema := stream.Schema().ToArrow()
 			logger.Info("Query snapshot", "batch-size", stream.BatchSize())
-			builder := array.NewRecordBuilder(memory.DefaultAllocator, schema)
 			baseQuery := fmt.Sprintf("SELECT * FROM %s.%s ORDER BY %s ", stream.Name(),
 				stream.Namespace(), strings.Join(stream.GetStream().SourceDefinedPrimaryKey.Array(), ", "))
 
@@ -263,25 +265,19 @@ func (s *Socket) start() {
 				if err != nil {
 					return err
 				}
+				data := map[string]any{}
+				columns := rows.FieldDescriptions()
 
 				for i, v := range values {
-					s := scalar.NewScalar(schema.Field(i).Type)
-					if err := s.Set(v); err != nil {
-						return err
-					}
-
-					scalar.AppendToBuilder(builder.Field(i), s)
+					data[columns[i].Name] = v
 				}
-				var snapshotChanges = Wal2JsonChanges{
-					Lsn: "",
-					Changes: []Wal2JsonChange{
-						{
-							Kind:   "insert",
-							Schema: stream.Namespace(),
-							Table:  stream.Name(),
-							Row:    builder.NewRecord(),
-						},
-					},
+
+				var snapshotChanges = WalJSChange{
+					Stream: stream,
+					Kind:   "insert",
+					Schema: stream.Namespace(),
+					Table:  stream.Name(),
+					Data:   data,
 				}
 
 				s.messages <- snapshotChanges
@@ -305,21 +301,23 @@ func (s *Socket) start() {
 }
 
 func (s *Socket) OnMessage(callback OnMessage) error {
+	defer s.cleanup()
+
 	for {
 		select {
 		case err := <-s.err:
-			defer s.cleanUpOnFailure()
 			return err
 		case message := <-s.messages:
-			callback(message)
-		case <-s.ctx.Done():
-			return nil
+			exit := callback(message)
+			if exit {
+				return nil
+			}
 		}
 	}
 }
 
 // cleanUpOnFailure drops replication slot and publication if database snapshotting was failed for any reason
-func (s *Socket) cleanUpOnFailure() {
+func (s *Socket) cleanup() {
 	s.pgConn.Close(context.TODO())
 	s.pgxConn.Close(context.TODO())
 }

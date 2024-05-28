@@ -9,6 +9,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/piyushsingariya/shift/drivers/base"
 	"github.com/piyushsingariya/shift/logger"
+	"github.com/piyushsingariya/shift/pkg/jdbc"
 	"github.com/piyushsingariya/shift/pkg/waljs"
 	"github.com/piyushsingariya/shift/protocol"
 	"github.com/piyushsingariya/shift/types"
@@ -156,6 +157,13 @@ func (p *Postgres) loadStreams() error {
 			}
 
 			stream.UpsertField(column.Name, datatype, strings.EqualFold("yes", *column.IsNullable))
+		}
+
+		// cdc additional fields
+		if p.Driver.GroupRead {
+			for column, typ := range jdbc.CDCColumns {
+				stream.UpsertField(column, typ, true)
+			}
 		}
 
 		// currently only datetime fields is supported for cursor field, automatic generated fields can also be used

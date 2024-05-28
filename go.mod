@@ -29,6 +29,7 @@ require (
 	github.com/klauspost/cpuid/v2 v2.2.7 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	golang.org/x/crypto v0.22.0 // indirect
@@ -47,6 +48,7 @@ require (
 	github.com/cloudquery/plugin-sdk/v4 v4.42.2
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pglogrepl v0.0.0-20240307033717-828fbfe908e9
+	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/joomcode/errorx v1.1.0
 	github.com/mitchellh/hashstructure v1.1.0
 	github.com/sirupsen/logrus v1.9.3
