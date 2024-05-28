@@ -161,7 +161,7 @@ func (s *Socket) streamMessagesAsync() {
 	for {
 		select {
 		case <-s.ctx.Done():
-			//  Initial Wait timeout is triggered
+			logger.Info("Initial wait timeout triggered; Closing Sync")
 			s.cancel()
 			s.err <- nil
 			return

@@ -74,11 +74,13 @@ type Standard struct {
 // Capture Write Ahead Logs
 type CDC struct {
 	// A plugin logical replication slot. Read about replication slots.
+	//
 	// @jsonschema(
 	// required=true
 	// )
 	ReplicationSlot string `json:"replication_slot"`
 	// Initial Wait Time for first CDC Log
+	//
 	// @jsonschema(
 	// required=true,
 	// default=0

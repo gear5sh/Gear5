@@ -19,6 +19,8 @@ func (p *Postgres) prepareWALJSConfig(streams ...protocol.Stream) (*waljs.Config
 		ReplicationSlotName: p.cdcConfig.ReplicationSlot,
 		InitialWaitTime:     p.cdcConfig.InitialWaitTime,
 		State:               p.cdcState,
+		FullSyncTables:      types.NewSet[protocol.Stream](),
+		Tables:              types.NewSet[protocol.Stream](),
 	}
 
 	for _, stream := range streams {

@@ -21,9 +21,8 @@ type Postgres struct {
 	client      *sqlx.DB
 	accessToken string
 	config      *Config // postgres driver connection config
-	cdcEnabled  bool
 	cdcConfig   CDC
-	cdcState    *types.Global[waljs.WALState]
+	cdcState    *types.Global[*waljs.WALState]
 }
 
 func (p *Postgres) Config() any {
@@ -50,7 +49,7 @@ func (p *Postgres) Check() error {
 			return err
 		}
 
-		p.cdcEnabled = true
+		p.Driver.GroupRead = true
 		p.cdcConfig = *cdc
 	} else {
 		logger.Info("Standard Replication is selected")
@@ -167,7 +166,7 @@ func (p *Postgres) loadStreams() error {
 			}
 		}
 
-		if !p.cdcEnabled {
+		if !p.Driver.GroupRead {
 			stream.WithSyncMode(types.FULLREFRESH)
 			// source has cursor fields, hence incremental also supported
 			if stream.DefaultCursorFields.Len() > 0 {

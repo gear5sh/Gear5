@@ -66,22 +66,37 @@ type StreamState struct {
 	State map[string]any `mapstructure:"state" json:"state"`
 }
 
-func NewGlobalState[T comparable](state *T) *Global[T] {
+func NewGlobalState[T GlobalState](state T) *Global[T] {
 	return &Global[T]{
 		State:   state,
 		Streams: NewSet[string](),
 	}
 }
 
-type Global[T comparable] struct {
+type GlobalState interface {
+	IsEmpty() bool
+}
+
+type Global[T GlobalState] struct {
 	// Global State shared by streams
-	State *T `json:"state"`
+	State T `json:"state"`
 	// Attaching Streams to Global State helps in recognizing the tables that the state belongs to.
 	//
 	// This results in helping connector determine what streams were synced during the last sync in
 	// Group read. and also helps connectors to migrate from incremental to GroupRead without the need to
 	// full load with the help of using cursor value and field as recovery cursor for GroupRead
 	Streams *Set[string] `json:"streams"`
+}
+
+func (g *Global[T]) MarshalJSON() ([]byte, error) {
+	if any(g.State).(GlobalState).IsEmpty() {
+		return json.Marshal(nil)
+	}
+
+	type Alias Global[T]
+	p := Alias(*g)
+
+	return json.Marshal(p)
 }
 
 func (g *Global[T]) UnmarshalJSON(data []byte) error {
