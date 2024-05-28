@@ -158,6 +158,7 @@ func (s *Socket) deadlineCrossed() bool {
 func (s *Socket) streamMessagesAsync() {
 	var cachedLSN *pglogrepl.LSN
 
+main:
 	for {
 		select {
 		case <-s.ctx.Done():
@@ -166,18 +167,16 @@ func (s *Socket) streamMessagesAsync() {
 			s.err <- nil
 			return
 		default:
-			func() {
+			exit, err := func() (bool, error) {
 				if s.deadlineCrossed() {
 					if cachedLSN != nil {
 						err := s.AcknowledgeLSN(*cachedLSN)
 						if err != nil {
-							s.err <- err
-							return
+							return true, err
 						}
 					}
 
-					s.err <- nil
-					return
+					return true, nil
 				}
 
 				ctx, cancel := context.WithDeadline(context.Background(), s.nextStandbyMessageDeadline)
@@ -186,29 +185,25 @@ func (s *Socket) streamMessagesAsync() {
 				rawMsg, err := s.pgConn.ReceiveMessage(ctx)
 				if err != nil {
 					if pgconn.Timeout(err) {
-						return
+						return true, nil
 					}
-					s.err <- fmt.Errorf("failed to receive messages from PostgreSQL %s", err)
-					return
+					return true, fmt.Errorf("failed to receive messages from PostgreSQL %s", err)
 				}
 
 				if errMsg, ok := rawMsg.(*pgproto3.ErrorResponse); ok {
-					s.err <- fmt.Errorf("received broken Postgres WAL. Error: %+v", errMsg)
-					return
+					return true, fmt.Errorf("received broken Postgres WAL. Error: %+v", errMsg)
 				}
 
 				msg, ok := rawMsg.(*pgproto3.CopyData)
 				if !ok {
-					logger.Warnf("Received unexpected message: %T\n", rawMsg)
-					return
+					return true, fmt.Errorf("received unexpected message: %T", rawMsg)
 				}
 
 				switch msg.Data[0] {
 				case pglogrepl.PrimaryKeepaliveMessageByteID:
 					pkm, err := pglogrepl.ParsePrimaryKeepaliveMessage(msg.Data[1:])
 					if err != nil {
-						s.err <- fmt.Errorf("ParsePrimaryKeepaliveMessage failed: %s", err)
-						return
+						return true, fmt.Errorf("ParsePrimaryKeepaliveMessage failed: %s", err)
 					}
 
 					if pkm.ReplyRequested {
@@ -218,8 +213,7 @@ func (s *Socket) streamMessagesAsync() {
 				case pglogrepl.XLogDataByteID:
 					xld, err := pglogrepl.ParseXLogData(msg.Data[1:])
 					if err != nil {
-						s.err <- fmt.Errorf("ParseXLogData failed: %s", err)
-						return
+						return true, fmt.Errorf("ParseXLogData failed: %s", err)
 					}
 
 					// Cache LSN here to be used during acknowledgement
@@ -231,7 +225,13 @@ func (s *Socket) streamMessagesAsync() {
 				}
 
 				s.increaseDeadline()
+
+				return false, nil
 			}()
+			if err != nil || exit {
+				s.err <- err
+				break main
+			}
 		}
 	}
 }
