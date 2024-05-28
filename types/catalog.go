@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/apache/arrow/go/v16/arrow"
 	"github.com/piyushsingariya/shift/utils"
 )
 
@@ -67,20 +66,6 @@ func (t *TypeSchema) GetType(column string) (DataType, error) {
 	}
 
 	return p.DataType(), nil
-}
-
-func (t *TypeSchema) ToArrow() *arrow.Schema {
-	fields := []arrow.Field{}
-
-	for key, p := range t.Properties {
-		fields = append(fields, arrow.Field{
-			Name:     key,
-			Type:     p.DataType().ToArrow(),
-			Nullable: p.Nullable(),
-		})
-	}
-
-	return arrow.NewSchema(fields, nil)
 }
 
 // Property is a dto for catalog properties representation
