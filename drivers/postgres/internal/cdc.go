@@ -64,7 +64,7 @@ func (p *Postgres) GroupRead(channel chan<- types.Record, streams ...protocol.St
 		return err
 	}
 
-	return socket.OnMessage(func(message waljs.WalJSChange) bool {
+	return socket.OnMessage(func(message waljs.WalJSChange) (bool, error) {
 		if message.Kind == "delete" {
 			message.Data[jdbc.CDCDeletedAt] = message.Timestamp
 		}
@@ -78,9 +78,14 @@ func (p *Postgres) GroupRead(channel chan<- types.Record, streams ...protocol.St
 		// insert record
 		if !safego.Insert(channel, base.ReformatRecord(message.Stream, message.Data)) {
 			// channel was closed; exit OnMessage
-			return true
+			return true, nil
 		}
 
-		return false
+		err = p.UpdateState(message.Stream, message.Data)
+		if err != nil {
+			return true, err
+		}
+
+		return false, nil
 	})
 }

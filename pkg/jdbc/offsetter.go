@@ -48,6 +48,7 @@ func WithContextOffsetter[T types.Iterable](ctx context.Context, baseQuery strin
 		rows:        make(chan T),
 		withContext: exec,
 		args:        args,
+		ctx:         ctx,
 	}
 
 	return setter

@@ -59,7 +59,7 @@ func (c *Config) ValidateAndPopulateDefaults() error {
 	timeString := "2017-01-25T00:00:00Z"
 	defaultTime, err := time.Parse(time.RFC3339, timeString)
 	if err != nil {
-		fmt.Println("Error parsing time:", err)
+		fmt.Println("Error parsing time: %s", err)
 		return err
 	}
 

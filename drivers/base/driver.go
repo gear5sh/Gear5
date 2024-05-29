@@ -1,7 +1,9 @@
 package base
 
 import (
+	"github.com/piyushsingariya/shift/protocol"
 	"github.com/piyushsingariya/shift/types"
+	"github.com/piyushsingariya/shift/typing"
 )
 
 type Driver struct {
@@ -17,4 +19,28 @@ func NewBase() *Driver {
 
 func (d *Driver) BulkRead() bool {
 	return d.GroupRead
+}
+
+func (d *Driver) UpdateState(stream protocol.Stream, data types.RecordData) error {
+	datatype, err := stream.Schema().GetType(stream.Cursor())
+	if err != nil {
+		return err
+	}
+
+	if cursorVal, found := data[stream.Cursor()]; found && cursorVal != nil {
+		// compare with current state
+		if stream.GetState() != nil {
+			state, err := typing.MaximumOnDataType(datatype, stream.GetState(), cursorVal)
+			if err != nil {
+				return err
+			}
+
+			stream.SetState(state)
+		} else {
+			// directly update
+			stream.SetState(cursorVal)
+		}
+	}
+
+	return nil
 }

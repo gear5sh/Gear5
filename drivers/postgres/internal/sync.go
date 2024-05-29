@@ -7,18 +7,12 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/piyushsingariya/shift/drivers/base"
+	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/pkg/jdbc"
 	"github.com/piyushsingariya/shift/protocol"
 	"github.com/piyushsingariya/shift/safego"
 	"github.com/piyushsingariya/shift/types"
-	"github.com/piyushsingariya/shift/typing"
 	"github.com/piyushsingariya/shift/utils"
-)
-
-const (
-	fullRefreshTemplate  = `SELECT * FROM "%s"."%s" ORDER BY %s`
-	withStateTemplate    = `SELECT * FROM "%s"."%s" where "%s">$1 ORDER BY "%s" ASC NULLS FIRST`
-	withoutStateTemplate = `SELECT * FROM "%s"."%s" ORDER BY "%s" ASC NULLS FIRST`
 )
 
 // Simple Full Refresh Sync; Loads table fully
@@ -32,7 +26,9 @@ func freshSync(client *sqlx.DB, stream protocol.Stream, channel chan<- types.Rec
 
 	defer tx.Rollback()
 
-	setter := jdbc.NewOffsetter(fullRefreshTemplate, int(stream.BatchSize()), tx.Query)
+	stmt := jdbc.PostgresFullRefresh(stream)
+
+	setter := jdbc.NewOffsetter(stmt, int(stream.BatchSize()), tx.Query)
 	return setter.Capture(func(rows *sql.Rows) error {
 		// Create a map to hold column names and values
 		record := make(types.RecordData)
@@ -54,10 +50,8 @@ func freshSync(client *sqlx.DB, stream protocol.Stream, channel chan<- types.Rec
 }
 
 // Incremental Sync based on a Cursor Value
-func incrementalSync(client *sqlx.DB, stream protocol.Stream, channel chan<- types.Record) error {
-	intialState := stream.InitialState()
-
-	tx, err := client.BeginTx(context.TODO(), &sql.TxOptions{
+func (p *Postgres) incrementalSync(stream protocol.Stream, channel chan<- types.Record) error {
+	tx, err := p.client.BeginTx(context.TODO(), &sql.TxOptions{
 		Isolation: sql.LevelRepeatableRead,
 	})
 	if err != nil {
@@ -65,15 +59,13 @@ func incrementalSync(client *sqlx.DB, stream protocol.Stream, channel chan<- typ
 	}
 
 	defer tx.Rollback()
-	cursorDataType, err := stream.Schema().GetType(stream.Cursor())
-	if err != nil {
-		return err
-	}
 
+	intialState := stream.InitialState()
 	args := []any{}
-	statement := fmt.Sprintf(withoutStateTemplate, stream.Namespace(), stream.Name(), stream.Cursor())
+	statement := jdbc.PostgresWithoutState(stream)
 	if intialState != nil {
-		statement = fmt.Sprintf(withStateTemplate, stream.Namespace(), stream.Name(), stream.Cursor(), stream.Cursor())
+		logger.Debugf("Using Initial state for stream %s : %v", stream.ID(), intialState)
+		statement = jdbc.PostgresWithState(stream)
 		args = append(args, intialState)
 	}
 
@@ -88,25 +80,15 @@ func incrementalSync(client *sqlx.DB, stream protocol.Stream, channel chan<- typ
 			return fmt.Errorf("failed to mapScan record data: %s", err)
 		}
 
-		if cursorVal, found := record[stream.Cursor()]; found && cursorVal != nil {
-			// compare with current state
-			if stream.GetState() != nil {
-				state, err := typing.MaximumOnDataType(cursorDataType, stream.GetState(), cursorVal)
-				if err != nil {
-					return err
-				}
-
-				stream.SetState(state)
-			} else {
-				// directly update
-				stream.SetState(cursorVal)
-			}
-		}
-
 		// insert record
 		if !safego.Insert(channel, base.ReformatRecord(stream, record)) {
 			// channel was closed
 			return nil
+		}
+
+		err = p.UpdateState(stream, record)
+		if err != nil {
+			return err
 		}
 
 		return nil

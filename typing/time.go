@@ -1,0 +1,26 @@
+package typing
+
+import (
+	"fmt"
+	"time"
+)
+
+type Time struct {
+	time.Time
+}
+
+// UnmarshalJSON overrides the default unmarshalling for CustomTime
+func (ct *Time) UnmarshalJSON(b []byte) error {
+	// Remove the quotes around the date string
+	str := string(b)
+
+	fmt.Println(str)
+
+	time, err := parseStringTimestamp(str)
+	if err != nil {
+		return err
+	}
+
+	*ct = Time{time}
+	return nil
+}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/jackc/pglogrepl"
@@ -255,11 +254,17 @@ func (s *Socket) start() {
 
 			logger.Infof("Processing database snapshot: %s", stream.ID())
 			logger.Info("Query snapshot", "batch-size", stream.BatchSize())
-			baseQuery := fmt.Sprintf("SELECT * FROM %s.%s ORDER BY %s ", stream.Name(),
-				stream.Namespace(), strings.Join(stream.GetStream().SourceDefinedPrimaryKey.Array(), ", "))
 
-			setter := jdbc.WithContextOffsetter(context.TODO(), baseQuery, int(stream.BatchSize()), snapshotter.tx.Query)
+			intialState := stream.InitialState()
+			args := []any{}
+			statement := jdbc.PostgresWithoutState(stream)
+			if intialState != nil {
+				logger.Debugf("Using Initial state for stream %s : %v", stream.ID(), intialState)
+				statement = jdbc.PostgresWithState(stream)
+				args = append(args, intialState)
+			}
 
+			setter := jdbc.WithContextOffsetter(context.TODO(), statement, int(stream.BatchSize()), snapshotter.tx.Query, args...)
 			return setter.Capture(func(rows pgx.Rows) error {
 				values, err := rows.Values()
 				if err != nil {
@@ -308,9 +313,9 @@ func (s *Socket) OnMessage(callback OnMessage) error {
 		case err := <-s.err:
 			return err
 		case message := <-s.messages:
-			exit := callback(message)
-			if exit {
-				return nil
+			exit, err := callback(message)
+			if err != nil || exit {
+				return err
 			}
 		}
 	}
