@@ -169,13 +169,6 @@ main:
 		default:
 			exit, err := func() (bool, error) {
 				if s.deadlineCrossed() {
-					if cachedLSN != nil {
-						err := s.AcknowledgeLSN(*cachedLSN)
-						if err != nil {
-							return true, err
-						}
-					}
-
 					return true, nil
 				}
 
@@ -187,23 +180,23 @@ main:
 					if pgconn.Timeout(err) {
 						return true, nil
 					}
-					return true, fmt.Errorf("failed to receive messages from PostgreSQL %s", err)
+					return false, fmt.Errorf("failed to receive messages from PostgreSQL %s", err)
 				}
 
 				if errMsg, ok := rawMsg.(*pgproto3.ErrorResponse); ok {
-					return true, fmt.Errorf("received broken Postgres WAL. Error: %+v", errMsg)
+					return false, fmt.Errorf("received broken Postgres WAL. Error: %+v", errMsg)
 				}
 
 				msg, ok := rawMsg.(*pgproto3.CopyData)
 				if !ok {
-					return true, fmt.Errorf("received unexpected message: %T", rawMsg)
+					return false, fmt.Errorf("received unexpected message: %T", rawMsg)
 				}
 
 				switch msg.Data[0] {
 				case pglogrepl.PrimaryKeepaliveMessageByteID:
 					pkm, err := pglogrepl.ParsePrimaryKeepaliveMessage(msg.Data[1:])
 					if err != nil {
-						return true, fmt.Errorf("ParsePrimaryKeepaliveMessage failed: %s", err)
+						return false, fmt.Errorf("ParsePrimaryKeepaliveMessage failed: %s", err)
 					}
 
 					if pkm.ReplyRequested {
@@ -213,7 +206,7 @@ main:
 				case pglogrepl.XLogDataByteID:
 					xld, err := pglogrepl.ParseXLogData(msg.Data[1:])
 					if err != nil {
-						return true, fmt.Errorf("ParseXLogData failed: %s", err)
+						return false, fmt.Errorf("ParseXLogData failed: %s", err)
 					}
 
 					// Cache LSN here to be used during acknowledgement
@@ -223,7 +216,7 @@ main:
 						s.messages <- change
 					})
 					if err != nil {
-						return true, err
+						return false, err
 					}
 				}
 
@@ -231,8 +224,17 @@ main:
 
 				return false, nil
 			}()
-			if err != nil || exit {
+			if err != nil {
 				s.err <- err
+				break main
+			}
+
+			// acknowledge and exit
+			if exit {
+				if cachedLSN != nil {
+					s.err <- s.AcknowledgeLSN(*cachedLSN)
+				}
+
 				break main
 			}
 		}

@@ -2,6 +2,7 @@ package typing
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -12,7 +13,7 @@ type Time struct {
 // UnmarshalJSON overrides the default unmarshalling for CustomTime
 func (ct *Time) UnmarshalJSON(b []byte) error {
 	// Remove the quotes around the date string
-	str := string(b)
+	str := strings.Trim(string(b), "\"")
 
 	fmt.Println(str)
 
