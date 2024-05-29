@@ -110,7 +110,7 @@ func (p *Postgres) Read(stream protocol.Stream, channel chan<- types.Record) err
 		return freshSync(p.client, stream, channel)
 	case types.INCREMENTAL:
 		// read incrementally
-		return incrementalSync(p.client, stream, channel)
+		return p.incrementalSync(stream, channel)
 	}
 
 	return nil
@@ -169,7 +169,7 @@ func (p *Postgres) loadStreams() error {
 		// currently only datetime fields is supported for cursor field, automatic generated fields can also be used
 		// future TODO
 		for propertyName, property := range stream.Schema.Properties {
-			if utils.ExistInArray(property.Type, types.TIMESTAMP) {
+			if utils.ExistInArray(property.Type, types.TIMESTAMP) || utils.ExistInArray(property.Type, types.INT64) {
 				stream.WithCursorField(propertyName)
 			}
 		}

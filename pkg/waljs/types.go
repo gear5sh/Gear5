@@ -1,26 +1,24 @@
 package waljs
 
 import (
-	"time"
-
 	"github.com/jackc/pglogrepl"
 	"github.com/piyushsingariya/shift/protocol"
+	"github.com/piyushsingariya/shift/typing"
 )
 
 type WalJSChange struct {
 	Stream    protocol.Stream
-	Timestamp *time.Time
+	Timestamp *typing.Time
 	LSN       *pglogrepl.LSN
 	Kind      string
 	Schema    string
 	Table     string
 	Data      map[string]any
-	// Row       arrow.Record
 }
 
 type WALMessage struct {
 	// NextLSN   pglogrepl.LSN `json:"nextlsn"`
-	Timestamp time.Time `json:"timestamp"`
+	Timestamp typing.Time `json:"timestamp"`
 	Change    []struct {
 		Kind         string        `json:"kind"`
 		Schema       string        `json:"schema"`
@@ -36,4 +34,4 @@ type WALMessage struct {
 	} `json:"change"`
 }
 
-type OnMessage = func(message WalJSChange) bool
+type OnMessage = func(message WalJSChange) (bool, error)

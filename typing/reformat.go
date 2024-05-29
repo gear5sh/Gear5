@@ -23,6 +23,8 @@ var DateTimeFormats = []string{
 	"2006-01-02T15:04:05.999999999Z07:00",
 	"2006-01-02T15:04:05+0000",
 	"2020-08-17T05:50:22.895Z",
+	"2006-01-02 15:04:05.999999-07",
+	"2006-01-02 15:04:05.999999+00",
 }
 
 func getFirstNotNullType(datatypes []types.DataType) types.DataType {
@@ -143,12 +145,12 @@ func ReformatDate(v interface{}) (time.Time, error) {
 		case nil:
 			return time.Time{}, nil
 		case string:
-			return parseCHDateTime(v)
+			return parseStringTimestamp(v)
 		case *string:
 			if v == nil || *v == "" {
 				return time.Time{}, fmt.Errorf("empty string passed")
 			} else {
-				return parseCHDateTime(*v)
+				return parseStringTimestamp(*v)
 			}
 		case *any:
 			return ReformatDate(*v)
@@ -170,7 +172,7 @@ func ReformatDate(v interface{}) (time.Time, error) {
 	return parsed, nil
 }
 
-func parseCHDateTime(value string) (time.Time, error) {
+func parseStringTimestamp(value string) (time.Time, error) {
 	var tv time.Time
 	var err error
 	for _, layout := range DateTimeFormats {
@@ -182,10 +184,10 @@ func parseCHDateTime(value string) (time.Time, error) {
 		}
 	}
 
-	return time.Time{}, fmt.Errorf("failed to parse datetime from available formats: %v : %s", DateTimeFormats, err)
+	return time.Time{}, fmt.Errorf("failed to parse datetime from available formats: %s", err)
 }
 
-func ReformatInt64(v interface{}) (interface{}, error) {
+func ReformatInt64(v any) (int64, error) {
 	switch v := v.(type) {
 	case float32:
 		return int64(v), nil
@@ -209,6 +211,8 @@ func ReformatInt64(v interface{}) (interface{}, error) {
 		return int64(v), nil
 	case uint64:
 		return int64(v), nil
+	case *any:
+		return ReformatInt64(*v)
 	}
 
 	return int64(0), fmt.Errorf("failed to change %v (type:%T) to int64", v, v)
