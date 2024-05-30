@@ -2,7 +2,9 @@ package driver
 
 import (
 	"fmt"
+	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/piyushsingariya/shift/drivers/base"
 	"github.com/piyushsingariya/shift/pkg/jdbc"
 	"github.com/piyushsingariya/shift/pkg/waljs"
@@ -19,7 +21,7 @@ func (p *Postgres) prepareWALJSConfig(streams ...protocol.Stream) (*waljs.Config
 	config := &waljs.Config{
 		Connection:          *p.config.Connection,
 		ReplicationSlotName: p.cdcConfig.ReplicationSlot,
-		InitialWaitTime:     p.cdcConfig.InitialWaitTime,
+		InitialWaitTime:     time.Duration(p.cdcConfig.InitialWaitTime) * time.Second,
 		State:               p.cdcState,
 		FullSyncTables:      types.NewSet[protocol.Stream](),
 		Tables:              types.NewSet[protocol.Stream](),
@@ -59,7 +61,7 @@ func (p *Postgres) GroupRead(channel chan<- types.Record, streams ...protocol.St
 		return err
 	}
 
-	socket, err := waljs.NewConnection(config)
+	socket, err := waljs.NewConnection(p.client, config)
 	if err != nil {
 		return err
 	}
@@ -88,4 +90,35 @@ func (p *Postgres) GroupRead(channel chan<- types.Record, streams ...protocol.St
 
 		return false, nil
 	})
+}
+
+func doesReplicationSlotExists(conn *sqlx.DB, slotName string) (bool, error) {
+	var exists bool
+	err := conn.QueryRow(
+		"SELECT EXISTS(Select 1 from pg_replication_slots where slot_name = $1)",
+		slotName,
+	).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, validateReplicationSlot(conn, slotName)
+}
+
+func validateReplicationSlot(conn *sqlx.DB, slotName string) error {
+	slot := waljs.ReplicationSlot{}
+	err := conn.Get(&slot, fmt.Sprintf(waljs.ReplicationSlotTempl, slotName))
+	if err != nil {
+		return err
+	}
+
+	if slot.Plugin != "wal2json" {
+		return fmt.Errorf("Plugin not supported[%s]: driver only supports wal2json", slot.Plugin)
+	}
+
+	if slot.SlotType != "logical" {
+		return fmt.Errorf("only logical slots are supported: %s", slot.SlotType)
+	}
+
+	return nil
 }
