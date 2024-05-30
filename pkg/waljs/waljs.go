@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/jackc/pglogrepl"
@@ -41,6 +42,7 @@ type Socket struct {
 	err                        chan error
 	changeFilter               ChangeFilter
 	lsnrestart                 pglogrepl.LSN
+	recovery                   bool
 }
 
 func NewConnection(db *sqlx.DB, config *Config) (*Socket, error) {
@@ -104,6 +106,7 @@ func NewConnection(db *sqlx.DB, config *Config) (*Socket, error) {
 
 		// difference in confirmed flush lsn from State and DB
 		if stateLSN.String() != slot.LSN.String() {
+			connection.recovery = true
 			logger.Info("Enabling Recovery mode...")
 			logger.Infof("Reason: Found difference in LSN present in database[%s] and Global State[%s]", slot.LSN.String(), stateLSN.String())
 
@@ -117,7 +120,6 @@ func NewConnection(db *sqlx.DB, config *Config) (*Socket, error) {
 	connection.lsnrestart = slot.LSN
 	connection.clientXLogPos = slot.LSN
 
-	go connection.start()
 	return connection, err
 }
 
@@ -133,9 +135,9 @@ func (s *Socket) startLr() error {
 
 	// Initial timer only works after one sync is completed
 	if !s.State.State.IsEmpty() {
-		logger.Debug("setting initial wait timer...")
+		logger.Debugf("Setting initial wait timer: %s", s.InitialWaitTime)
 		s.waiter = time.AfterFunc(s.InitialWaitTime, func() {
-			logger.Info("Initial wait timer expired...")
+			logger.Info("Closing sync. initial wait timer expired...")
 			s.err <- nil
 		})
 	}
@@ -189,15 +191,11 @@ func (s *Socket) streamMessagesAsync() {
 
 			rawMsg, err := s.pgConn.ReceiveMessage(ctx)
 			if err != nil {
-				if pgconn.Timeout(err) {
+				if pgconn.Timeout(err) || err == io.EOF || err == io.ErrUnexpectedEOF {
 					return true, nil
 				}
-				return false, fmt.Errorf("failed to receive messages from PostgreSQL %s", err)
-			}
 
-			// stop waiter after a message has been recieved
-			if s.waiter != nil {
-				s.waiter.Stop()
+				return false, fmt.Errorf("failed to receive messages from PostgreSQL %s", err)
 			}
 
 			if errMsg, ok := rawMsg.(*pgproto3.ErrorResponse); ok {
@@ -231,6 +229,11 @@ func (s *Socket) streamMessagesAsync() {
 				cachedLSN = &clientXLogPos
 				err = s.changeFilter.FilterChange(clientXLogPos, xld.WALData, func(change WalJSChange) {
 					s.messages <- change
+
+					// stop waiter after a record has been recieved
+					if s.waiter != nil {
+						s.waiter.Stop()
+					}
 				})
 				if err != nil {
 					return false, err
@@ -312,6 +315,11 @@ func (s *Socket) start() {
 		}
 	}
 
+	// after recovery; Update the LSN
+	if s.recovery {
+		s.Config.State.State.LSN = s.lsnrestart.String()
+	}
+
 	err := s.startLr()
 	if err != nil {
 		s.err <- err
@@ -322,6 +330,8 @@ func (s *Socket) start() {
 }
 
 func (s *Socket) OnMessage(callback OnMessage) error {
+	go s.start()
+
 	defer s.cleanup()
 
 	for {
