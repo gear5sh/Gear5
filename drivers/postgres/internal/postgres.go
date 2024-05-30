@@ -42,6 +42,13 @@ func (p *Postgres) Check() error {
 		return fmt.Errorf("failed to validate config: %s", err)
 	}
 
+	db, err := sqlx.Open("pgx", p.config.Connection.String())
+	if err != nil {
+		return fmt.Errorf("failed to connect database: %s", err)
+	}
+
+	db = db.Unsafe()
+
 	found, _ := utils.IsOfType(p.config.UpdateMethod, "replication_slot")
 	if found {
 		logger.Info("Found CDC Configuration")
@@ -50,16 +57,21 @@ func (p *Postgres) Check() error {
 			return err
 		}
 
+		exists, err := doesReplicationSlotExists(db, cdc.ReplicationSlot)
+		if err != nil {
+			return fmt.Errorf("failed to check replication slot: %s", err)
+		}
+
+		if !exists {
+			return fmt.Errorf("replication slot %s does not exist!", cdc.ReplicationSlot)
+		}
+
 		p.Driver.GroupRead = true
 		p.cdcConfig = *cdc
 	} else {
 		logger.Info("Standard Replication is selected")
 	}
 
-	db, err := sqlx.Open("pgx", p.config.Connection.String())
-	if err != nil {
-		return fmt.Errorf("failed to connect database: %s", err)
-	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
@@ -69,7 +81,7 @@ func (p *Postgres) Check() error {
 		return fmt.Errorf("failed to ping database: %s", err)
 	}
 
-	p.client = db.Unsafe()
+	p.client = db
 
 	return nil
 }

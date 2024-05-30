@@ -10,8 +10,14 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgproto3"
+	"github.com/jmoiron/sqlx"
 	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/pkg/jdbc"
+	"github.com/piyushsingariya/shift/protocol"
+)
+
+const (
+	ReplicationSlotTempl = "SELECT plugin, slot_type, confirmed_flush_lsn FROM pg_replication_slots WHERE slot_name = '%s'"
 )
 
 var pluginArguments = []string{
@@ -25,8 +31,9 @@ type Socket struct {
 	pgConn  *pgconn.PgConn
 	pgxConn *pgx.Conn
 
-	ctx                        context.Context // Context to use Inital Wait Time
-	cancel                     context.CancelFunc
+	waiter *time.Timer
+	// ctx                        context.Context // Context to use Inital Wait Time
+	// cancel                     context.CancelFunc
 	clientXLogPos              pglogrepl.LSN
 	standbyMessageTimeout      time.Duration
 	nextStandbyMessageDeadline time.Time
@@ -36,7 +43,7 @@ type Socket struct {
 	lsnrestart                 pglogrepl.LSN
 }
 
-func NewConnection(config *Config) (*Socket, error) {
+func NewConnection(db *sqlx.DB, config *Config) (*Socket, error) {
 	if !config.FullSyncTables.SubsetOf(config.Tables) {
 		return nil, fmt.Errorf("mismatch: full sync tables are not subset of all tables")
 	}
@@ -83,32 +90,32 @@ func NewConnection(config *Config) (*Socket, error) {
 
 	logger.Info("System identification result", "SystemID:", sysident.SystemID, "Timeline:", sysident.Timeline, "XLogPos:", sysident.XLogPos, "Database:", sysident.DBName)
 
-	var confirmedLSNFromDB string
-	// check is replication slot exist to get last restart SLN
-	connExecResult := connection.pgConn.Exec(context.TODO(), fmt.Sprintf("SELECT confirmed_flush_lsn FROM pg_replication_slots WHERE slot_name = '%s'", config.ReplicationSlotName))
-	if slotCheckResults, err := connExecResult.ReadAll(); err != nil {
-		return nil, fmt.Errorf("failed to read table[pg_replication_slots]: %s", err)
-	} else {
-		if len(slotCheckResults) == 0 || len(slotCheckResults[0].Rows) == 0 {
-			return nil, fmt.Errorf("slot[%s] doesn't exists", config.ReplicationSlotName)
-		} else {
-			slotCheckRow := slotCheckResults[0].Rows[0]
-			confirmedLSNFromDB = string(slotCheckRow[0])
-			logger.Info("Replication slot restart LSN extracted from DB", "LSN", confirmedLSNFromDB)
+	slot := ReplicationSlot{}
+	err = db.Get(&slot, fmt.Sprintf(ReplicationSlotTempl, config.ReplicationSlotName))
+	if err != nil {
+		return nil, err
+	}
+
+	if config.State.State.LSN != "" {
+		stateLSN, err := pglogrepl.ParseLSN(config.State.State.LSN)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse State LSN: %s", err)
+		}
+
+		// difference in confirmed flush lsn from State and DB
+		if stateLSN.String() != slot.LSN.String() {
+			logger.Info("Enabling Recovery mode...")
+			logger.Infof("Reason: Found difference in LSN present in database[%s] and Global State[%s]", slot.LSN.String(), stateLSN.String())
+
+			// adding all tables in full load for recovery
+			config.Tables.Range(func(s protocol.Stream) {
+				config.FullSyncTables.Insert(s)
+			})
 		}
 	}
 
-	lsnrestart, err := pglogrepl.ParseLSN(confirmedLSNFromDB)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse LSN: %s", err)
-	}
-
-	connection.lsnrestart = lsnrestart
-	connection.clientXLogPos = lsnrestart
-
-	// Setup initial wait timeout to be the next message deadline to wait for a change log
-	connection.nextStandbyMessageDeadline = time.Now().Add(time.Second*time.Duration(config.InitialWaitTime) + time.Second)
-	connection.ctx, connection.cancel = context.WithTimeout(context.TODO(), time.Second*time.Duration(config.InitialWaitTime))
+	connection.lsnrestart = slot.LSN
+	connection.clientXLogPos = slot.LSN
 
 	go connection.start()
 	return connection, err
@@ -120,6 +127,18 @@ func (s *Socket) startLr() error {
 		return fmt.Errorf("starting replication slot failed: %s", err)
 	}
 	logger.Infof("Started logical replication on slot[%s]", s.ReplicationSlotName)
+
+	// Setup initial wait timeout to be the next message deadline to wait for a change log
+	s.nextStandbyMessageDeadline = time.Now().Add(s.InitialWaitTime + 2*time.Second)
+
+	// Initial timer only works after one sync is completed
+	if !s.State.State.IsEmpty() {
+		logger.Debug("setting initial wait timer...")
+		s.waiter = time.AfterFunc(s.InitialWaitTime, func() {
+			logger.Info("Initial wait timer expired...")
+			s.err <- nil
+		})
+	}
 
 	return nil
 }
@@ -157,86 +176,81 @@ func (s *Socket) deadlineCrossed() bool {
 
 func (s *Socket) streamMessagesAsync() {
 	var cachedLSN *pglogrepl.LSN
-
-main:
 	for {
-		select {
-		case <-s.ctx.Done():
-			logger.Info("Initial wait timeout triggered; Closing Sync")
-			s.cancel()
-			s.err <- nil
-			return
-		default:
-			exit, err := func() (bool, error) {
-				if s.deadlineCrossed() {
+		exit, err := func() (bool, error) {
+			if s.deadlineCrossed() {
+				// adjusting with function being retriggered when not even a single message has been received
+				s.increaseDeadline()
+				return true, nil
+			}
+
+			ctx, cancel := context.WithDeadline(context.Background(), s.nextStandbyMessageDeadline)
+			defer cancel()
+
+			rawMsg, err := s.pgConn.ReceiveMessage(ctx)
+			if err != nil {
+				if pgconn.Timeout(err) {
 					return true, nil
 				}
+				return false, fmt.Errorf("failed to receive messages from PostgreSQL %s", err)
+			}
 
-				ctx, cancel := context.WithDeadline(context.Background(), s.nextStandbyMessageDeadline)
-				defer cancel()
+			// stop waiter after a message has been recieved
+			if s.waiter != nil {
+				s.waiter.Stop()
+			}
 
-				rawMsg, err := s.pgConn.ReceiveMessage(ctx)
+			if errMsg, ok := rawMsg.(*pgproto3.ErrorResponse); ok {
+				return false, fmt.Errorf("received broken Postgres WAL. Error: %+v", errMsg)
+			}
+
+			msg, ok := rawMsg.(*pgproto3.CopyData)
+			if !ok {
+				return false, fmt.Errorf("received unexpected message: %T", rawMsg)
+			}
+
+			switch msg.Data[0] {
+			case pglogrepl.PrimaryKeepaliveMessageByteID:
+				pkm, err := pglogrepl.ParsePrimaryKeepaliveMessage(msg.Data[1:])
 				if err != nil {
-					if pgconn.Timeout(err) {
-						return true, nil
-					}
-					return false, fmt.Errorf("failed to receive messages from PostgreSQL %s", err)
+					return false, fmt.Errorf("ParsePrimaryKeepaliveMessage failed: %s", err)
 				}
 
-				if errMsg, ok := rawMsg.(*pgproto3.ErrorResponse); ok {
-					return false, fmt.Errorf("received broken Postgres WAL. Error: %+v", errMsg)
+				if pkm.ReplyRequested {
+					s.nextStandbyMessageDeadline = time.Time{}
 				}
 
-				msg, ok := rawMsg.(*pgproto3.CopyData)
-				if !ok {
-					return false, fmt.Errorf("received unexpected message: %T", rawMsg)
+			case pglogrepl.XLogDataByteID:
+				xld, err := pglogrepl.ParseXLogData(msg.Data[1:])
+				if err != nil {
+					return false, fmt.Errorf("ParseXLogData failed: %s", err)
 				}
 
-				switch msg.Data[0] {
-				case pglogrepl.PrimaryKeepaliveMessageByteID:
-					pkm, err := pglogrepl.ParsePrimaryKeepaliveMessage(msg.Data[1:])
-					if err != nil {
-						return false, fmt.Errorf("ParsePrimaryKeepaliveMessage failed: %s", err)
-					}
-
-					if pkm.ReplyRequested {
-						s.nextStandbyMessageDeadline = time.Time{}
-					}
-
-				case pglogrepl.XLogDataByteID:
-					xld, err := pglogrepl.ParseXLogData(msg.Data[1:])
-					if err != nil {
-						return false, fmt.Errorf("ParseXLogData failed: %s", err)
-					}
-
-					// Cache LSN here to be used during acknowledgement
-					clientXLogPos := xld.WALStart + pglogrepl.LSN(len(xld.WALData))
-					cachedLSN = &clientXLogPos
-					err = s.changeFilter.FilterChange(clientXLogPos, xld.WALData, func(change WalJSChange) {
-						s.messages <- change
-					})
-					if err != nil {
-						return false, err
-					}
+				// Cache LSN here to be used during acknowledgement
+				clientXLogPos := xld.WALStart + pglogrepl.LSN(len(xld.WALData))
+				cachedLSN = &clientXLogPos
+				err = s.changeFilter.FilterChange(clientXLogPos, xld.WALData, func(change WalJSChange) {
+					s.messages <- change
+				})
+				if err != nil {
+					return false, err
 				}
-
-				s.increaseDeadline()
-
-				return false, nil
-			}()
-			if err != nil {
-				s.err <- err
-				break main
 			}
 
-			// acknowledge and exit
-			if exit {
-				if cachedLSN != nil {
-					s.err <- s.AcknowledgeLSN(*cachedLSN)
-				}
+			s.increaseDeadline()
 
-				break main
-			}
+			return false, nil
+		}()
+		if err != nil {
+			s.err <- err
+			break
+		}
+
+		// acknowledge and exit only when we can acknowledge a LSN
+		// This helps in hooking till atleast getting one message from
+		if exit && cachedLSN != nil {
+			s.err <- s.AcknowledgeLSN(*cachedLSN)
+			break
 		}
 	}
 }
@@ -331,27 +345,12 @@ func (s *Socket) cleanup() {
 
 func (s *Socket) Stop() error {
 	if s.pgConn != nil {
-		if s.ctx != nil {
-			s.cancel()
+		if s.waiter != nil {
+			s.waiter.Stop()
 		}
 
 		return s.pgConn.Close(context.TODO())
 	}
 
 	return nil
-}
-
-func doesReplicationSlotExists(conn *pgx.Conn, slotName string) (bool, error) {
-	var exists bool
-	err := conn.QueryRow(
-		context.Background(),
-		"SELECT EXISTS(Select 1 from pg_replication_slots where slot_name = $1)",
-		slotName,
-	).Scan(&exists)
-
-	if err != nil {
-		return false, err
-	}
-
-	return exists, nil
 }

@@ -1,10 +1,40 @@
 package waljs
 
 import (
+	"crypto/tls"
+	"net/url"
+	"time"
+
 	"github.com/jackc/pglogrepl"
 	"github.com/piyushsingariya/shift/protocol"
+	"github.com/piyushsingariya/shift/types"
 	"github.com/piyushsingariya/shift/typing"
 )
+
+type Config struct {
+	Tables                     *types.Set[protocol.Stream]
+	FullSyncTables             *types.Set[protocol.Stream] // full sync tables must be a subset of ChangeTables
+	Connection                 url.URL
+	ReplicationSlotName        string
+	InitialWaitTime            time.Duration
+	SnapshotMemorySafetyFactor float64
+	TLSConfig                  *tls.Config
+	State                      *types.Global[*WALState]
+}
+
+type WALState struct {
+	LSN string `json:"lsn"`
+}
+
+func (s *WALState) IsEmpty() bool {
+	return s.LSN == ""
+}
+
+type ReplicationSlot struct {
+	SlotType string        `db:"slot_type"`
+	Plugin   string        `db:"plugin"`
+	LSN      pglogrepl.LSN `db:"confirmed_flush_lsn"`
+}
 
 type WalJSChange struct {
 	Stream    protocol.Stream
