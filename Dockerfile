@@ -1,23 +1,21 @@
-FROM golang:1.21-alpine as base
-
-# Install dependencies
-RUN apk add git make bash build-base lzo-dev
+FROM golang:1.22-alpine as base
 
 ADD . /home/app/
 # ADD . /home/app/
-WORKDIR /home/app/drivers/s3/
+WORKDIR /home/app/drivers/postgres/
 
 RUN gofmt -l -s -w .
-RUN CGO_ENABLED=1 go build -o dsynk main.go
+RUN go build -o dsynk main.go
 RUN mv dsynk /
+RUN mv generated.json /
 
 FROM golang:1.21-alpine
 COPY --from=base /dsynk /home/
+COPY --from=base /generated.json /home/generated.json
 ADD . /home
-RUN apk add build-base lzo-dev
-LABEL io.airbyte.version=2.0.24
 
-LABEL io.airbyte.name=airbyte/source-mysql
+LABEL io.eggwhite.version=2.0.24
+LABEL io.eggwhite.name=airbyte/source-mysql
 
 WORKDIR /home
 ENTRYPOINT [ "./dsynk" ]
