@@ -1,23 +1,39 @@
 package types
 
-import "sync/atomic"
+import (
+	"sync/atomic"
 
-type BatchSize struct {
-	maximum int
-	size    atomic.Int64
+	"github.com/piyushsingariya/shift/utils"
+)
+
+type BatchSizeEstimator struct {
+	avgrecordsize *atomic.Int64
+	records       int64
+	maxtoconsume  int64
 }
 
-func NewBatchSize(maximum int) *BatchSize {
-	return &BatchSize{
-		maximum: maximum,
-		size:    atomic.Int64{},
+func NewBatchSizeEstimator(input int64) *BatchSizeEstimator {
+	return &BatchSizeEstimator{
+		maxtoconsume: input,
 	}
 }
 
-func (b *BatchSize) Set(size int) {
-	b.size.Store(int64(size))
+func (b *BatchSizeEstimator) Size() int64 {
+	if b.avgrecordsize == nil {
+		return b.maxtoconsume
+	}
+
+	return int64((float64(utils.FreeMemory()) * 0.8) / float64(b.avgrecordsize.Load()))
 }
 
-func (b *BatchSize) Size() int {
-	return int(b.size.Load())
+func (b *BatchSizeEstimator) Consume(data RecordData) {
+	size := utils.SizeOf(data)
+	if b.avgrecordsize == nil {
+		b.avgrecordsize = &atomic.Int64{}
+		b.avgrecordsize.Store(int64(size))
+	} else if b.records <= b.maxtoconsume {
+		b.avgrecordsize.Store((b.records*b.avgrecordsize.Load() + int64(size)) / (b.records + 1))
+	}
+
+	b.records += 1
 }
