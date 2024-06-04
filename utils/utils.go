@@ -1,20 +1,13 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"reflect"
 	"time"
 
-	"github.com/goccy/go-json"
-
-	"github.com/piyushsingariya/shift/jsonschema"
-	"github.com/piyushsingariya/shift/logger"
-	"github.com/piyushsingariya/shift/models"
-	"github.com/piyushsingariya/shift/types"
-	"github.com/piyushsingariya/shift/typing"
 	"github.com/spf13/cobra"
-	"sigs.k8s.io/yaml"
 )
 
 func Absolute[T int | int8 | int16 | int32 | int64 | float32 | float64](value T) T {
@@ -35,42 +28,22 @@ func IsValidSubcommand(available []*cobra.Command, sub string) bool {
 	return false
 }
 
-func ArrayContains[T comparable](array []T, value T) bool {
-	for _, elem := range array {
-		if elem == value {
-			return true
+func ExistInArray[T ~string | int | int8 | int16 | int32 | int64 | float32 | float64](set []T, value T) bool {
+	_, found := ArrayContains(set, func(elem T) bool {
+		return elem == value
+	})
+
+	return found
+}
+
+func ArrayContains[T any](set []T, match func(elem T) bool) (int, bool) {
+	for idx, elem := range set {
+		if match(elem) {
+			return idx, true
 		}
 	}
 
-	return false
-}
-
-func ToJSONSchema(obj interface{}) (string, error) {
-	schema, err := jsonschema.Reflect(obj)
-	if err != nil {
-		return "", err
-	}
-
-	j, err := json.MarshalIndent(schema, "", " ")
-	if err != nil {
-		return "", err
-	}
-
-	return string(j), nil
-}
-
-func ToYamlSchema(obj interface{}) (string, error) {
-	jsonSchema, err := ToJSONSchema(obj)
-	if err != nil {
-		return "", err
-	}
-
-	yamlData, err := yaml.JSONToYAML([]byte(jsonSchema))
-	if err != nil {
-		return "", err
-	}
-
-	return string(yamlData), nil
+	return -1, false
 }
 
 // Unmarshal serializes and deserializes any from into the object
@@ -137,34 +110,28 @@ func CheckIfFilesExists(files ...string) error {
 	return nil
 }
 
-func ReadFile(file string) interface{} {
-	content, err := ReadFileE(file)
-	if err != nil {
-		logger.Error(err)
-		return nil
-	}
+// func ReadFile(file string) any {
+// 	content, _ := ReadFileE(file)
 
-	return content
-}
+// 	return content
+// }
 
-func ReadFileE(file string) (interface{}, error) {
+func UnmarshalFile(file string, dest any) error {
 	if err := CheckIfFilesExists(file); err != nil {
-		return nil, err
+		return err
 	}
 
 	data, err := os.ReadFile(file)
 	if err != nil {
-		return nil, fmt.Errorf("file not found : %s", err)
+		return fmt.Errorf("file not found : %s", err)
 	}
 
-	var content interface{}
-
-	err = yaml.Unmarshal(data, &content)
+	err = json.Unmarshal(data, dest)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return content, nil
+	return nil
 }
 
 func IsOfType(object interface{}, decidingKey string) (bool, error) {
@@ -180,35 +147,12 @@ func IsOfType(object interface{}, decidingKey string) (bool, error) {
 	return false, nil
 }
 
-func StreamIdentifier(namespace, name string) string {
-	return namespace + name
-}
-
-func ToShiftSchema(obj interface{}) (string, error) {
-	schema, err := jsonschema.Reflect(obj)
-	if err != nil {
-		return "", err
+func StreamIdentifier(name, namespace string) string {
+	if namespace != "" {
+		return fmt.Sprintf("%s.%s", namespace, name)
 	}
 
-	j, err := json.MarshalIndent(schema, "", " ")
-	if err != nil {
-		return "", err
-	}
-
-	return string(j), nil
-}
-
-func RetryOnFailure(attempts int, sleep *time.Duration, f func() error) (err error) {
-	for i := 0; i < attempts; i++ {
-		if err = f(); err == nil {
-			return nil
-		}
-
-		logger.Infof("Retrying after %v...", sleep)
-		time.Sleep(*sleep)
-	}
-
-	return err
+	return name
 }
 
 func IsSubset[T comparable](setArray, subsetArray []T) bool {
@@ -232,41 +176,4 @@ func MaxDate(v1, v2 time.Time) time.Time {
 	}
 
 	return v2
-}
-
-func MaximumOnDataType[T any](typ []types.DataType, a, b T) (T, error) {
-	switch {
-	case ArrayContains(typ, types.TIMESTAMP):
-		adate, err := typing.ReformatDate(a)
-		if err != nil {
-			return a, fmt.Errorf("failed to reformat[%v] while comparing: %s", a, err)
-		}
-		bdate, err := typing.ReformatDate(b)
-		if err != nil {
-			return a, fmt.Errorf("failed to reformat[%v] while comparing: %s", b, err)
-		}
-
-		if MaxDate(adate, bdate) == adate {
-			return a, nil
-		}
-
-		return b, nil
-	default:
-		return a, fmt.Errorf("comparison not available for data types %v now", typ)
-	}
-}
-
-func ReformatRecord(name, namespace string, record map[string]any) models.Record {
-	return models.Record{
-		Stream:    name,
-		Namespace: namespace,
-		Data:      record,
-	}
-}
-
-// CloseRecordIteration closes iteration over a record channel
-func CloseRecordIteration(channel chan models.Record) {
-	channel <- models.Record{
-		Close: true,
-	}
 }

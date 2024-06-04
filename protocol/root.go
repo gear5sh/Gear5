@@ -3,23 +3,29 @@ package protocol
 import (
 	"fmt"
 
-	"github.com/piyushsingariya/shift/logger"
+	"github.com/piyushsingariya/shift/logger/console"
+	"github.com/piyushsingariya/shift/types"
 	"github.com/piyushsingariya/shift/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 var (
-	config    string
-	state     string
-	catalog   string
-	batchSize int64
+	config_    string
+	state_     string
+	catalog_   string
+	batchSize_ uint
+
+	catalog *types.Catalog
+	state   *types.State
 
 	isDriver        = false
 	driverCommands  = []*cobra.Command{}
 	adapterCommands = []*cobra.Command{}
 
-	rawConnector interface{}
+	_driver       Driver
+	_adapter      Adapter
+	_rawConnector Connector
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -39,14 +45,17 @@ var RootCmd = &cobra.Command{
 	},
 }
 
-func CreateRootCommand(forDriver bool, connector interface{}) *cobra.Command {
+func CreateRootCommand(forDriver bool, connector any) *cobra.Command {
 	if forDriver {
 		RootCmd.AddCommand(driverCommands...)
+		_driver = connector.(Driver)
+		isDriver = true
 	} else {
 		RootCmd.AddCommand(adapterCommands...)
+		_adapter = connector.(Adapter)
 	}
 
-	rawConnector = connector
+	_rawConnector = connector.(Connector)
 
 	return RootCmd
 }
@@ -63,10 +72,10 @@ func init() {
 	driverCommands = append(driverCommands, SpecCmd, CheckCmd, DiscoverCmd, ReadCmd)
 	adapterCommands = append(adapterCommands, SpecCmd, CheckCmd, DiscoverCmd, WriteCmd)
 
-	RootCmd.PersistentFlags().StringVarP(&config, "config", "", "", "(Required) Config for Shift connector")
-	RootCmd.PersistentFlags().StringVarP(&catalog, "catalog", "", "", "(Required) Catalog for Shift connector")
-	RootCmd.PersistentFlags().StringVarP(&state, "state", "", "", "(Required) State for Shift connector")
-	RootCmd.PersistentFlags().Int64VarP(&batchSize, "batch", "", 1000, "(Optional) Batch size for Shift connector")
+	RootCmd.PersistentFlags().StringVarP(&config_, "config", "", "", "(Required) Config for Shift connector")
+	RootCmd.PersistentFlags().StringVarP(&catalog_, "catalog", "", "", "(Required) Catalog for Shift connector")
+	RootCmd.PersistentFlags().StringVarP(&state_, "state", "", "", "(Required) State for Shift connector")
+	RootCmd.PersistentFlags().UintVarP(&batchSize_, "batch", "", 10000, "(Optional) Batch size for Shift connector")
 
 	// Disable Cobra CLI's built-in usage and error handling
 	RootCmd.SilenceUsage = true
@@ -75,5 +84,5 @@ func init() {
 	// Disable logging
 	logrus.SetOutput(nil)
 
-	logger.SetupWriter(RootCmd.OutOrStdout(), RootCmd.ErrOrStderr())
+	console.SetupWriter(RootCmd.OutOrStdout(), RootCmd.ErrOrStderr())
 }

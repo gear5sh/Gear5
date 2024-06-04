@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/piyushsingariya/shift/logger"
+	"github.com/piyushsingariya/shift/types"
 	"github.com/piyushsingariya/shift/utils"
 	"github.com/spf13/cobra"
 )
@@ -12,32 +13,79 @@ import (
 var CheckCmd = &cobra.Command{
 	Use:   "check",
 	Short: "Shift spec command",
-	PreRun: func(cmd *cobra.Command, args []string) {
-		if config == "" {
-			logger.LogConnectionStatus(fmt.Errorf("--config not passed"))
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if config_ == "" {
+			return fmt.Errorf("--config not passed")
+		} else {
+			if err := utils.UnmarshalFile(config_, _rawConnector.Config()); err != nil {
+				return err
+			}
 		}
 
-		if err := utils.CheckIfFilesExists(config); err != nil {
-			logger.LogConnectionStatus(err)
+		if catalog_ != "" {
+			catalog = &types.Catalog{}
+			if err := utils.UnmarshalFile(catalog_, &catalog); err != nil {
+				return err
+			}
 		}
+
+		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		connector, not := rawConnector.(Connector)
-		if !not {
-			logger.LogConnectionStatus(fmt.Errorf("expected type to be: Connector, found %T", connector))
-		}
+		err := func() error {
+			// Catalog has been passed setup and is driver; Connector should be setup
+			if isDriver && catalog != nil {
+				err := _rawConnector.Setup()
+				if err != nil {
+					return err
+				}
 
-		err := connector.Setup(utils.ReadFile(config), nil, nil, batchSize)
-		if err != nil {
-			logger.LogConnectionStatus(err)
-		}
+				// Get Source Streams
+				streams, err := _driver.Discover()
+				if err != nil {
+					return err
+				}
 
-		err = connector.Check()
-		if err != nil {
-			logger.LogConnectionStatus(err)
-		}
+				streamsMap := types.StreamsToMap(streams...)
+
+				// Validating Streams
+				invalidStreams := []string{}
+				missingStreams := []string{}
+				_, _ = utils.ArrayContains(catalog.Streams, func(stream *types.ConfiguredStream) bool {
+					source, found := streamsMap[stream.ID()]
+					if !found {
+						missingStreams = append(missingStreams, stream.ID())
+						return false
+					}
+
+					err := stream.Validate(source)
+					if err != nil {
+						logger.Error(err)
+						invalidStreams = append(invalidStreams, stream.ID())
+					}
+
+					return false
+				})
+
+				if len(invalidStreams) > 0 && len(missingStreams) > 0 {
+					return fmt.Errorf("found missing streams: %v and invalid streams: %v", missingStreams, invalidStreams)
+				} else if len(invalidStreams) > 0 {
+					return fmt.Errorf("found invalid streams: %v", invalidStreams)
+				} else if len(missingStreams) > 0 {
+					return fmt.Errorf("found missing streams: %v", missingStreams)
+				}
+			} else {
+				// Only perform checks
+				err := _rawConnector.Check()
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
+		}()
 
 		// success
-		logger.LogConnectionStatus(nil)
+		logger.LogConnectionStatus(err)
 	},
 }

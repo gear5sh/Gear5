@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/piyushsingariya/shift/logger"
-	"github.com/piyushsingariya/shift/models"
+	"github.com/piyushsingariya/shift/types"
 	"github.com/piyushsingariya/shift/utils"
 	"github.com/spf13/cobra"
 )
@@ -17,45 +17,48 @@ var ReadCmd = &cobra.Command{
 	Use:   "read",
 	Short: "Shift read command",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		if err := utils.CheckIfFilesExists(config, catalog); err != nil {
-			return err
+		if config_ == "" {
+			return fmt.Errorf("--config not passed")
+		} else {
+			if err := utils.UnmarshalFile(config_, _rawConnector.Config()); err != nil {
+				return err
+			}
 		}
 
-		if state != "" {
-			return utils.CheckIfFilesExists(state)
+		if catalog_ != "" {
+			catalog = &types.Catalog{}
+			if err := utils.UnmarshalFile(catalog_, catalog); err != nil {
+				return err
+			}
+		}
+
+		if state_ != "" {
+			state = &types.State{}
+			if err := utils.UnmarshalFile(state_, state); err != nil {
+				return err
+			}
 		}
 
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		connector, not := rawConnector.(Driver)
-		if !not {
-			return fmt.Errorf("expected type to be: Driver, found %T", connector)
+		// Driver Setup
+		err := _driver.Setup()
+		if err != nil {
+			return err
 		}
 
-		cat := &models.Catalog{}
-		if err := utils.Unmarshal(utils.ReadFile(catalog), cat); err != nil {
-			return fmt.Errorf("failed to unmarshal catalog:%s", err)
-		}
-
-		if state == "" {
-			if err := connector.Setup(utils.ReadFile(config), cat, nil, batchSize); err != nil {
-				return err
-			}
-		} else {
-			st := models.State{}
-			err := utils.Unmarshal(utils.ReadFile(state), &st)
-			if err != nil {
-				return fmt.Errorf("failed to unmarshal state file")
-			}
-			if err := connector.Setup(utils.ReadFile(config), cat, st, batchSize); err != nil {
-				return err
+		// Setup default state
+		if state == nil {
+			state = &types.State{
+				Type: types.StreamType,
 			}
 		}
 
-		recordStream := make(chan models.Record, 2*batchSize)
+		// Setting Record iteration
+		recordStream := make(chan types.Record, 2*batchSize_)
 		numRecords := int64(0)
-		batch := int64(0)
+		batch := uint(0)
 		recordIterationWait := sync.WaitGroup{}
 
 		recordIterationWait.Add(1)
@@ -74,12 +77,8 @@ var ReadCmd = &cobra.Command{
 				batch++
 
 				// log state after a batch
-				if batch >= batchSize {
-					state, err := connector.GetState()
-					if err != nil {
-						logger.Fatalf("failed to get state from connector")
-					}
-					if state != nil && state.Len() > 0 {
+				if batch >= batchSize_ {
+					if !state.IsZero() {
 						logger.LogState(state)
 					}
 					// reset batch
@@ -88,44 +87,81 @@ var ReadCmd = &cobra.Command{
 			}
 		}()
 
-		streamNames := []string{}
-
-		for _, stream := range connector.Catalog().Streams {
-			if stream.Namespace() != "" {
-				streamNames = append(streamNames, fmt.Sprintf("%s[%s]", stream.Name(), stream.Namespace()))
-			} else {
-				streamNames = append(streamNames, stream.Name())
-			}
+		// Get Source Streams
+		streams, err := _driver.Discover()
+		if err != nil {
+			return err
 		}
-		logger.Infof("Selected streams are %s", strings.Join(streamNames, ", "))
 
-		for _, stream := range connector.Catalog().Streams {
-			if stream.Namespace() != "" {
-				logger.Infof("Reading stream %s[%s]", stream.Name(), stream.Namespace())
-			} else {
-				logger.Infof("Reading stream %s", stream.Name())
+		streamsMap := types.StreamsToMap(streams...)
+
+		// Validating Streams and attaching State
+		selectedStreams := []string{}
+		validStreams := []Stream{}
+		_, _ = utils.ArrayContains(catalog.Streams, func(elem *types.ConfiguredStream) bool {
+			source, found := streamsMap[elem.ID()]
+			if !found {
+				logger.Warnf("Skipping; Configured Stream %s not found in source", elem.ID())
+				return false
 			}
 
-			streamStartTime := time.Now()
-			err := connector.Read(stream, recordStream)
+			err := elem.Validate(source)
 			if err != nil {
-				logger.Fatalf("Error occurred while reading records from [%s]: %s", connector.Type(), err)
+				logger.Warnf("Skipping; Configured Stream %s found invalid due to reason: %s", elem.ID(), err)
+				return false
 			}
 
-			logger.Infof("Finished reading stream %s[%s] in %s", stream.Name(), stream.Namespace(), time.Since(streamStartTime).String())
+			err = elem.SetupState(state, int(batchSize_))
+			if err != nil {
+				logger.Warnf("failed to set stream[%s] state due to reason: %s", elem.ID(), err)
+			}
+
+			selectedStreams = append(selectedStreams, elem.ID())
+			validStreams = append(validStreams, elem)
+			return false
+		})
+
+		logger.Infof("Valid selected streams are %s", strings.Join(selectedStreams, ", "))
+
+		// Driver running on GroupRead
+		if _driver.BulkRead() {
+			driver, yes := _driver.(BulkDriver)
+			if !yes {
+				return fmt.Errorf("%s does not implement BulkDriver", _driver.Type())
+			}
+
+			// Setup Global State from Connector
+			if err := driver.SetupGlobalState(state); err != nil {
+				return err
+			}
+
+			err := driver.GroupRead(recordStream, validStreams...)
+			if err != nil {
+				return fmt.Errorf("error occurred while reading records: %s", err)
+			}
+		} else {
+			// Driver running on Stream mode
+			for _, stream := range validStreams {
+				logger.Infof("Reading stream %s", stream.ID())
+
+				streamStartTime := time.Now()
+				err := _driver.Read(stream, recordStream)
+				if err != nil {
+					return fmt.Errorf("error occurred while reading records: %s", err)
+				}
+
+				logger.Infof("Finished reading stream %s[%s] in %s", stream.Name(), stream.Namespace(), time.Since(streamStartTime).String())
+			}
 		}
 
 		// stop record iteration
-		utils.CloseRecordIteration(recordStream)
+		recordStream <- types.Record{
+			Close: true,
+		}
 		recordIterationWait.Wait()
 
 		logger.Infof("Total records read: %d", numRecords)
-		state, err := connector.GetState()
-		if err != nil {
-			logger.Fatalf("failed to get state from connector")
-		}
-
-		if state != nil {
+		if !state.IsZero() {
 			logger.LogState(state)
 		}
 

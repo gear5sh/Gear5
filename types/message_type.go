@@ -3,12 +3,13 @@ package types
 type MessageType string
 
 const (
-	LogType              MessageType = "LOG"
-	ConnectionStatusType MessageType = "CONNECTION_STATUS"
-	StateType            MessageType = "STATE"
-	RecordType           MessageType = "RECORD"
-	CatalogType          MessageType = "CATALOG"
-	SpecType             MessageType = "SPEC"
+	LogMessage              MessageType = "LOG"
+	ConnectionStatusMessage MessageType = "CONNECTION_STATUS"
+	StateMessage            MessageType = "STATE"
+	RecordMessage           MessageType = "RECORD"
+	CataLogMessage          MessageType = "CATALOG"
+	SpecMessage             MessageType = "SPEC"
+	ActionMessage           MessageType = "ACTION"
 )
 
 type ConnectionStatus string
