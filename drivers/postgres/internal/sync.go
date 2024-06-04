@@ -28,7 +28,9 @@ func freshSync(client *sqlx.DB, stream protocol.Stream, channel chan<- types.Rec
 
 	stmt := jdbc.PostgresFullRefresh(stream)
 
-	setter := jdbc.NewOffsetter(stmt, int(stream.BatchSize()), tx.Query)
+	setter := jdbc.NewReader(context.TODO(), stmt, int(stream.BatchSize()), func(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+		return tx.Query(query, args...)
+	})
 	return setter.Capture(func(rows *sql.Rows) error {
 		// Create a map to hold column names and values
 		record := make(types.RecordData)
@@ -69,7 +71,9 @@ func (p *Postgres) incrementalSync(stream protocol.Stream, channel chan<- types.
 		args = append(args, intialState)
 	}
 
-	setter := jdbc.NewOffsetter(statement, int(stream.BatchSize()), tx.Query, args...)
+	setter := jdbc.NewReader(context.Background(), statement, int(stream.BatchSize()), func(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+		return tx.Query(query, args...)
+	}, args...)
 	return setter.Capture(func(rows *sql.Rows) error {
 		// Create a map to hold column names and values
 		record := make(types.RecordData)
