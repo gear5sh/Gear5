@@ -6,7 +6,7 @@ import (
 
 	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/types"
-	"github.com/piyushsingariya/shift/typing"
+	"github.com/piyushsingariya/shift/typeutils"
 	"github.com/piyushsingariya/shift/utils"
 )
 
@@ -67,7 +67,7 @@ func (i *IncrementalStream) setup(mode types.SyncMode, state map[string]any) {
 	i._mode = &mode
 	if state != nil {
 		if value, found := state[i.cursorField()]; found {
-			date, err := typing.ReformatDate(value)
+			date, err := typeutils.ReformatDate(value)
 			if err != nil {
 				logger.Fatalf("failed to reformate date in state map: %v : %s", value, err)
 			}

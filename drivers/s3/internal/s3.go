@@ -20,7 +20,7 @@ import (
 	protocol "github.com/piyushsingariya/shift/protocol"
 	"github.com/piyushsingariya/shift/safego"
 	"github.com/piyushsingariya/shift/types"
-	"github.com/piyushsingariya/shift/typing"
+	"github.com/piyushsingariya/shift/typeutils"
 	"github.com/piyushsingariya/shift/utils"
 )
 
@@ -121,7 +121,7 @@ func (s *S3) Read(stream protocol.Stream, channel chan<- types.Record) error {
 	if stream.GetSyncMode() == types.Incremental {
 		state := stream.InitialState()
 		if state != nil {
-			stateCursor, err := typing.ReformatDate(state)
+			stateCursor, err := typeutils.ReformatDate(state)
 			if err != nil {
 				logger.Warnf("failed to parse state for stream %s[%s]", name, namespace)
 			} else {

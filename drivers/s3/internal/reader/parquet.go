@@ -15,7 +15,7 @@ import (
 	_ "github.com/akrennmair/parquet-go-zstd" // registers the Zstd block compressor with parquet-go
 	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/types"
-	"github.com/piyushsingariya/shift/typing"
+	"github.com/piyushsingariya/shift/typeutils"
 	"github.com/piyushsingariya/shift/utils"
 
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -256,5 +256,5 @@ func (p *Parquet) convertFieldData(logicalType, pqType string, fieldValue any) (
 		return nil, err
 	}
 
-	return typing.ReformatValueOnDataTypes([]types.DataType{datatype}, fieldValue)
+	return typeutils.ReformatValueOnDataTypes([]types.DataType{datatype}, fieldValue)
 }

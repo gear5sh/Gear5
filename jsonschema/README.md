@@ -81,7 +81,7 @@ jsonschemagen [base package] [root type]
 
 In it's simplest form the command-line tool takes a base package and a root type.
 Since a schema has to have a root, we've opted to pass in the package and type explicitly to avoid having to search the entire source tree for the starting point.
-This may seem like extra typing, but it saves a ton of time in terms of performance of the tool.
+This may seem like extra typeutils, but it saves a ton of time in terms of performance of the tool.
 
 **Base Package:** This is the package where the root type can be found. This needs to be the full package declaration as it appears in an import statement.
 
