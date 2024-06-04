@@ -283,7 +283,7 @@ func (s *Socket) start() {
 				args = append(args, intialState)
 			}
 
-			setter := jdbc.WithContextOffsetter(context.TODO(), statement, int(stream.BatchSize()), snapshotter.tx.Query, args...)
+			setter := jdbc.NewReader(context.TODO(), statement, int(stream.BatchSize()), snapshotter.tx.Query, args...)
 			return setter.Capture(func(rows pgx.Rows) error {
 				values, err := rows.Values()
 				if err != nil {

@@ -39,6 +39,14 @@ type BulkDriver interface {
 	StateType() types.StateType
 }
 
+// JDBC Driver
+type JDBCDriver interface {
+	FullLoad(stream protocol.Stream, channel chan<- types.Record) error
+	GroupRead(channel chan<- types.Record, streams ...Stream) error
+	SetupGlobalState(state *types.State) error
+	StateType() types.StateType
+}
+
 type Adapter interface {
 	Connector
 	Write(channel <-chan types.Record) error
