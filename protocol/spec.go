@@ -1,11 +1,21 @@
 package protocol
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"path"
 
+	"github.com/piyushsingariya/shift/jsonschema"
 	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/utils"
+
 	"github.com/spf13/cobra"
+)
+
+var (
+	generate bool
+	airbyte  bool
 )
 
 // SpecCmd represents the read command
@@ -13,25 +23,61 @@ var SpecCmd = &cobra.Command{
 	Use:   "spec",
 	Short: "Shift spec command",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		connector, not := rawConnector.(Connector)
-		if !not {
-			return fmt.Errorf("expected type to be: Connector, found %T", connector)
+		wd, _ := os.Getwd()
+		specfile := path.Join(wd, "generated.json")
+		spec := make(map[string]interface{})
+		if generate {
+			logger.Info("Generating Spec")
+
+			config := _rawConnector.Spec()
+			schema, err := jsonschema.Reflect(config)
+			if err != nil {
+				return err
+			}
+
+			err = utils.Unmarshal(schema, &spec)
+			if err != nil {
+				return fmt.Errorf("failed to generate json schema for config: %s", err)
+			}
+
+			file, err := os.OpenFile(specfile, os.O_CREATE|os.O_RDWR, os.ModePerm)
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+
+			bytes, err := json.MarshalIndent(spec, "", "\t")
+			if err != nil {
+				return err
+			}
+
+			_, err = file.Write(bytes)
+			if err != nil {
+				return err
+			}
+		} else {
+			logger.Info("Reading cached Spec")
+
+			err := utils.UnmarshalFile(specfile, &spec)
+			if err != nil {
+				return err
+			}
 		}
 
-		schema, err := connector.Spec()
-		if err != nil {
-			return fmt.Errorf("failed to generate json schema for config: %s", connector.Type())
+		if airbyte {
+			spec = map[string]any{
+				"connectionSpecification": spec,
+			}
 		}
 
-		schemaInMap := make(map[string]interface{})
-
-		err = utils.Unmarshal(schema, &schemaInMap)
-		if err != nil {
-			return fmt.Errorf("failed to generate json schema for config: %s", connector.Type())
-		}
-
-		logger.LogSpec(schemaInMap)
+		logger.LogSpec(spec)
 
 		return nil
 	},
+}
+
+func init() {
+	// TODO: Set false
+	RootCmd.PersistentFlags().BoolVarP(&generate, "generate", "", false, "(Optional) Generate Config")
+	RootCmd.PersistentFlags().BoolVarP(&airbyte, "airbyte", "", true, "(Optional) Print Config wrapped like airbyte")
 }

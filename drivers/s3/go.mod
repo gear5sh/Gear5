@@ -1,25 +1,36 @@
 module github.com/piyushsingariya/drivers/s3
 
-go 1.19
+go 1.22
+
+toolchain go1.22.3
+
+require github.com/piyushsingariya/shift v0.0.0-20230727050722-6795340c7033
 
 require (
-	github.com/go-playground/validator v9.31.0+incompatible
-	github.com/piyushsingariya/shift v0.0.0-20230727050722-6795340c7033
-)
-
-require (
-	github.com/andybalholm/brotli v1.0.5 // indirect
-	github.com/apache/thrift v0.18.1 // indirect
+	github.com/andybalholm/brotli v1.1.0 // indirect
+	github.com/apache/arrow/go/v16 v16.0.0 // indirect
+	github.com/apache/thrift v0.19.0 // indirect
 	github.com/cyberdelia/lzo v1.0.0 // indirect
-	github.com/go-playground/locales v0.13.0 // indirect
-	github.com/go-playground/universal-translator v0.17.0 // indirect
+	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
+	github.com/go-playground/locales v0.14.1 // indirect
+	github.com/go-playground/universal-translator v0.18.1 // indirect
+	github.com/go-playground/validator/v10 v10.20.0 // indirect
+	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/google/flatbuffers v24.3.25+incompatible // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
-	github.com/klauspost/compress v1.16.7 // indirect
-	github.com/leodido/go-urn v1.2.0 // indirect
-	github.com/pierrec/lz4/v4 v4.1.18 // indirect
+	github.com/klauspost/compress v1.17.7 // indirect
+	github.com/leodido/go-urn v1.4.0 // indirect
+	github.com/mitchellh/hashstructure v1.1.0 // indirect
+	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/xitongsys/parquet-go v1.6.2 // indirect
-	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
+	golang.org/x/crypto v0.22.0 // indirect
+	golang.org/x/exp v0.0.0-20240416160154-fe59bbe5cc7f // indirect
+	golang.org/x/mod v0.17.0 // indirect
+	golang.org/x/net v0.24.0 // indirect
+	golang.org/x/sync v0.7.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 )
 
 require (
@@ -34,12 +45,14 @@ require (
 	github.com/gobwas/glob v0.2.3
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/joomcode/errorx v1.1.0 // indirect
-	github.com/sirupsen/logrus v1.9.2 // indirect
-	github.com/spf13/cobra v1.7.0 // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
+	github.com/spf13/cobra v1.8.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/xitongsys/parquet-go-source v0.0.0-20230607234618-40034c8066df
-	golang.org/x/sys v0.10.0 // indirect
-	golang.org/x/tools v0.9.1 // indirect
+	golang.org/x/sys v0.19.0 // indirect
+	golang.org/x/tools v0.20.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
+
+replace github.com/piyushsingariya/shift => ../../

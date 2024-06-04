@@ -1,45 +1,12 @@
 package types
 
-import (
-	"time"
-)
-
-func String(str string) *string {
-	return &str
+func ToPtr[T any](val T) *T {
+	return &val
 }
 
-func Bool(b bool) *bool {
-	return &b
-}
+const NullStruct = "github.com/piyushsingariya/shift/types/Null"
 
-func Int(i int) *int {
-	return &i
-}
-
-func Duration(d time.Duration) *time.Duration {
-	return &d
-}
-
-func Time(t time.Time) *time.Time {
-	return &t
-}
-
-func DataTypePtr(dt DataType) *DataType {
-	return &dt
-}
-
-func Set[T any](array []T) []T {
-	setArray := []T{}
-	set := make(map[any]bool)
-	for _, item := range array {
-		if _, found := set[item]; found {
-			continue
-		}
-		set[item] = true
-		setArray = append(setArray, item)
-	}
-
-	return setArray
+type Null struct {
 }
 
 func Keys[T comparable](v map[T]any) []T {

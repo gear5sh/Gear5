@@ -1,14 +1,14 @@
 package protocol
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
 	"github.com/piyushsingariya/shift/logger"
-	"github.com/piyushsingariya/shift/models"
 	"github.com/piyushsingariya/shift/safego"
 	"github.com/piyushsingariya/shift/types"
-	"github.com/piyushsingariya/shift/typing"
+	"github.com/piyushsingariya/shift/typeutils"
 	"github.com/piyushsingariya/shift/utils"
 	"github.com/spf13/cobra"
 )
@@ -17,48 +17,52 @@ import (
 var DiscoverCmd = &cobra.Command{
 	Use:   "discover",
 	Short: "Shift discover command",
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		return utils.CheckIfFilesExists(config)
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if config_ == "" {
+			return fmt.Errorf("--config not passed")
+		} else {
+			if err := utils.UnmarshalFile(config_, _rawConnector.Config()); err != nil {
+				return err
+			}
+		}
+
+		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		connector, not := rawConnector.(Driver)
-		if !not {
-			logger.Fatal(fmt.Errorf("expected type to be: Connector, found %T", connector))
+		err := _driver.Setup()
+		if err != nil {
+			return err
 		}
 
-		err := connector.Setup(utils.ReadFile(config), nil, nil, batchSize)
+		streams, err := _driver.Discover()
 		if err != nil {
-			logger.Fatal(err)
-		}
-
-		err = connector.Check()
-		if err != nil {
-			logger.Fatal(err)
-		}
-
-		streams, err := connector.Discover()
-		if err != nil {
-			logger.Fatal(err)
+			return err
 		}
 
 		if len(streams) == 0 {
-			logger.Fatal("no streams found in connector")
+			return errors.New("no streams found in connector")
 		}
 
 		recordsPerStream := 100
 		group := sync.WaitGroup{}
-		for _, wrappedStream := range wrapForSchemaDiscovery(streams) {
-			stream := wrappedStream
+		for _, stream_ := range streams {
+			if stream_.Schema != nil {
+				continue
+			}
+
+			logger.Infof("Generating Type Schema for stream: %s", stream_.ID())
+
+			stream := stream_
 			group.Add(1)
 
 			go func() {
 				objects := []types.RecordData{}
-				channel := make(chan models.Record, recordsPerStream)
+				channel := make(chan types.Record, recordsPerStream)
 				count := 0
 				go func() {
-					err := connector.Read(stream, channel)
+					err := _driver.Read(stream.Wrap(recordsPerStream), channel)
 					if err != nil {
-						logger.Fatalf("Error occurred while reading records from [%s]: %s", stream.Name(), err)
+						logger.Fatalf("Error occurred while reading records from [%s]: %s", stream.Name, err)
 					}
 
 					// close channel incase records are less than recordsPerStream
@@ -73,37 +77,19 @@ var DiscoverCmd = &cobra.Command{
 					}
 				}
 
-				properties, err := typing.Resolve(objects...)
+				err := typeutils.Resolve(stream, objects...)
 				if err != nil {
 					logger.Fatal(err)
 				}
 
-				stream.Stream.JSONSchema = &models.Schema{
-					Properties: properties,
-				}
-
+				logger.Infof("Type Schema generated for stream: %s", stream.ID())
 				group.Done()
 			}()
 		}
 
 		group.Wait()
+
 		logger.LogCatalog(streams)
 		return nil
 	},
-}
-
-func wrapForSchemaDiscovery(streams []*models.Stream) []*models.WrappedStream {
-	wrappedStreams := []*models.WrappedStream{}
-
-	for _, stream := range streams {
-		// only adding streams for which json schema needs to be discovered
-		if stream.JSONSchema == nil {
-			wrappedStreams = append(wrappedStreams, &models.WrappedStream{
-				SyncMode: types.FullRefresh,
-				Stream:   stream,
-			})
-		}
-	}
-
-	return wrappedStreams
 }
