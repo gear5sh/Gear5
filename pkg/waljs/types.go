@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pglogrepl"
 	"github.com/piyushsingariya/shift/protocol"
 	"github.com/piyushsingariya/shift/types"
-	"github.com/piyushsingariya/shift/typing"
+	"github.com/piyushsingariya/shift/typeutils"
 )
 
 type Config struct {
@@ -38,7 +38,7 @@ type ReplicationSlot struct {
 
 type WalJSChange struct {
 	Stream    protocol.Stream
-	Timestamp *typing.Time
+	Timestamp *typeutils.Time
 	LSN       *pglogrepl.LSN
 	Kind      string
 	Schema    string
@@ -48,7 +48,7 @@ type WalJSChange struct {
 
 type WALMessage struct {
 	// NextLSN   pglogrepl.LSN `json:"nextlsn"`
-	Timestamp typing.Time `json:"timestamp"`
+	Timestamp typeutils.Time `json:"timestamp"`
 	Change    []struct {
 		Kind         string        `json:"kind"`
 		Schema       string        `json:"schema"`

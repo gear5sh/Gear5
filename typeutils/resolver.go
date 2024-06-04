@@ -1,4 +1,4 @@
-package typing
+package typeutils
 
 import "github.com/piyushsingariya/shift/types"
 

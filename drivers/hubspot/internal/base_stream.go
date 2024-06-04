@@ -18,7 +18,7 @@ import (
 	"github.com/piyushsingariya/shift/drivers/base"
 	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/types"
-	"github.com/piyushsingariya/shift/typing"
+	"github.com/piyushsingariya/shift/typeutils"
 	"github.com/piyushsingariya/shift/utils"
 )
 
@@ -231,7 +231,7 @@ func (s *Stream) castRecordFieldsIfNeeded(record map[string]any) map[string]any 
 				continue
 			}
 			declaredFieldTypes := properties[fieldName].Type
-			reformattedFieldValue, err := typing.ReformatValueOnDataTypes(declaredFieldTypes, fieldValue)
+			reformattedFieldValue, err := typeutils.ReformatValueOnDataTypes(declaredFieldTypes, fieldValue)
 			if err != nil {
 				logger.Warnf("failed to reformat for field[%s] to data-type:%v for record id:%v", fieldName, declaredFieldTypes, record["id"])
 				continue
@@ -277,7 +277,7 @@ func (s *Stream) filterOldRecords(records []types.RecordData) []map[string]any {
 
 	for _, record := range records {
 		if uat, found := record[s.updatedAtField]; found {
-			updatedAt, err := typing.ReformatDate(uat)
+			updatedAt, err := typeutils.ReformatDate(uat)
 			if err != nil {
 				logger.Warnf("failed to reformat[%s] for record %v: %s", s.updatedAtField, record, err)
 				continue

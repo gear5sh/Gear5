@@ -8,7 +8,7 @@ import (
 	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/safego"
 	"github.com/piyushsingariya/shift/types"
-	"github.com/piyushsingariya/shift/typing"
+	"github.com/piyushsingariya/shift/typeutils"
 	"github.com/piyushsingariya/shift/utils"
 	"github.com/spf13/cobra"
 )
@@ -77,7 +77,7 @@ var DiscoverCmd = &cobra.Command{
 					}
 				}
 
-				err := typing.Resolve(stream, objects...)
+				err := typeutils.Resolve(stream, objects...)
 				if err != nil {
 					logger.Fatal(err)
 				}

@@ -9,7 +9,7 @@ import (
 	"github.com/piyushsingariya/shift/logger"
 	"github.com/piyushsingariya/shift/safego"
 	"github.com/piyushsingariya/shift/types"
-	"github.com/piyushsingariya/shift/typing"
+	"github.com/piyushsingariya/shift/typeutils"
 	"github.com/piyushsingariya/shift/utils"
 )
 
@@ -113,7 +113,7 @@ func (c *CRMSearchStream) readRecords(send chan<- types.Record) error {
 		}
 
 		for _, record := range c.filterOldRecords(c.flatAssociations(records)) {
-			cursor, err := typing.ReformatDate(record[c.updatedAtField])
+			cursor, err := typeutils.ReformatDate(record[c.updatedAtField])
 			if err != nil {
 				return err
 			}
