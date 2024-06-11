@@ -2,8 +2,9 @@ package waljs
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
+
+	"github.com/goccy/go-json"
 
 	"github.com/jackc/pglogrepl"
 	"github.com/piyushsingariya/shift/protocol"

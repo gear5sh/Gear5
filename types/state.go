@@ -1,8 +1,9 @@
 package types
 
 import (
-	"encoding/json"
 	"errors"
+
+	"github.com/goccy/go-json"
 )
 
 type StateType string

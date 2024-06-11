@@ -1,9 +1,10 @@
 package jsonschema
 
 import (
-	"encoding/json"
 	"log"
 	"reflect"
+
+	"github.com/goccy/go-json"
 
 	"github.com/piyushsingariya/shift/jsonschema/generator"
 	"github.com/piyushsingariya/shift/jsonschema/schema"

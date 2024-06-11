@@ -1,7 +1,7 @@
 package types
 
 import (
-	"encoding/json"
+	"github.com/goccy/go-json"
 
 	"github.com/piyushsingariya/shift/jsonschema/schema"
 	"github.com/piyushsingariya/shift/utils"

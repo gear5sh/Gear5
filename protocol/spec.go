@@ -1,10 +1,11 @@
 package protocol
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path"
+
+	"github.com/goccy/go-json"
 
 	"github.com/piyushsingariya/shift/jsonschema"
 	"github.com/piyushsingariya/shift/logger"

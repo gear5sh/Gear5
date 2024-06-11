@@ -1,10 +1,11 @@
 package console
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/goccy/go-json"
 
 	"github.com/piyushsingariya/shift/types"
 )
