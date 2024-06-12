@@ -48,12 +48,13 @@ var ReadCmd = &cobra.Command{
 			return err
 		}
 
-		// Setup default state
+		// Setup state defaults
 		if state == nil {
 			state = &types.State{
 				Type: types.StreamType,
 			}
 		}
+		state.Mutex = &sync.Mutex{}
 
 		// Setting Record iteration
 		recordStream := make(chan types.Record, 2*batchSize_)

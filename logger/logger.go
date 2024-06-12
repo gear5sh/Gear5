@@ -135,6 +135,9 @@ func LogRequest(req *http.Request) {
 }
 
 func LogState(state *types.State) {
+	state.Lock()
+	defer state.Unlock()
+
 	message := types.Message{}
 	message.Type = types.StateMessage
 	message.State = state
