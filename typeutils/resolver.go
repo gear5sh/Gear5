@@ -1,6 +1,6 @@
 package typeutils
 
-import "github.com/piyushsingariya/shift/types"
+import "github.com/piyushsingariya/synkit/types"
 
 func Resolve(stream *types.Stream, objects ...map[string]interface{}) error {
 	allfields := Fields{}

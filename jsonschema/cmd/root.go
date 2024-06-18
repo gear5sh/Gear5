@@ -15,8 +15,8 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/piyushsingariya/shift/jsonschema/generator"
-	"github.com/piyushsingariya/shift/jsonschema/schema"
+	"github.com/piyushsingariya/synkit/jsonschema/generator"
+	"github.com/piyushsingariya/synkit/jsonschema/schema"
 
 	"github.com/spf13/cobra"
 )

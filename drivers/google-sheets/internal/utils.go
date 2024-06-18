@@ -11,9 +11,9 @@ import (
 	"github.com/goccy/go-json"
 
 	unidecode "github.com/mozillazg/go-unidecode"
-	"github.com/piyushsingariya/shift/logger"
-	"github.com/piyushsingariya/shift/types"
-	"github.com/piyushsingariya/shift/utils"
+	"github.com/piyushsingariya/synkit/logger"
+	"github.com/piyushsingariya/synkit/types"
+	"github.com/piyushsingariya/synkit/utils"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"gopkg.in/Iwark/spreadsheet.v2"

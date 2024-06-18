@@ -1,9 +1,10 @@
 package types
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
+
+	"github.com/goccy/go-json"
 
 	"github.com/mitchellh/hashstructure"
 )

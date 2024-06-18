@@ -7,9 +7,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/piyushsingariya/shift/logger"
-	"github.com/piyushsingariya/shift/types"
-	"github.com/piyushsingariya/shift/utils"
+	"github.com/piyushsingariya/synkit/logger"
+	"github.com/piyushsingariya/synkit/types"
+	"github.com/piyushsingariya/synkit/utils"
 	"golang.org/x/oauth2"
 )
 

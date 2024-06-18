@@ -6,16 +6,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/piyushsingariya/shift/logger"
-	"github.com/piyushsingariya/shift/types"
-	"github.com/piyushsingariya/shift/utils"
+	"github.com/piyushsingariya/synkit/logger"
+	"github.com/piyushsingariya/synkit/types"
+	"github.com/piyushsingariya/synkit/utils"
 	"github.com/spf13/cobra"
 )
 
 // ReadCmd represents the read command
 var ReadCmd = &cobra.Command{
 	Use:   "read",
-	Short: "Shift read command",
+	Short: "Synkit read command",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		if config_ == "" {
 			return fmt.Errorf("--config not passed")
@@ -48,12 +48,13 @@ var ReadCmd = &cobra.Command{
 			return err
 		}
 
-		// Setup default state
+		// Setup state defaults
 		if state == nil {
 			state = &types.State{
 				Type: types.StreamType,
 			}
 		}
+		state.Mutex = &sync.Mutex{}
 
 		// Setting Record iteration
 		recordStream := make(chan types.Record, 2*batchSize_)

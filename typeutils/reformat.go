@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/piyushsingariya/shift/types"
+	"github.com/piyushsingariya/synkit/types"
 )
 
 type StringInterface interface {

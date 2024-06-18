@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/piyushsingariya/shift/logger"
-	"github.com/piyushsingariya/shift/types"
-	"github.com/piyushsingariya/shift/typeutils"
-	"github.com/piyushsingariya/shift/utils"
+	"github.com/piyushsingariya/synkit/logger"
+	"github.com/piyushsingariya/synkit/types"
+	"github.com/piyushsingariya/synkit/typeutils"
+	"github.com/piyushsingariya/synkit/utils"
 )
 
 type IncrementalStream struct {

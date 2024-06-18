@@ -1,12 +1,13 @@
 package jsonschema
 
 import (
-	"encoding/json"
 	"log"
 	"reflect"
 
-	"github.com/piyushsingariya/shift/jsonschema/generator"
-	"github.com/piyushsingariya/shift/jsonschema/schema"
+	"github.com/goccy/go-json"
+
+	"github.com/piyushsingariya/synkit/jsonschema/generator"
+	"github.com/piyushsingariya/synkit/jsonschema/schema"
 	"sigs.k8s.io/yaml"
 )
 

@@ -1,9 +1,9 @@
 package base
 
 import (
-	"github.com/piyushsingariya/shift/protocol"
-	"github.com/piyushsingariya/shift/types"
-	"github.com/piyushsingariya/shift/typeutils"
+	"github.com/piyushsingariya/synkit/protocol"
+	"github.com/piyushsingariya/synkit/types"
+	"github.com/piyushsingariya/synkit/typeutils"
 )
 
 type Driver struct {

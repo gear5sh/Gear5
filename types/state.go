@@ -1,8 +1,10 @@
 package types
 
 import (
-	"encoding/json"
 	"errors"
+	"sync"
+
+	"github.com/goccy/go-json"
 )
 
 type StateType string
@@ -20,9 +22,10 @@ const (
 // TODO: Add validation tags; Write custom unmarshal that triggers validation
 // State is a dto for airbyte state serialization
 type State struct {
-	Type    StateType      `json:"type"`
-	Global  any            `json:"global,omitempty"`
-	Streams []*StreamState `json:"streams,omitempty"`
+	*sync.Mutex `json:"-"`
+	Type        StateType      `json:"type"`
+	Global      any            `json:"global,omitempty"`
+	Streams     []*StreamState `json:"streams,omitempty"`
 }
 
 var (

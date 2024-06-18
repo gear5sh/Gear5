@@ -1,7 +1,7 @@
 package generator
 
 import (
-	"github.com/piyushsingariya/shift/logger"
+	"github.com/piyushsingariya/synkit/logger"
 )
 
 // LogLevel is an enum specifying log verbosity

@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/piyushsingariya/shift/logger/console"
-	"github.com/piyushsingariya/shift/types"
+	"github.com/piyushsingariya/synkit/logger/console"
+	"github.com/piyushsingariya/synkit/types"
 )
 
 // Info writes record into os.stdout with log level INFO
@@ -135,6 +135,9 @@ func LogRequest(req *http.Request) {
 }
 
 func LogState(state *types.State) {
+	state.Lock()
+	defer state.Unlock()
+
 	message := types.Message{}
 	message.Type = types.StateMessage
 	message.State = state

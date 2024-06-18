@@ -5,18 +5,18 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/piyushsingariya/shift/logger"
-	"github.com/piyushsingariya/shift/safego"
-	"github.com/piyushsingariya/shift/types"
-	"github.com/piyushsingariya/shift/typeutils"
-	"github.com/piyushsingariya/shift/utils"
+	"github.com/piyushsingariya/synkit/logger"
+	"github.com/piyushsingariya/synkit/safego"
+	"github.com/piyushsingariya/synkit/types"
+	"github.com/piyushsingariya/synkit/typeutils"
+	"github.com/piyushsingariya/synkit/utils"
 	"github.com/spf13/cobra"
 )
 
 // DiscoverCmd represents the read command
 var DiscoverCmd = &cobra.Command{
 	Use:   "discover",
-	Short: "Shift discover command",
+	Short: "discover command",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if config_ == "" {
 			return fmt.Errorf("--config not passed")

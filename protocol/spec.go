@@ -1,14 +1,15 @@
 package protocol
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path"
 
-	"github.com/piyushsingariya/shift/jsonschema"
-	"github.com/piyushsingariya/shift/logger"
-	"github.com/piyushsingariya/shift/utils"
+	"github.com/goccy/go-json"
+
+	"github.com/piyushsingariya/synkit/jsonschema"
+	"github.com/piyushsingariya/synkit/logger"
+	"github.com/piyushsingariya/synkit/utils"
 
 	"github.com/spf13/cobra"
 )
@@ -21,7 +22,7 @@ var (
 // SpecCmd represents the read command
 var SpecCmd = &cobra.Command{
 	Use:   "spec",
-	Short: "Shift spec command",
+	Short: "spec command",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		wd, _ := os.Getwd()
 		specfile := path.Join(wd, "generated.json")

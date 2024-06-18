@@ -2,12 +2,13 @@ package waljs
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 
+	"github.com/goccy/go-json"
+
 	"github.com/jackc/pglogrepl"
-	"github.com/piyushsingariya/shift/protocol"
-	"github.com/piyushsingariya/shift/utils"
+	"github.com/piyushsingariya/synkit/protocol"
+	"github.com/piyushsingariya/synkit/utils"
 )
 
 type ChangeFilter struct {

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/piyushsingariya/shift/protocol"
-	"github.com/piyushsingariya/shift/types"
+	"github.com/piyushsingariya/synkit/protocol"
+	"github.com/piyushsingariya/synkit/types"
 )
 
 const CDCDeletedAt = "_cdc_deleted_at"

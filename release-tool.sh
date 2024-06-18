@@ -5,7 +5,7 @@
 #
 function chalk() {
     local color=$1
-    shift
+    synkit
     local color_code=0
     if [[ $color == "red" ]]; then
         color_code=1
