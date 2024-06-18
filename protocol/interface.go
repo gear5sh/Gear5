@@ -1,7 +1,7 @@
 package protocol
 
 import (
-	"github.com/piyushsingariya/shift/types"
+	"github.com/piyushsingariya/synkit/types"
 )
 
 type Connector interface {

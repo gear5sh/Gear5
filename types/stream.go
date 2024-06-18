@@ -3,8 +3,8 @@ package types
 import (
 	"github.com/goccy/go-json"
 
-	"github.com/piyushsingariya/shift/jsonschema/schema"
-	"github.com/piyushsingariya/shift/utils"
+	"github.com/piyushsingariya/synkit/jsonschema/schema"
+	"github.com/piyushsingariya/synkit/utils"
 )
 
 // Output Stream Object for dsynk

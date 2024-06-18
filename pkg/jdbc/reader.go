@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/piyushsingariya/shift/safego"
-	"github.com/piyushsingariya/shift/types"
+	"github.com/piyushsingariya/synkit/safego"
+	"github.com/piyushsingariya/synkit/types"
 )
 
 type Reader[T types.Iterable] struct {

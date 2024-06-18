@@ -3,7 +3,7 @@ package types
 import (
 	"sync/atomic"
 
-	"github.com/piyushsingariya/shift/utils"
+	"github.com/piyushsingariya/synkit/utils"
 )
 
 type BatchSizeEstimator struct {

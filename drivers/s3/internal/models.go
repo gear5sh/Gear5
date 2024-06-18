@@ -3,8 +3,8 @@ package driver
 import (
 	"fmt"
 
-	"github.com/piyushsingariya/shift/logger"
-	"github.com/piyushsingariya/shift/utils"
+	"github.com/piyushsingariya/synkit/logger"
+	"github.com/piyushsingariya/synkit/utils"
 )
 
 // Authenticate via Access and Secret Keys

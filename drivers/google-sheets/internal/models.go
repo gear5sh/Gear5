@@ -3,7 +3,7 @@ package driver
 import (
 	"fmt"
 
-	"github.com/piyushsingariya/shift/types"
+	"github.com/piyushsingariya/synkit/types"
 )
 
 type Config struct {

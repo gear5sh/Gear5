@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/lib/pq"
-	"github.com/piyushsingariya/shift/utils"
+	"github.com/piyushsingariya/synkit/utils"
 )
 
 type Config struct {

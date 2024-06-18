@@ -1,4 +1,4 @@
-module github.com/piyushsingariya/shift
+module github.com/piyushsingariya/synkit
 
 go 1.22
 

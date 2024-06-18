@@ -3,7 +3,7 @@ package types
 import (
 	"fmt"
 
-	"github.com/piyushsingariya/shift/utils"
+	"github.com/piyushsingariya/synkit/utils"
 )
 
 // Input/Processed object for Stream

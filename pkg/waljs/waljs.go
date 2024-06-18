@@ -12,9 +12,9 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgproto3"
 	"github.com/jmoiron/sqlx"
-	"github.com/piyushsingariya/shift/logger"
-	"github.com/piyushsingariya/shift/pkg/jdbc"
-	"github.com/piyushsingariya/shift/protocol"
+	"github.com/piyushsingariya/synkit/logger"
+	"github.com/piyushsingariya/synkit/pkg/jdbc"
+	"github.com/piyushsingariya/synkit/protocol"
 )
 
 const (

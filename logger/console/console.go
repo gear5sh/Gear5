@@ -7,7 +7,7 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/piyushsingariya/shift/types"
+	"github.com/piyushsingariya/synkit/types"
 )
 
 var (
@@ -68,25 +68,25 @@ func ToLevel(levelStr string) Level {
 }
 
 func Log(format string, level Level, v ...interface{}) error {
-	message := ""
+	str := ""
 	if format == "" {
 		formatted := []string{}
 		for _, elem := range v {
 			formatted = append(formatted, fmt.Sprint(elem))
 		}
-		message = strings.Join(formatted, ", ")
+		str = strings.Join(formatted, ", ")
 	} else {
-		message = fmt.Sprintf(format, v...)
+		str = fmt.Sprintf(format, v...)
 	}
-	shiftMessage := types.Message{
+	message := types.Message{
 		Type: types.LogMessage,
 		Log: &types.Log{
 			Level:   level.String(),
-			Message: message,
+			Message: str,
 		},
 	}
 
-	return Print(level, shiftMessage)
+	return Print(level, message)
 }
 
 func Print(level Level, value any) error {

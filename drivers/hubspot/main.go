@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/piyushsingariya/shift"
-	driver "github.com/piyushsingariya/shift/drivers/hubspot/internal"
+	"github.com/piyushsingariya/synkit"
+	driver "github.com/piyushsingariya/synkit/drivers/hubspot/internal"
 )
 
 func main() {
 	driver := &driver.Hubspot{}
-	shift.RegisterDriver(driver)
+	synkit.RegisterDriver(driver)
 }

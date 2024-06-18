@@ -1,9 +1,9 @@
 package base
 
 import (
-	"github.com/piyushsingariya/shift/protocol"
-	"github.com/piyushsingariya/shift/types"
-	"github.com/piyushsingariya/shift/utils"
+	"github.com/piyushsingariya/synkit/protocol"
+	"github.com/piyushsingariya/synkit/types"
+	"github.com/piyushsingariya/synkit/utils"
 )
 
 // Pass dest with all fields initialized to handle nil state case

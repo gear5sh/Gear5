@@ -1,12 +1,12 @@
-package shift
+package synkit
 
 import (
 	"fmt"
 	"os"
 
-	"github.com/piyushsingariya/shift/logger"
-	protocol "github.com/piyushsingariya/shift/protocol"
-	"github.com/piyushsingariya/shift/safego"
+	"github.com/piyushsingariya/synkit/logger"
+	protocol "github.com/piyushsingariya/synkit/protocol"
+	"github.com/piyushsingariya/synkit/safego"
 	"github.com/spf13/cobra"
 )
 

@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/piyushsingariya/shift"
-	driver "github.com/piyushsingariya/shift/drivers/google-sheets/internal"
+	"github.com/piyushsingariya/synkit"
+	driver "github.com/piyushsingariya/synkit/drivers/google-sheets/internal"
 )
 
 func main() {
 	driver := &driver.GoogleSheets{}
-	shift.RegisterDriver(driver)
+	synkit.RegisterDriver(driver)
 }
