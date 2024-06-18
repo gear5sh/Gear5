@@ -2,10 +2,10 @@ package main
 
 import (
 	_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/piyushsingariya/shift"
-	"github.com/piyushsingariya/shift/drivers/base"
-	driver "github.com/piyushsingariya/shift/drivers/postgres/internal"
-	"github.com/piyushsingariya/shift/protocol"
+	"github.com/piyushsingariya/synkit"
+	"github.com/piyushsingariya/synkit/drivers/base"
+	driver "github.com/piyushsingariya/synkit/drivers/postgres/internal"
+	"github.com/piyushsingariya/synkit/protocol"
 )
 
 func main() {
@@ -15,5 +15,5 @@ func main() {
 	_ = protocol.BulkDriver(driver)
 
 	defer driver.CloseConnection()
-	shift.RegisterDriver(driver)
+	synkit.RegisterDriver(driver)
 }

@@ -3,8 +3,8 @@ package typeutils
 import (
 	"sort"
 
-	"github.com/piyushsingariya/shift/logger"
-	"github.com/piyushsingariya/shift/types"
+	"github.com/piyushsingariya/synkit/logger"
+	"github.com/piyushsingariya/synkit/types"
 )
 
 type Fields map[string]*Field

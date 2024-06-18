@@ -3,7 +3,7 @@ package types
 import (
 	"fmt"
 
-	"github.com/piyushsingariya/shift/utils"
+	"github.com/piyushsingariya/synkit/utils"
 )
 
 // Input/Processed object for Stream
@@ -60,44 +60,6 @@ func (s *ConfiguredStream) Cursor() string {
 	return s.CursorField
 }
 
-func (s *ConfiguredStream) InitialState() any {
-	return s.CursorValue
-}
-
-func (s *ConfiguredStream) SetState(value any) {
-	if s.state == nil {
-		ss := &StreamState{
-			Stream:    s.Name(),
-			Namespace: s.Namespace(),
-			State: map[string]any{
-				s.Cursor(): value,
-			},
-		}
-
-		// save references of state
-		s.state = ss
-		s.connectorState.Streams = append(s.connectorState.Streams, ss)
-		return
-	}
-
-	s.state.State[s.Cursor()] = value
-}
-
-func (s *ConfiguredStream) GetState() any {
-	if s.state == nil || s.state.State == nil {
-		return nil
-	}
-	return s.state.State[s.Cursor()]
-}
-
-func (s *ConfiguredStream) BatchSize() int {
-	return s.batchSize
-}
-
-func (s *ConfiguredStream) SetBatchSize(size int) {
-	s.batchSize = size
-}
-
 // Returns empty and missing
 func (s *ConfiguredStream) SetupState(state *State, batchSize int) error {
 	s.SetBatchSize(batchSize)
@@ -123,6 +85,50 @@ func (s *ConfiguredStream) SetupState(state *State, batchSize int) error {
 	}
 
 	return nil
+}
+
+func (s *ConfiguredStream) InitialState() any {
+	return s.CursorValue
+}
+
+func (s *ConfiguredStream) SetState(value any) {
+	s.connectorState.Lock()
+	defer s.connectorState.Unlock()
+
+	if s.state == nil {
+		ss := &StreamState{
+			Stream:    s.Name(),
+			Namespace: s.Namespace(),
+			State: map[string]any{
+				s.Cursor(): value,
+			},
+		}
+
+		// save references of state
+		s.state = ss
+		s.connectorState.Streams = append(s.connectorState.Streams, ss)
+		return
+	}
+
+	s.state.State[s.Cursor()] = value
+}
+
+func (s *ConfiguredStream) GetState() any {
+	s.connectorState.Lock()
+	defer s.connectorState.Unlock()
+
+	if s.state == nil || s.state.State == nil {
+		return nil
+	}
+	return s.state.State[s.Cursor()]
+}
+
+func (s *ConfiguredStream) BatchSize() int {
+	return s.batchSize
+}
+
+func (s *ConfiguredStream) SetBatchSize(size int) {
+	s.batchSize = size
 }
 
 // Validate Configured Stream with Source Stream

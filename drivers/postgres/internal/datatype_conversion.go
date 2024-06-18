@@ -1,7 +1,7 @@
 package driver
 
 import (
-	"github.com/piyushsingariya/shift/types"
+	"github.com/piyushsingariya/synkit/types"
 )
 
 var pgTypeToDataTypes = map[string]types.DataType{

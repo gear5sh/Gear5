@@ -7,7 +7,7 @@ import (
 	"github.com/goccy/go-json"
 
 	"github.com/brainicorn/ganno"
-	"github.com/piyushsingariya/shift/jsonschema/schema"
+	"github.com/piyushsingariya/synkit/jsonschema/schema"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -82,7 +82,7 @@ func TestStandardDocStruct(t *testing.T) {
 }
 
 func TestNewlineSynopsisAndDescStruct(t *testing.T) {
-	pkg := "github.com/piyushsingariya/shift/jsonschema/generator"
+	pkg := "github.com/piyushsingariya/synkit/jsonschema/generator"
 	opts := NewOptions()
 	opts.IncludeTests = true
 	opts.LogLevel = VerboseLevel
@@ -96,7 +96,7 @@ func TestNewlineSynopsisAndDescStruct(t *testing.T) {
 }
 
 func TestNewlineSynopsisDocField(t *testing.T) {
-	pkg := "github.com/piyushsingariya/shift/jsonschema/generator"
+	pkg := "github.com/piyushsingariya/synkit/jsonschema/generator"
 	opts := NewOptions()
 	opts.IncludeTests = true
 	opts.LogLevel = VerboseLevel

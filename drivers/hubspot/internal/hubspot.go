@@ -6,13 +6,13 @@ import (
 	"net/http"
 
 	"github.com/goccy/go-json"
-	"github.com/piyushsingariya/shift/drivers/base"
+	"github.com/piyushsingariya/synkit/drivers/base"
 
-	"github.com/piyushsingariya/shift/jsonschema"
-	"github.com/piyushsingariya/shift/jsonschema/schema"
-	"github.com/piyushsingariya/shift/protocol"
-	"github.com/piyushsingariya/shift/types"
-	"github.com/piyushsingariya/shift/utils"
+	"github.com/piyushsingariya/synkit/jsonschema"
+	"github.com/piyushsingariya/synkit/jsonschema/schema"
+	"github.com/piyushsingariya/synkit/protocol"
+	"github.com/piyushsingariya/synkit/types"
+	"github.com/piyushsingariya/synkit/utils"
 )
 
 type Hubspot struct {

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/piyushsingariya/shift/types"
-	"github.com/piyushsingariya/shift/utils"
+	"github.com/piyushsingariya/synkit/types"
+	"github.com/piyushsingariya/synkit/utils"
 )
 
 // TypeFromValue return DataType from v type

@@ -1,10 +1,10 @@
-module github.com/piyushsingariya/shift/drivers/postgres
+module github.com/piyushsingariya/synkit/drivers/postgres
 
 go 1.22
 
 require (
 	github.com/lib/pq v1.10.2
-	github.com/piyushsingariya/shift v0.0.0-20230630130252-054496f39abb
+	github.com/piyushsingariya/synkit v0.0.0-20230630130252-054496f39abb
 )
 
 require (

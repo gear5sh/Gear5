@@ -3,16 +3,16 @@ package protocol
 import (
 	"fmt"
 
-	"github.com/piyushsingariya/shift/logger"
-	"github.com/piyushsingariya/shift/types"
-	"github.com/piyushsingariya/shift/utils"
+	"github.com/piyushsingariya/synkit/logger"
+	"github.com/piyushsingariya/synkit/types"
+	"github.com/piyushsingariya/synkit/utils"
 	"github.com/spf13/cobra"
 )
 
 // SpecCmd represents the read command
 var CheckCmd = &cobra.Command{
 	Use:   "check",
-	Short: "Shift spec command",
+	Short: "check command",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if config_ == "" {
 			return fmt.Errorf("--config not passed")
